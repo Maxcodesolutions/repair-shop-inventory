@@ -185,90 +185,97 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Data management
 function loadData() {
-    console.log('Loading data from localStorage...');
-    
-    inventory = JSON.parse(localStorage.getItem('inventory')) || getDefaultInventory();
-    // Migrate existing items to include units if they don't have them
-    inventory.forEach(item => {
-        if (!item.unit) {
-            item.unit = 'pcs'; // Default to pieces for existing items
-            console.log('Migrated item:', item.name, 'to have unit:', item.unit);
-        }
-    });
-    vendors = JSON.parse(localStorage.getItem('vendors')) || getDefaultVendors();
-    customers = JSON.parse(localStorage.getItem('customers')) || getDefaultCustomers();
-    purchases = JSON.parse(localStorage.getItem('purchases')) || [];
-    repairs = JSON.parse(localStorage.getItem('repairs')) || [];
-    outsourceRepairs = JSON.parse(localStorage.getItem('outsourceRepairs')) || [];
-    invoices = JSON.parse(localStorage.getItem('invoices')) || [];
-    quotations = JSON.parse(localStorage.getItem('quotations')) || [];
-    pickDrops = JSON.parse(localStorage.getItem('pickDrops')) || [];
-    payments = JSON.parse(localStorage.getItem('payments')) || [];
-    // Load users with error handling
-    try {
-        const usersData = localStorage.getItem('users');
+    // Initialize data manager for server-side storage
+    if (typeof dataManager !== 'undefined') {
+        dataManager.init();
+    } else {
+        // Fallback to localStorage if Firebase is not available
+        console.log('Loading data from localStorage (Firebase not available)...');
         
-        if (usersData) {
-            users = JSON.parse(usersData);
-        } else {
+        inventory = JSON.parse(localStorage.getItem('inventory')) || getDefaultInventory();
+        // Migrate existing items to include units if they don't have them
+        inventory.forEach(item => {
+            if (!item.unit) {
+                item.unit = 'pcs'; // Default to pieces for existing items
+                console.log('Migrated item:', item.name, 'to have unit:', item.unit);
+            }
+        });
+        vendors = JSON.parse(localStorage.getItem('vendors')) || getDefaultVendors();
+        customers = JSON.parse(localStorage.getItem('customers')) || getDefaultCustomers();
+        purchases = JSON.parse(localStorage.getItem('purchases')) || [];
+        repairs = JSON.parse(localStorage.getItem('repairs')) || [];
+        outsourceRepairs = JSON.parse(localStorage.getItem('outsourceRepairs')) || [];
+        invoices = JSON.parse(localStorage.getItem('invoices')) || [];
+        quotations = JSON.parse(localStorage.getItem('quotations')) || [];
+        pickDrops = JSON.parse(localStorage.getItem('pickDrops')) || [];
+        payments = JSON.parse(localStorage.getItem('payments')) || [];
+        deliveries = JSON.parse(localStorage.getItem('deliveries')) || getDefaultDeliveries();
+        
+        // Load users with error handling
+        try {
+            const usersData = localStorage.getItem('users');
+            if (usersData) {
+                users = JSON.parse(usersData);
+            } else {
+                users = getDefaultUsers();
+            }
+        } catch (error) {
+            console.error('Error loading users from localStorage:', error);
             users = getDefaultUsers();
         }
-    } catch (error) {
-        console.error('Error loading users from localStorage:', error);
-        users = getDefaultUsers();
+        
+        // Migrate existing users to include delivery and payment permissions
+        users.forEach(user => {
+            if (user.permissions && !user.permissions.includes('delivery')) {
+                user.permissions.push('delivery');
+                console.log('Added delivery permission to user:', user.username);
+            }
+            if (user.permissions && !user.permissions.includes('payments')) {
+                user.permissions.push('payments');
+                console.log('Added payments permission to user:', user.username);
+            }
+        });
+        
+        console.log('Final users after migration:', users);
+        console.log('All loaded data:', {
+            inventory: inventory.length,
+            vendors: vendors.length,
+            customers: customers.length,
+            purchases: purchases.length,
+            repairs: repairs.length,
+            outsourceRepairs: outsourceRepairs.length,
+            invoices: invoices.length,
+            quotations: quotations.length,
+            users: users.length
+        });
     }
-    
-    deliveries = JSON.parse(localStorage.getItem('deliveries')) || getDefaultDeliveries();
-    
-    // Migrate existing users to include delivery and payment permissions
-    users.forEach(user => {
-        if (user.permissions && !user.permissions.includes('delivery')) {
-            user.permissions.push('delivery');
-            console.log('Added delivery permission to user:', user.username);
-        }
-        if (user.permissions && !user.permissions.includes('payments')) {
-            user.permissions.push('payments');
-            console.log('Added payments permission to user:', user.username);
-        }
-    });
-    
-    console.log('Final users after migration:', users);
-    
-    console.log('Loaded quotations from localStorage:', quotations);
-    console.log('Raw quotations from localStorage:', localStorage.getItem('quotations'));
-    console.log('Quotations array length:', quotations.length);
-    console.log('All loaded data:', {
-        inventory: inventory.length,
-        vendors: vendors.length,
-        customers: customers.length,
-        purchases: purchases.length,
-        repairs: repairs.length,
-        outsourceRepairs: outsourceRepairs.length,
-        invoices: invoices.length,
-        quotations: quotations.length,
-        users: users.length
-    });
 }
 
 function saveData() {
-    console.log('Saving data to localStorage...');
-    console.log('Saving quotations:', quotations);
-    
-    localStorage.setItem('inventory', JSON.stringify(inventory));
-    localStorage.setItem('vendors', JSON.stringify(vendors));
-    localStorage.setItem('customers', JSON.stringify(customers));
-    localStorage.setItem('purchases', JSON.stringify(purchases));
-    localStorage.setItem('repairs', JSON.stringify(repairs));
-    localStorage.setItem('outsourceRepairs', JSON.stringify(outsourceRepairs));
-    localStorage.setItem('invoices', JSON.stringify(invoices));
-    localStorage.setItem('quotations', JSON.stringify(quotations));
-    localStorage.setItem('pickDrops', JSON.stringify(pickDrops));
-    localStorage.setItem('payments', JSON.stringify(payments));
-    localStorage.setItem('users', JSON.stringify(users));
-    localStorage.setItem('deliveries', JSON.stringify(deliveries));
-    
-    console.log('Data saved successfully');
-    console.log('Quotations in localStorage after save:', localStorage.getItem('quotations'));
+    // Use data manager for server-side storage if available
+    if (typeof dataManager !== 'undefined' && dataManager.isOnline) {
+        dataManager.saveDataToServer();
+    } else {
+        // Fallback to localStorage
+        console.log('Saving data to localStorage...');
+        console.log('Saving quotations:', quotations);
+        
+        localStorage.setItem('inventory', JSON.stringify(inventory));
+        localStorage.setItem('vendors', JSON.stringify(vendors));
+        localStorage.setItem('customers', JSON.stringify(customers));
+        localStorage.setItem('purchases', JSON.stringify(purchases));
+        localStorage.setItem('repairs', JSON.stringify(repairs));
+        localStorage.setItem('outsourceRepairs', JSON.stringify(outsourceRepairs));
+        localStorage.setItem('invoices', JSON.stringify(invoices));
+        localStorage.setItem('quotations', JSON.stringify(quotations));
+        localStorage.setItem('pickDrops', JSON.stringify(pickDrops));
+        localStorage.setItem('payments', JSON.stringify(payments));
+        localStorage.setItem('users', JSON.stringify(users));
+        localStorage.setItem('deliveries', JSON.stringify(deliveries));
+        
+        console.log('Data saved successfully to localStorage');
+        console.log('Quotations in localStorage after save:', localStorage.getItem('quotations'));
+    }
 }
 
 function getDefaultInventory() {
