@@ -838,23 +838,64 @@ async function saveDataToCloud() {
             quotations: quotations.length
         });
         
-        await window.setDoc(window.doc(window.collection(window.db, 'users'), user.uid), data);
-        console.log('✅ Data saved successfully to cloud');
+        // Add retry logic for connection issues
+        let retryCount = 0;
+        const maxRetries = 3;
         
-        // Also save a timestamp to verify sync
-        await window.setDoc(window.doc(window.collection(window.db, 'sync'), user.uid), {
-            lastSync: new Date().toISOString(),
-            userAgent: navigator.userAgent,
-            dataCount: {
-                inventory: inventory.length,
-                customers: customers.length,
-                repairs: repairs.length
+        while (retryCount < maxRetries) {
+            try {
+                await window.setDoc(window.doc(window.collection(window.db, 'users'), user.uid), data);
+                console.log('✅ Data saved successfully to cloud');
+                
+                // Also save a timestamp to verify sync
+                try {
+                    await window.setDoc(window.doc(window.collection(window.db, 'sync'), user.uid), {
+                        lastSync: new Date().toISOString(),
+                        userAgent: navigator.userAgent,
+                        dataCount: {
+                            inventory: inventory.length,
+                            customers: customers.length,
+                            repairs: repairs.length
+                        }
+                    });
+                    console.log('✅ Sync timestamp saved to cloud');
+                } catch (syncError) {
+                    console.log('Warning: Could not save sync timestamp:', syncError.message);
+                }
+                
+                break; // Success, exit retry loop
+                
+            } catch (error) {
+                retryCount++;
+                console.log(`❌ Cloud save attempt ${retryCount} failed:`, error.message);
+                
+                if (error.message.includes('connection') || 
+                    error.message.includes('network') || 
+                    error.message.includes('ERR_CONNECTION_CLOSED') ||
+                    error.message.includes('connection closed')) {
+                    console.log('Connection error detected, retrying...');
+                    if (retryCount < maxRetries) {
+                        // Wait before retry with exponential backoff
+                        const waitTime = 1000 * Math.pow(2, retryCount - 1);
+                        console.log(`Waiting ${waitTime}ms before retry...`);
+                        await new Promise(resolve => setTimeout(resolve, waitTime));
+                        continue;
+                    }
+                }
+                
+                // If it's not a connection error or max retries reached
+                throw error;
             }
-        });
-        console.log('✅ Sync timestamp saved to cloud');
+        }
+        
+        if (retryCount >= maxRetries) {
+            throw new Error('Max retries reached for cloud save');
+        }
         
     } catch (error) {
-        console.error('❌ Error saving to cloud:', error);
+        console.error('❌ Error saving to cloud after retries:', error);
+        console.log('Falling back to localStorage');
+        saveDataToLocal();
     }
 }
 
@@ -7494,6 +7535,79 @@ function checkCrossBrowserSync() {
 // Make cross-browser sync functions available globally
 window.fixCrossBrowserSync = fixCrossBrowserSync;
 window.checkCrossBrowserSync = checkCrossBrowserSync;
+
+// Function to handle Firebase connection issues
+function handleFirebaseConnectionIssues() {
+    console.log('=== HANDLING FIREBASE CONNECTION ISSUES ===');
+    
+    // Check if Firebase is available
+    if (!window.auth || !window.db) {
+        console.log('❌ Firebase not available');
+        return;
+    }
+    
+    // Check current connection status
+    const currentUser = window.auth.currentUser;
+    if (currentUser) {
+        console.log('✅ User authenticated:', currentUser.uid);
+    } else {
+        console.log('❌ No authenticated user');
+    }
+    
+    // Try to re-establish connection
+    console.log('Attempting to re-establish Firebase connection...');
+    
+    // Force a small data save to test connection
+    if (currentUser) {
+        const testData = {
+            test: true,
+            timestamp: new Date().toISOString(),
+            userUid: currentUser.uid
+        };
+        
+        if (window.setDoc && window.doc && window.collection) {
+            window.setDoc(window.doc(window.collection(window.db, 'connection-test'), currentUser.uid), testData)
+                .then(() => {
+                    console.log('✅ Firebase connection test successful');
+                    // Remove test data
+                    window.setDoc(window.doc(window.collection(window.db, 'connection-test'), currentUser.uid), {});
+                })
+                .catch((error) => {
+                    console.log('❌ Firebase connection test failed:', error.message);
+                    console.log('Recommendation: Check internet connection and try again');
+                });
+        }
+    }
+}
+
+// Function to check Firebase connection status
+function checkFirebaseConnection() {
+    console.log('=== CHECKING FIREBASE CONNECTION ===');
+    
+    const status = {
+        auth: !!window.auth,
+        db: !!window.db,
+        setDoc: !!window.setDoc,
+        getDoc: !!window.getDoc,
+        doc: !!window.doc,
+        collection: !!window.collection,
+        currentUser: window.auth?.currentUser ? 'authenticated' : 'not authenticated'
+    };
+    
+    console.log('Firebase status:', status);
+    
+    if (status.auth && status.db && status.setDoc && status.getDoc && status.doc && status.collection) {
+        console.log('✅ All Firebase functions available');
+    } else {
+        console.log('❌ Some Firebase functions missing');
+    }
+    
+    return status;
+}
+
+// Make connection functions available globally
+window.handleFirebaseConnectionIssues = handleFirebaseConnectionIssues;
+window.checkFirebaseConnection = checkFirebaseConnection;
 
 // Function to check localStorage data
 function checkLocalStorageData() {
