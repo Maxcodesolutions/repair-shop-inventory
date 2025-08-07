@@ -2794,10 +2794,30 @@
       window.setDoc = setDoc;
       window.getDoc = getDoc;
       
+      // Also expose Firebase functions as global functions for easier access
+      window.getFirestore = getFirestore;
+      window.initializeApp = initializeApp;
+      window.getAuth = getAuth;
+      
       // Signal that Firebase is ready
       window.firebaseReady = true;
+      window.firebaseConfig = firebaseConfig;
+      
+      // Dispatch custom event when Firebase is ready
       window.dispatchEvent(new CustomEvent('firebaseReady'));
+      
+      // Log Firebase initialization
+      console.log('Firebase initialized and exposed to global scope');
+      console.log('Available global functions:', {
+        db: !!window.db,
+        auth: !!window.auth,
+        collection: !!window.collection,
+        doc: !!window.doc,
+        setDoc: !!window.setDoc,
+        getDoc: !!window.getDoc
+      });
     </script>
+    <script src="firebase-init-check.js"></script>
     <script src="firebase-config.js"></script>
     <script src="script.js"></script>
     <script src="quick-fix.js"></script>

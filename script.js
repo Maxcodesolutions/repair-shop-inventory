@@ -411,6 +411,22 @@ document.addEventListener('DOMContentLoaded', function() {
     // Uncomment the next line to reset all data and start fresh
     // localStorage.clear();
     
+    // Wait for Firebase to be ready before initializing
+    if (window.ensureFirebaseAvailable) {
+        window.ensureFirebaseAvailable().then(() => {
+            console.log('Firebase ready, initializing application...');
+            initializeApplication();
+        }).catch((error) => {
+            console.log('Firebase not available, initializing with local storage only:', error.message);
+            initializeApplication();
+        });
+    } else {
+        console.log('Firebase init check not available, initializing application...');
+        initializeApplication();
+    }
+});
+
+function initializeApplication() {
     // Setup Firebase auth listener for automatic cloud sync
     setupFirebaseAuthListener();
     
@@ -424,7 +440,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Setup customer autocomplete
     setupCustomerAutocomplete();
-});
+}
 
 // Data management
 function loadData() {
