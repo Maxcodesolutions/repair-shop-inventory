@@ -1,20 +1,9 @@
-// Firebase Configuration
-// Replace with your Firebase project settings
-const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "your-project.firebaseapp.com",
-  projectId: "your-project-id",
-  storageBucket: "your-project.appspot.com",
-  messagingSenderId: "123456789",
-  appId: "your-app-id"
-};
+// Firebase Configuration (v12 SDK)
+// Note: Firebase is initialized in the HTML module script
 
-// Initialize Firebase
-firebase.initializeApp(firebaseConfig);
-
-// Initialize Firebase services
-const db = firebase.firestore();
-const auth = firebase.auth();
+// Initialize Firebase services (using global variables from module script)
+const db = window.db;
+const auth = window.auth;
 
 // Data management functions
 class DataManager {
@@ -27,7 +16,7 @@ class DataManager {
     async init() {
         try {
             // Check if user is authenticated
-            auth.onAuthStateChanged((user) => {
+            window.onAuthStateChanged(auth, (user) => {
                 if (user) {
                     this.currentUser = user;
                     this.isOnline = true;
@@ -70,7 +59,7 @@ class DataManager {
                 lastUpdated: new Date().toISOString()
             };
 
-            await db.collection('users').doc(this.currentUser.uid).set(userData);
+            await window.setDoc(window.doc(window.collection(db, 'users'), this.currentUser.uid), userData);
             console.log('Data saved to server successfully');
         } catch (error) {
             console.error('Error saving to server:', error);
@@ -86,8 +75,8 @@ class DataManager {
         }
 
         try {
-            const doc = await db.collection('users').doc(this.currentUser.uid).get();
-            if (doc.exists) {
+            const doc = await window.getDoc(window.doc(window.collection(db, 'users'), this.currentUser.uid));
+            if (doc.exists()) {
                 const data = doc.data();
                 inventory = data.inventory || [];
                 vendors = data.vendors || [];

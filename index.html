@@ -2744,10 +2744,40 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-auth-compat.js"></script>
+    <!-- Firebase SDK v12 -->
+    <script type="module">
+      // Import the functions you need from the SDKs you need
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
+      import { getFirestore, collection, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
+      import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
+      import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-analytics.js";
+
+      // Your web app's Firebase configuration
+      const firebaseConfig = {
+        apiKey: "AIzaSyCvuJuOlhqasNbpCkyJjOH1YKJKnjvxLvk",
+        authDomain: "repair-shop-inventory.firebaseapp.com",
+        projectId: "repair-shop-inventory",
+        storageBucket: "repair-shop-inventory.firebasestorage.app",
+        messagingSenderId: "91629691464",
+        appId: "1:91629691464:web:d20cabddb6dcbf755dee7d",
+        measurementId: "G-K78PVPW0MG"
+      };
+
+      // Initialize Firebase
+      const app = initializeApp(firebaseConfig);
+      const analytics = getAnalytics(app);
+      const db = getFirestore(app);
+      const auth = getAuth(app);
+
+      // Make Firebase services globally available
+      window.db = db;
+      window.auth = auth;
+      window.onAuthStateChanged = onAuthStateChanged;
+      window.collection = collection;
+      window.doc = doc;
+      window.setDoc = setDoc;
+      window.getDoc = getDoc;
+    </script>
     <script src="firebase-config.js"></script>
     <script src="script.js"></script>
 </body>
