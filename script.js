@@ -354,7 +354,17 @@ function loadData() {
         dataManager.init();
     }
     
-    // Always load from localStorage as primary source
+    // Check if user is authenticated with Firebase
+    if (window.auth && window.auth.currentUser) {
+        console.log('User authenticated, attempting to load from cloud...');
+        loadDataFromCloud();
+    } else {
+        console.log('No Firebase auth, loading from localStorage...');
+        loadDataFromLocal();
+    }
+}
+
+function loadDataFromLocal() {
     console.log('Loading data from localStorage...');
     
     // Check if data already exists to prevent overwriting
@@ -427,7 +437,7 @@ function loadData() {
             }
         });
         
-        console.log('Data loaded successfully:', {
+        console.log('Data loaded successfully from localStorage:', {
             inventory: inventory.length,
             vendors: vendors.length,
             customers: customers.length,
@@ -447,7 +457,7 @@ function loadData() {
         saveData();
         
     } catch (error) {
-        console.error('Error loading data:', error);
+        console.error('Error loading data from localStorage:', error);
         // Load default data if there's an error
         inventory = getDefaultInventory();
         vendors = getDefaultVendors();
@@ -465,8 +475,65 @@ function loadData() {
         console.log('Loaded default data due to error');
         saveData();
     }
+}
+
+async function loadDataFromCloud() {
+    if (!window.auth || !window.auth.currentUser) {
+        console.log('No authenticated user, falling back to localStorage');
+        loadDataFromLocal();
+        return;
+    }
     
-    console.log('=== DATA LOADING COMPLETE ===');
+    try {
+        console.log('Loading data from Firebase cloud...');
+        const user = window.auth.currentUser;
+        
+        if (window.getDoc && window.doc && window.collection) {
+            const docRef = window.doc(window.collection(window.db, 'users'), user.uid);
+            const docSnap = await window.getDoc(docRef);
+            
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                console.log('Cloud data found, loading...');
+                
+                // Load data from cloud
+                inventory = data.inventory || getDefaultInventory();
+                vendors = data.vendors || getDefaultVendors();
+                customers = data.customers || getDefaultCustomers();
+                purchases = data.purchases || [];
+                repairs = data.repairs || [];
+                outsource = data.outsource || [];
+                invoices = data.invoices || [];
+                quotations = data.quotations || [];
+                pickDrops = data.pickDrops || [];
+                payments = data.payments || [];
+                deliveries = data.deliveries || getDefaultDeliveries();
+                users = data.users || getDefaultUsers();
+                
+                // Also save to localStorage as backup
+                saveData();
+                
+                console.log('Data loaded successfully from cloud:', {
+                    inventory: inventory.length,
+                    vendors: vendors.length,
+                    customers: customers.length,
+                    repairs: repairs.length,
+                    invoices: invoices.length,
+                    quotations: quotations.length
+                });
+            } else {
+                console.log('No cloud data found, loading from localStorage');
+                loadDataFromLocal();
+            }
+        } else {
+            console.log('Firebase functions not available, falling back to localStorage');
+            loadDataFromLocal();
+        }
+    } catch (error) {
+        console.error('Error loading from cloud:', error);
+        console.log('Falling back to localStorage');
+        loadDataFromLocal();
+    }
 }
 
 function saveData() {
@@ -503,15 +570,56 @@ function saveData() {
         console.error('Error saving to localStorage:', error);
     }
     
+    // Save to cloud if user is authenticated
+    if (window.auth && window.auth.currentUser) {
+        console.log('User authenticated, saving to cloud...');
+        saveDataToCloud();
+    } else {
+        console.log('No authenticated user, localStorage only');
+    }
+    
     // Use data manager for server-side storage if available
     if (typeof dataManager !== 'undefined' && dataManager.isOnline) {
         console.log('Attempting to save to server...');
         dataManager.saveDataToServer();
-    } else {
-        console.log('Server storage not available, localStorage only');
     }
     
     console.log('=== DATA SAVING COMPLETE ===');
+}
+
+async function saveDataToCloud() {
+    if (!window.auth || !window.auth.currentUser) {
+        console.log('No authenticated user for cloud save');
+        return;
+    }
+    
+    try {
+        const user = window.auth.currentUser;
+        const data = {
+            inventory: inventory,
+            vendors: vendors,
+            customers: customers,
+            purchases: purchases,
+            repairs: repairs,
+            outsource: outsource,
+            invoices: invoices,
+            quotations: quotations,
+            pickDrops: pickDrops,
+            payments: payments,
+            deliveries: deliveries,
+            users: users,
+            lastUpdated: new Date().toISOString()
+        };
+        
+        if (window.setDoc && window.doc && window.collection) {
+            await window.setDoc(window.doc(window.collection(window.db, 'users'), user.uid), data);
+            console.log('Data saved successfully to cloud');
+        } else {
+            console.log('Firebase functions not available for cloud save');
+        }
+    } catch (error) {
+        console.error('Error saving to cloud:', error);
+    }
 }
 
 function getDefaultInventory() {
