@@ -1179,6 +1179,28 @@ function populatePurchaseModal() {
     vendors.forEach(vendor => {
         vendorSelect.innerHTML += `<option value="${vendor.id}">${vendor.name}</option>`;
     });
+    
+    // Populate item dropdowns
+    populatePurchaseItemDropdowns();
+}
+
+function populatePurchaseItemDropdowns() {
+    const itemDropdowns = document.querySelectorAll('.purchase-item-select');
+    itemDropdowns.forEach(dropdown => {
+        dropdown.innerHTML = '<option value="">Select Item</option>';
+        inventory.forEach(item => {
+            dropdown.innerHTML += `<option value="${item.id}" data-price="${item.price}">${item.name} (${item.brand} ${item.model})</option>`;
+        });
+        
+        // Add event listener to auto-populate price when item is selected
+        dropdown.addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            const priceInput = this.parentElement.querySelector('.purchase-price');
+            if (selectedOption && selectedOption.dataset.price) {
+                priceInput.value = selectedOption.dataset.price;
+            }
+        });
+    });
 }
 
 function populateOutsourceModal() {
@@ -4059,13 +4081,23 @@ function addPurchaseItem() {
     newItem.innerHTML = `
         <select class="purchase-item-select" required>
             <option value="">Select Item</option>
-            ${inventory.map(item => `<option value="${item.id}">${item.name} (${item.sku})</option>`).join('')}
+            ${inventory.map(item => `<option value="${item.id}" data-price="${item.price}">${item.name} (${item.brand} ${item.model})</option>`).join('')}
         </select>
         <input type="number" class="purchase-quantity" placeholder="Qty" min="1" required>
         <input type="number" class="purchase-price" placeholder="Price" min="0" step="0.01" required>
         <button type="button" class="btn btn-danger btn-sm" onclick="removePurchaseItem(this)">Remove</button>
     `;
     container.appendChild(newItem);
+    
+    // Add event listener to auto-populate price when item is selected
+    const newSelect = newItem.querySelector('.purchase-item-select');
+    newSelect.addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        const priceInput = this.parentElement.querySelector('.purchase-price');
+        if (selectedOption && selectedOption.dataset.price) {
+            priceInput.value = selectedOption.dataset.price;
+        }
+    });
 }
 
 function removePurchaseItem(button) {
