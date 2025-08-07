@@ -375,10 +375,51 @@ function setupFirebaseAuthListener() {
     if (window.onAuthStateChanged && window.auth) {
         console.log('Setting up Firebase auth listener for cross-device sync...');
         
+        // First, check if we have stored credentials and try to use them immediately
+        const storedEmail = localStorage.getItem('cloudSyncEmail');
+        const storedPassword = localStorage.getItem('cloudSyncPassword');
+        const consistentUserId = localStorage.getItem('consistentUserId');
+        
+        console.log('=== INITIAL AUTH CHECK ===');
+        console.log('Stored email:', storedEmail ? '✅ Set' : '❌ Not set');
+        console.log('Stored password:', storedPassword ? '✅ Set' : '❌ Not set');
+        console.log('Consistent user ID:', consistentUserId || '❌ Not set');
+        
+        // If we have stored credentials, try to sign in immediately
+        if (storedEmail && storedPassword && window.signInWithEmailAndPassword) {
+            console.log('Attempting immediate sign-in with stored credentials...');
+            
+            window.signInWithEmailAndPassword(window.auth, storedEmail, storedPassword)
+                .then((userCredential) => {
+                    console.log('✅ Immediate sign-in successful:', userCredential.user.uid);
+                    localStorage.setItem('consistentUserId', userCredential.user.uid);
+                    
+                    // Load data from cloud
+                    if (typeof loadDataFromCloud === 'function') {
+                        loadDataFromCloud();
+                    }
+                })
+                .catch((error) => {
+                    console.log('❌ Immediate sign-in failed:', error.message);
+                    console.log('Will try anonymous auth in auth state listener');
+                });
+        }
+        
         window.onAuthStateChanged(window.auth, (user) => {
             if (user) {
-                console.log('User authenticated automatically:', user.email || 'Anonymous');
+                const authMethod = user.providerData[0]?.providerId || 'Anonymous';
+                console.log('User authenticated automatically:', authMethod);
                 console.log('User UID for cross-device sync:', user.uid);
+                
+                if (authMethod === 'Anonymous') {
+                    // Store the anonymous user ID
+                    localStorage.setItem('anonymousUserId', user.uid);
+                    console.log('⚠️ Using anonymous authentication - this will create different UIDs per browser');
+                } else {
+                    // Store the consistent user ID
+                    localStorage.setItem('consistentUserId', user.uid);
+                    console.log('✅ Using consistent authentication - cross-browser sync enabled');
+                }
                 
                 // Automatically load data from cloud when user signs in
                 loadDataFromCloud().then(() => {
@@ -398,7 +439,7 @@ function setupFirebaseAuthListener() {
                         renderAll();
                     }
                 });
-        } else {
+            } else {
                 console.log('User signed out, switching to local storage');
                 // Load from local storage when user signs out
                 loadDataFromLocal();
@@ -420,56 +461,27 @@ function setupFirebaseAuthListener() {
         } else {
             console.log('No current user, attempting consistent authentication for cross-device sync...');
             
-            // Try to use stored credentials for consistent authentication
-            const storedEmail = localStorage.getItem('cloudSyncEmail');
-            const storedPassword = localStorage.getItem('cloudSyncPassword');
-            
-            if (storedEmail && storedPassword && window.signInWithEmailAndPassword) {
-                console.log('Attempting consistent authentication with stored credentials');
-                window.signInWithEmailAndPassword(window.auth, storedEmail, storedPassword)
-                    .then((userCredential) => {
-                        console.log('✅ Consistent authentication successful:', userCredential.user.uid);
-                        localStorage.setItem('consistentUserId', userCredential.user.uid);
-                        loadDataFromCloud();
-                    })
-                    .catch((error) => {
-                        console.log('Consistent authentication failed, trying to create account:', error.message);
-                        
-                        if (window.createUserWithEmailAndPassword) {
-                            window.createUserWithEmailAndPassword(window.auth, storedEmail, storedPassword)
-                                .then((userCredential) => {
-                                    console.log('✅ Account created for consistent sync:', userCredential.user.uid);
-                                    localStorage.setItem('consistentUserId', userCredential.user.uid);
-                                    loadDataFromCloud();
-                                })
-                                .catch((createError) => {
-                                    console.log('Account creation failed, falling back to anonymous:', createError.message);
-                                    tryAnonymousAuth();
-                                });
-                        } else {
-                            tryAnonymousAuth();
-                        }
-                    });
-                    } else {
-            console.log('No stored credentials found, attempting to create consistent credentials...');
-            
-            // Create consistent credentials based on current user
-            const username = localStorage.getItem('currentUserId') || 'admin';
-            const email = `${username}@repairshop.local`;
-            const password = 'admin123456';
-            
-            localStorage.setItem('cloudSyncEmail', email);
-            localStorage.setItem('cloudSyncPassword', password);
-            
-            console.log('Created consistent credentials:', { email, password });
-            
-            // Try to create account with new credentials
-            if (window.createUserWithEmailAndPassword) {
-                window.createUserWithEmailAndPassword(window.auth, email, password)
-                    .then((userCredential) => {
-                        console.log('✅ Account created for consistent sync:', userCredential.user.uid);
-                        localStorage.setItem('consistentUserId', userCredential.user.uid);
-                        loadDataFromCloud();
+            // Only try stored credentials if we haven't already tried them above
+            if (!storedEmail || !storedPassword) {
+                console.log('No stored credentials found, attempting to create consistent credentials...');
+                
+                // Create consistent credentials based on current user
+                const username = localStorage.getItem('currentUserId') || 'admin';
+                const email = `${username}@repairshop.local`;
+                const password = 'admin123456';
+                
+                localStorage.setItem('cloudSyncEmail', email);
+                localStorage.setItem('cloudSyncPassword', password);
+                
+                console.log('Created consistent credentials:', { email, password });
+                
+                // Try to create account with new credentials
+                if (window.createUserWithEmailAndPassword) {
+                    window.createUserWithEmailAndPassword(window.auth, email, password)
+                        .then((userCredential) => {
+                            console.log('✅ Account created for consistent sync:', userCredential.user.uid);
+                            localStorage.setItem('consistentUserId', userCredential.user.uid);
+                            loadDataFromCloud();
                     })
                     .catch((createError) => {
                         console.log('Account creation failed, trying to sign in:', createError.message);
@@ -8680,6 +8692,105 @@ function testCurrentUserCredentials() {
 // Make the test functions available globally
 window.testSpecificCredentials = testSpecificCredentials;
 window.testCurrentUserCredentials = testCurrentUserCredentials;
+
+// Function to force consistent authentication by signing out and using stored credentials
+function forceConsistentAuthWithSignOut() {
+    console.log('=== FORCING CONSISTENT AUTHENTICATION ===');
+    
+    const storedEmail = localStorage.getItem('cloudSyncEmail');
+    const storedPassword = localStorage.getItem('cloudSyncPassword');
+    
+    console.log('Stored credentials:', {
+        email: storedEmail ? '✅ Set' : '❌ Not set',
+        password: storedPassword ? '✅ Set' : '❌ Not set'
+    });
+    
+    if (!storedEmail || !storedPassword) {
+        console.error('❌ No stored credentials found');
+        console.log('Please run forceConsistentAuthAndClear() first');
+        return;
+    }
+    
+    // First, sign out any current session
+    if (window.signOut && window.auth) {
+        console.log('Signing out current session...');
+        window.signOut(window.auth).then(() => {
+            console.log('✅ Signed out successfully');
+            
+            // Wait a moment, then sign in with stored credentials
+            setTimeout(() => {
+                console.log('Attempting to sign in with stored credentials...');
+                
+                if (window.signInWithEmailAndPassword) {
+                    window.signInWithEmailAndPassword(window.auth, storedEmail, storedPassword)
+                        .then((userCredential) => {
+                            console.log('✅ Sign-in successful with stored credentials:', userCredential.user.uid);
+                            localStorage.setItem('consistentUserId', userCredential.user.uid);
+                            console.log('Cross-browser sync should now work!');
+                            
+                            // Force data sync
+                            if (typeof loadDataFromCloud === 'function') {
+                                loadDataFromCloud();
+                            }
+                        })
+                        .catch((error) => {
+                            console.error('❌ Sign-in failed:', error.message);
+                            console.log('Error details:', error);
+                            
+                            if (error.code === 'auth/user-not-found') {
+                                console.log('🔧 SOLUTION: Account does not exist, creating it...');
+                                
+                                if (window.createUserWithEmailAndPassword) {
+                                    window.createUserWithEmailAndPassword(window.auth, storedEmail, storedPassword)
+                                        .then((userCredential) => {
+                                            console.log('✅ Account created successfully:', userCredential.user.uid);
+                                            localStorage.setItem('consistentUserId', userCredential.user.uid);
+                                            console.log('Cross-browser sync should now work!');
+                                            
+                                            // Force data sync
+                                            if (typeof loadDataFromCloud === 'function') {
+                                                loadDataFromCloud();
+                                            }
+                                        })
+                                        .catch((createError) => {
+                                            console.error('❌ Account creation failed:', createError.message);
+                                            console.log('Falling back to anonymous auth...');
+                                            tryAnonymousAuth();
+                                        });
+                                } else {
+                                    tryAnonymousAuth();
+                                }
+                            } else {
+                                console.log('🔧 SOLUTION: Check Firebase Console settings');
+                                console.log('1. Go to Firebase Console → Authentication → Sign-in method');
+                                console.log('2. Enable Email/Password authentication');
+                                console.log('3. Wait a few minutes for changes to take effect');
+                                tryAnonymousAuth();
+                            }
+                        });
+                } else {
+                    console.error('❌ Firebase sign-in function not available');
+                    tryAnonymousAuth();
+                }
+            }, 1000); // Wait 1 second after sign out
+        }).catch((signOutError) => {
+            console.error('❌ Sign out failed:', signOutError.message);
+            // Try to sign in anyway
+            if (window.signInWithEmailAndPassword) {
+                window.signInWithEmailAndPassword(window.auth, storedEmail, storedPassword);
+            }
+        });
+    } else {
+        console.error('❌ Firebase sign-out function not available');
+        // Try to sign in anyway
+        if (window.signInWithEmailAndPassword) {
+            window.signInWithEmailAndPassword(window.auth, storedEmail, storedPassword);
+        }
+    }
+}
+
+// Make the function available globally
+window.forceConsistentAuthWithSignOut = forceConsistentAuthWithSignOut;
 
 // Global function for anonymous authentication
 function tryAnonymousAuth() {
