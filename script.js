@@ -440,6 +440,9 @@ function initializeApplication() {
     
     // Setup customer autocomplete
     setupCustomerAutocomplete();
+    
+    // Initialize global search
+    initializeGlobalSearch();
 }
 
 // Data management
@@ -6705,3 +6708,408 @@ function updatePaymentCustomer() {
 }
 
 // ... existing code ...
+
+// Global Search Functionality
+function initializeGlobalSearch() {
+    const searchInput = document.getElementById('search-input');
+    if (searchInput) {
+        searchInput.addEventListener('input', performGlobalSearch);
+        searchInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                performGlobalSearch();
+            }
+        });
+    }
+}
+
+function performGlobalSearch() {
+    const searchTerm = document.getElementById('search-input').value.toLowerCase().trim();
+    
+    if (searchTerm.length < 2) {
+        hideGlobalSearchResults();
+        return;
+    }
+
+    const results = searchAllData(searchTerm);
+    displayGlobalSearchResults(results, searchTerm);
+}
+
+function searchAllData(searchTerm) {
+    const results = {
+        inventory: [],
+        customers: [],
+        vendors: [],
+        repairs: [],
+        invoices: [],
+        quotations: [],
+        outsource: [],
+        pickdrops: [],
+        deliveries: [],
+        payments: [],
+        users: []
+    };
+
+    // Search Inventory
+    if (inventory) {
+        results.inventory = inventory.filter(item => 
+            item.name.toLowerCase().includes(searchTerm) ||
+            item.sku.toLowerCase().includes(searchTerm) ||
+            (item.model && item.model.toLowerCase().includes(searchTerm)) ||
+            (item.brand && item.brand.toLowerCase().includes(searchTerm)) ||
+            (item.category && item.category.toLowerCase().includes(searchTerm))
+        );
+    }
+
+    // Search Customers
+    if (customers) {
+        results.customers = customers.filter(customer => 
+            customer.name.toLowerCase().includes(searchTerm) ||
+            customer.phone.toLowerCase().includes(searchTerm) ||
+            (customer.email && customer.email.toLowerCase().includes(searchTerm)) ||
+            (customer.address && customer.address.toLowerCase().includes(searchTerm))
+        );
+    }
+
+    // Search Vendors
+    if (vendors) {
+        results.vendors = vendors.filter(vendor => 
+            vendor.name.toLowerCase().includes(searchTerm) ||
+            vendor.phone.toLowerCase().includes(searchTerm) ||
+            (vendor.email && vendor.email.toLowerCase().includes(searchTerm)) ||
+            (vendor.address && vendor.address.toLowerCase().includes(searchTerm))
+        );
+    }
+
+    // Search Repairs
+    if (repairs) {
+        results.repairs = repairs.filter(repair => 
+            repair.customer.toLowerCase().includes(searchTerm) ||
+            repair.deviceType.toLowerCase().includes(searchTerm) ||
+            repair.deviceBrand.toLowerCase().includes(searchTerm) ||
+            repair.deviceModel.toLowerCase().includes(searchTerm) ||
+            (repair.issue && repair.issue.toLowerCase().includes(searchTerm)) ||
+            (repair.estimate && repair.estimate.toString().includes(searchTerm))
+        );
+    }
+
+    // Search Invoices
+    if (invoices) {
+        results.invoices = invoices.filter(invoice => 
+            invoice.invoiceNumber.toLowerCase().includes(searchTerm) ||
+            invoice.customer.toLowerCase().includes(searchTerm) ||
+            (invoice.total && invoice.total.toString().includes(searchTerm))
+        );
+    }
+
+    // Search Quotations
+    if (quotations) {
+        results.quotations = quotations.filter(quotation => 
+            quotation.quotationNumber.toLowerCase().includes(searchTerm) ||
+            quotation.customer.toLowerCase().includes(searchTerm) ||
+            (quotation.total && quotation.total.toString().includes(searchTerm))
+        );
+    }
+
+    // Search Outsource
+    if (outsource) {
+        results.outsource = outsource.filter(item => 
+            item.customer.toLowerCase().includes(searchTerm) ||
+            item.deviceType.toLowerCase().includes(searchTerm) ||
+            item.deviceBrand.toLowerCase().includes(searchTerm) ||
+            item.deviceModel.toLowerCase().includes(searchTerm)
+        );
+    }
+
+    // Search Pick & Drops
+    if (pickdrops) {
+        results.pickdrops = pickdrops.filter(item => 
+            item.customer.toLowerCase().includes(searchTerm) ||
+            item.deviceType.toLowerCase().includes(searchTerm) ||
+            item.deviceBrand.toLowerCase().includes(searchTerm) ||
+            item.deviceModel.toLowerCase().includes(searchTerm)
+        );
+    }
+
+    // Search Deliveries
+    if (deliveries) {
+        results.deliveries = deliveries.filter(item => 
+            item.customer.toLowerCase().includes(searchTerm) ||
+            item.deviceType.toLowerCase().includes(searchTerm) ||
+            item.deviceBrand.toLowerCase().includes(searchTerm) ||
+            item.deviceModel.toLowerCase().includes(searchTerm)
+        );
+    }
+
+    // Search Payments
+    if (payments) {
+        results.payments = payments.filter(item => 
+            item.customer.toLowerCase().includes(searchTerm) ||
+            (item.amount && item.amount.toString().includes(searchTerm)) ||
+            (item.paymentMethod && item.paymentMethod.toLowerCase().includes(searchTerm))
+        );
+    }
+
+    // Search Users
+    if (users) {
+        results.users = users.filter(user => 
+            user.username.toLowerCase().includes(searchTerm) ||
+            user.fullName.toLowerCase().includes(searchTerm) ||
+            (user.email && user.email.toLowerCase().includes(searchTerm))
+        );
+    }
+
+    return results;
+}
+
+function displayGlobalSearchResults(results, searchTerm) {
+    // Remove existing search results
+    hideGlobalSearchResults();
+
+    // Create search results container
+    const searchResultsContainer = document.createElement('div');
+    searchResultsContainer.id = 'global-search-results';
+    searchResultsContainer.className = 'global-search-results';
+    
+    let totalResults = 0;
+    let html = `
+        <div class="search-results-header">
+            <h3>Search Results for "${searchTerm}"</h3>
+            <button class="close-search-btn" onclick="hideGlobalSearchResults()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="search-results-content">
+    `;
+
+    // Inventory Results
+    if (results.inventory.length > 0) {
+        html += `
+            <div class="search-category">
+                <h4><i class="fas fa-boxes"></i> Inventory (${results.inventory.length})</h4>
+                <div class="search-items">
+        `;
+        results.inventory.forEach(item => {
+            html += `
+                <div class="search-item" onclick="navigateToSection('inventory')">
+                    <div class="item-name">${item.name}</div>
+                    <div class="item-details">SKU: ${item.sku} | Stock: ${item.stock}</div>
+                </div>
+            `;
+        });
+        html += `</div></div>`;
+        totalResults += results.inventory.length;
+    }
+
+    // Customer Results
+    if (results.customers.length > 0) {
+        html += `
+            <div class="search-category">
+                <h4><i class="fas fa-users"></i> Customers (${results.customers.length})</h4>
+                <div class="search-items">
+        `;
+        results.customers.forEach(customer => {
+            html += `
+                <div class="search-item" onclick="navigateToSection('customers')">
+                    <div class="item-name">${customer.name}</div>
+                    <div class="item-details">Phone: ${customer.phone}</div>
+                </div>
+            `;
+        });
+        html += `</div></div>`;
+        totalResults += results.customers.length;
+    }
+
+    // Vendor Results
+    if (results.vendors.length > 0) {
+        html += `
+            <div class="search-category">
+                <h4><i class="fas fa-truck"></i> Vendors (${results.vendors.length})</h4>
+                <div class="search-items">
+        `;
+        results.vendors.forEach(vendor => {
+            html += `
+                <div class="search-item" onclick="navigateToSection('vendors')">
+                    <div class="item-name">${vendor.name}</div>
+                    <div class="item-details">Phone: ${vendor.phone}</div>
+                </div>
+            `;
+        });
+        html += `</div></div>`;
+        totalResults += results.vendors.length;
+    }
+
+    // Repair Results
+    if (results.repairs.length > 0) {
+        html += `
+            <div class="search-category">
+                <h4><i class="fas fa-wrench"></i> Repairs (${results.repairs.length})</h4>
+                <div class="search-items">
+        `;
+        results.repairs.forEach(repair => {
+            html += `
+                <div class="search-item" onclick="navigateToSection('repairs')">
+                    <div class="item-name">${repair.customer} - ${repair.deviceBrand} ${repair.deviceModel}</div>
+                    <div class="item-details">Status: ${repair.status} | Estimate: ₹${repair.estimate}</div>
+                </div>
+            `;
+        });
+        html += `</div></div>`;
+        totalResults += results.repairs.length;
+    }
+
+    // Invoice Results
+    if (results.invoices.length > 0) {
+        html += `
+            <div class="search-category">
+                <h4><i class="fas fa-file-invoice"></i> Invoices (${results.invoices.length})</h4>
+                <div class="search-items">
+        `;
+        results.invoices.forEach(invoice => {
+            html += `
+                <div class="search-item" onclick="navigateToSection('invoices')">
+                    <div class="item-name">${invoice.invoiceNumber} - ${invoice.customer}</div>
+                    <div class="item-details">Total: ₹${invoice.total} | Status: ${invoice.status}</div>
+                </div>
+            `;
+        });
+        html += `</div></div>`;
+        totalResults += results.invoices.length;
+    }
+
+    // Quotation Results
+    if (results.quotations.length > 0) {
+        html += `
+            <div class="search-category">
+                <h4><i class="fas fa-file-contract"></i> Quotations (${results.quotations.length})</h4>
+                <div class="search-items">
+        `;
+        results.quotations.forEach(quotation => {
+            html += `
+                <div class="search-item" onclick="navigateToSection('quotations')">
+                    <div class="item-name">${quotation.quotationNumber} - ${quotation.customer}</div>
+                    <div class="item-details">Total: ₹${quotation.total} | Status: ${quotation.status}</div>
+                </div>
+            `;
+        });
+        html += `</div></div>`;
+        totalResults += results.quotations.length;
+    }
+
+    // Outsource Results
+    if (results.outsource.length > 0) {
+        html += `
+            <div class="search-category">
+                <h4><i class="fas fa-share-alt"></i> Outsource (${results.outsource.length})</h4>
+                <div class="search-items">
+        `;
+        results.outsource.forEach(item => {
+            html += `
+                <div class="search-item" onclick="navigateToSection('outsource')">
+                    <div class="item-name">${item.customer} - ${item.deviceBrand} ${item.deviceModel}</div>
+                    <div class="item-details">Status: ${item.status}</div>
+                </div>
+            `;
+        });
+        html += `</div></div>`;
+        totalResults += results.outsource.length;
+    }
+
+    // Pick & Drop Results
+    if (results.pickdrops.length > 0) {
+        html += `
+            <div class="search-category">
+                <h4><i class="fas fa-exchange-alt"></i> Pick & Drop (${results.pickdrops.length})</h4>
+                <div class="search-items">
+        `;
+        results.pickdrops.forEach(item => {
+            html += `
+                <div class="search-item" onclick="navigateToSection('pickdrop')">
+                    <div class="item-name">${item.customer} - ${item.deviceBrand} ${item.deviceModel}</div>
+                    <div class="item-details">Status: ${item.status}</div>
+                </div>
+            `;
+        });
+        html += `</div></div>`;
+        totalResults += results.pickdrops.length;
+    }
+
+    // Delivery Results
+    if (results.deliveries.length > 0) {
+        html += `
+            <div class="search-category">
+                <h4><i class="fas fa-shipping-fast"></i> Deliveries (${results.deliveries.length})</h4>
+                <div class="search-items">
+        `;
+        results.deliveries.forEach(item => {
+            html += `
+                <div class="search-item" onclick="navigateToSection('delivery')">
+                    <div class="item-name">${item.customer} - ${item.deviceBrand} ${item.deviceModel}</div>
+                    <div class="item-details">Status: ${item.status}</div>
+                </div>
+            `;
+        });
+        html += `</div></div>`;
+        totalResults += results.deliveries.length;
+    }
+
+    // Payment Results
+    if (results.payments.length > 0) {
+        html += `
+            <div class="search-category">
+                <h4><i class="fas fa-credit-card"></i> Payments (${results.payments.length})</h4>
+                <div class="search-items">
+        `;
+        results.payments.forEach(item => {
+            html += `
+                <div class="search-item" onclick="navigateToSection('payments')">
+                    <div class="item-name">${item.customer} - ₹${item.amount}</div>
+                    <div class="item-details">Method: ${item.paymentMethod} | Date: ${item.date}</div>
+                </div>
+            `;
+        });
+        html += `</div></div>`;
+        totalResults += results.payments.length;
+    }
+
+    // User Results
+    if (results.users.length > 0) {
+        html += `
+            <div class="search-category">
+                <h4><i class="fas fa-user"></i> Users (${results.users.length})</h4>
+                <div class="search-items">
+        `;
+        results.users.forEach(user => {
+            html += `
+                <div class="search-item" onclick="navigateToSection('users')">
+                    <div class="item-name">${user.fullName} (${user.username})</div>
+                    <div class="item-details">Role: ${user.role} | Status: ${user.status}</div>
+                </div>
+            `;
+        });
+        html += `</div></div>`;
+        totalResults += results.users.length;
+    }
+
+    if (totalResults === 0) {
+        html += `
+            <div class="no-results">
+                <i class="fas fa-search"></i>
+                <p>No results found for "${searchTerm}"</p>
+                <p>Try searching with different keywords</p>
+            </div>
+        `;
+    }
+
+    html += `</div></div>`;
+    
+    searchResultsContainer.innerHTML = html;
+    document.body.appendChild(searchResultsContainer);
+}
+
+function hideGlobalSearchResults() {
+    const existingResults = document.getElementById('global-search-results');
+    if (existingResults) {
+        existingResults.remove();
+    }
+}
