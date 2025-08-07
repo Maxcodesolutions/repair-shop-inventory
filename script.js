@@ -122,6 +122,16 @@ function handleLogin(e) {
         localStorage.setItem('loginStatus', 'true');
         localStorage.setItem('currentUserId', authenticatedUser.id.toString());
         
+        // If Firebase auth is available, try to sign in anonymously for cloud sync
+        if (window.auth && window.signInAnonymously) {
+            window.signInAnonymously(window.auth).then((userCredential) => {
+                console.log('Signed in anonymously for cloud sync:', userCredential.user.uid);
+                // Data will be automatically loaded from cloud via the auth listener
+            }).catch((error) => {
+                console.log('Anonymous sign-in failed, using local storage:', error.message);
+            });
+        }
+        
         // Hide login and show app after a short delay
         setTimeout(() => {
             showApp();
@@ -140,6 +150,15 @@ function logout() {
     localStorage.removeItem('currentUserId');
     currentUser = null;
     currentUserId = null;
+    
+    // Sign out from Firebase if available
+    if (window.auth && window.signOut) {
+        window.signOut(window.auth).then(() => {
+            console.log('Signed out from Firebase');
+        }).catch((error) => {
+            console.log('Error signing out from Firebase:', error.message);
+        });
+    }
     
     // Show login overlay
     showLogin();
@@ -260,6 +279,9 @@ function ensureAdminUserExists() {
 function initializeApp() {
     console.log('Initializing application...');
     
+    // Setup Firebase auth listener for automatic cloud sync
+    setupFirebaseAuthListener();
+    
     // Load data first
     loadData();
     
@@ -285,6 +307,40 @@ function initializeApp() {
     setupEventListeners();
     
     console.log('Application initialized successfully');
+}
+
+// Setup Firebase authentication listener for automatic cloud sync
+function setupFirebaseAuthListener() {
+    if (window.onAuthStateChanged && window.auth) {
+        window.onAuthStateChanged(window.auth, (user) => {
+            if (user) {
+                console.log('User authenticated automatically:', user.email || 'Anonymous');
+                // Automatically load data from cloud when user signs in
+                loadDataFromCloud().then(() => {
+                    console.log('Data loaded from cloud after authentication');
+                    // Re-render all data after cloud load
+                    if (typeof renderAll === 'function') {
+                        renderAll();
+                    }
+                    if (typeof updateDashboard === 'function') {
+                        updateDashboard();
+                    }
+                });
+            } else {
+                console.log('User signed out, switching to local storage');
+                // Load from local storage when user signs out
+                loadDataFromLocal();
+                if (typeof renderAll === 'function') {
+                    renderAll();
+                }
+                if (typeof updateDashboard === 'function') {
+                    updateDashboard();
+                }
+            }
+        });
+    } else {
+        console.log('Firebase auth not available, using local storage only');
+    }
 }
 
 // Global data
@@ -331,6 +387,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Uncomment the next line to reset all data and start fresh
     // localStorage.clear();
+    
+    // Setup Firebase auth listener for automatic cloud sync
+    setupFirebaseAuthListener();
     
     // Load data first
     loadData();
