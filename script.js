@@ -677,23 +677,69 @@ function editUser(userId) {
 function setupEventListeners() {
     console.log('Setting up event listeners...');
     
-    // Navigation - with better error handling
+    // Navigation - with better error handling and multiple approaches
     const navLinks = document.querySelectorAll('.nav-link');
     console.log('Found nav links:', navLinks.length);
     
+    // Remove any existing event listeners first
     navLinks.forEach(link => {
+        const newLink = link.cloneNode(true);
+        link.parentNode.replaceChild(newLink, link);
+    });
+    
+    // Get fresh references after cloning
+    const freshNavLinks = document.querySelectorAll('.nav-link');
+    console.log('Fresh nav links found:', freshNavLinks.length);
+    
+    freshNavLinks.forEach((link, index) => {
+        const section = link.getAttribute('data-section');
+        console.log(`Setting up nav link ${index + 1}: ${link.textContent.trim()} -> ${section}`);
+        
+        // Add click event listener
         link.addEventListener('click', function(e) {
             e.preventDefault();
-            const section = this.getAttribute('data-section');
-            console.log('Nav link clicked:', section);
+            e.stopPropagation();
             
-            if (section) {
-                showSection(section);
+            const clickedSection = this.getAttribute('data-section');
+            console.log('Nav link clicked:', clickedSection);
+            
+            if (clickedSection) {
+                showSection(clickedSection);
             } else {
                 console.error('No data-section attribute found on nav link');
             }
         });
+        
+        // Also add onclick as backup
+        link.onclick = function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const clickedSection = this.getAttribute('data-section');
+            console.log('Nav link onclick triggered:', clickedSection);
+            
+            if (clickedSection) {
+                showSection(clickedSection);
+            }
+        };
     });
+    
+    console.log('Navigation event listeners setup completed');
+    
+    // Forms
+    document.getElementById('add-item-form').addEventListener('submit', handleAddItem);
+    document.getElementById('add-vendor-form').addEventListener('submit', handleAddVendor);
+    document.getElementById('add-customer-form').addEventListener('submit', handleAddCustomer);
+    document.getElementById('add-purchase-form').addEventListener('submit', handleAddPurchase);
+    document.getElementById('add-repair-form').addEventListener('submit', handleAddRepair);
+    document.getElementById('add-outsource-form').addEventListener('submit', handleAddOutsource);
+    document.getElementById('add-invoice-form').addEventListener('submit', handleAddInvoice);
+    document.getElementById('add-quotation-form').addEventListener('submit', handleAddQuotation);
+    document.getElementById('add-pickdrop-form').addEventListener('submit', handleAddPickDrop);
+    document.getElementById('add-delivery-form').addEventListener('submit', handleAddDelivery);
+    document.getElementById('add-payment-form').addEventListener('submit', handleAddPayment);
+    document.getElementById('add-user-form').addEventListener('submit', handleAddUser);
+}
 
     // Forms
     document.getElementById('add-item-form').addEventListener('submit', handleAddItem);
