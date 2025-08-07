@@ -1,24 +1,32 @@
 // Login functionality
-let isLoggedIn = false;
+let currentUser = null;
+let currentUserId = null;
 
-// Check if user is already logged in
 function checkLoginStatus() {
     const loginStatus = localStorage.getItem('loginStatus');
-    const currentUserId = localStorage.getItem('currentUserId');
+    const storedUserId = localStorage.getItem('currentUserId');
     
-    if (loginStatus === 'true' && currentUserId) {
-        // Restore current user
-        currentUser = users.find(u => u.id === parseInt(currentUserId));
-        if (currentUser) {
-            isLoggedIn = true;
+    console.log('Checking login status:', loginStatus);
+    console.log('Stored user ID:', storedUserId);
+    console.log('Available users:', users);
+    
+    if (loginStatus === 'true' && storedUserId) {
+        currentUserId = parseInt(storedUserId);
+        currentUser = users.find(u => u.id === currentUserId);
+        
+        if (currentUser && currentUser.status === 'active') {
+            console.log('User found and active:', currentUser);
             showApp();
+            applyUserPermissions();
         } else {
+            console.log('User not found or inactive, clearing login status');
             // User not found, clear login status
             localStorage.removeItem('loginStatus');
             localStorage.removeItem('currentUserId');
             showLogin();
         }
     } else {
+        console.log('No valid login status, showing login');
         showLogin();
     }
 }
@@ -26,15 +34,14 @@ function checkLoginStatus() {
 // Show login overlay
 function showLogin() {
     document.getElementById('login-overlay').style.display = 'flex';
-    document.getElementById('app-container').classList.remove('logged-in');
-    isLoggedIn = false;
+    // Ensure admin user exists
+    ensureAdminUserExists();
 }
 
-// Show application
+// Hide login and show app
 function showApp() {
     document.getElementById('login-overlay').style.display = 'none';
-    document.getElementById('app-container').classList.add('logged-in');
-    isLoggedIn = true;
+    document.getElementById('app-container').style.display = 'block';
 }
 
 // Handle login form submission
@@ -46,83 +53,136 @@ function handleLogin(e) {
     const loginError = document.getElementById('login-error');
     const loginSuccess = document.getElementById('login-success');
     
-    // Hide previous messages
+    // Clear previous messages
     loginError.style.display = 'none';
     loginSuccess.style.display = 'none';
     
-    // Authenticate user
+    console.log('Login attempt:', { username, password });
+    console.log('Available users:', users);
+    
     const authenticatedUser = authenticateUser(username, password);
+    
     if (authenticatedUser) {
-        // Show success message
         loginSuccess.style.display = 'block';
+        loginSuccess.textContent = 'Login successful! Redirecting...';
         
         // Store login status
         localStorage.setItem('loginStatus', 'true');
-        localStorage.setItem('currentUserId', authenticatedUser.id);
+        localStorage.setItem('currentUserId', authenticatedUser.id.toString());
         
         // Hide login and show app after a short delay
         setTimeout(() => {
             showApp();
-            // Initialize the application
-            initializeApp();
+            applyUserPermissions();
         }, 1000);
     } else {
-        // Show error message
         loginError.style.display = 'block';
+        loginError.textContent = 'Invalid username or password. Please try again.';
         document.getElementById('password').value = '';
     }
 }
 
-// Handle logout
+// Clear login status
 function logout() {
-    // Clear login status
     localStorage.removeItem('loginStatus');
-    isLoggedIn = false;
+    localStorage.removeItem('currentUserId');
+    currentUser = null;
+    currentUserId = null;
     
     // Show login overlay
     showLogin();
-    
-    // Clear form
+}
+
+// Clear login form
+function clearLoginForm() {
     document.getElementById('username').value = '';
     document.getElementById('password').value = '';
     document.getElementById('login-error').style.display = 'none';
     document.getElementById('login-success').style.display = 'none';
 }
 
+// Reset login data (for debugging)
+function resetLoginData() {
+    console.log('Resetting login data...');
+    localStorage.removeItem('loginStatus');
+    localStorage.removeItem('currentUserId');
+    localStorage.removeItem('users');
+    currentUser = null;
+    currentUserId = null;
+    
+    // Reload data to get fresh admin user
+    loadData();
+    ensureAdminUserExists();
+    
+    console.log('Login data reset. Admin user should be available.');
+    console.log('Available users after reset:', users);
+}
 
+// Ensure admin user exists
+function ensureAdminUserExists() {
+    console.log('Ensuring admin user exists...');
+    console.log('Current users:', users);
+    
+    const adminUser = users.find(u => u.username === 'admin');
+    
+    if (!adminUser) {
+        console.log('Admin user not found, creating...');
+        const newAdminUser = {
+            id: users.length > 0 ? Math.max(...users.map(u => u.id)) + 1 : 1,
+            username: 'admin',
+            password: 'admin',
+            fullName: 'System Administrator',
+            email: 'admin@repairmaniac.com',
+            role: 'admin',
+            status: 'active',
+            permissions: ['dashboard', 'inventory', 'purchases', 'vendors', 'customers', 'repairs', 'outsource', 'invoices', 'quotations', 'pickdrop', 'delivery', 'payments', 'reports', 'users'],
+            lastLogin: null,
+            createdAt: new Date().toISOString()
+        };
+        
+        users.push(newAdminUser);
+        saveData();
+        console.log('Admin user created:', newAdminUser);
+    } else {
+        console.log('Admin user already exists:', adminUser);
+        // Ensure admin user has all permissions
+        if (!adminUser.permissions.includes('delivery')) {
+            adminUser.permissions.push('delivery');
+        }
+        if (!adminUser.permissions.includes('payments')) {
+            adminUser.permissions.push('payments');
+        }
+        saveData();
+    }
+    
+    console.log('Final users after ensuring admin:', users);
+}
 
 // Initialize application after login
 function initializeApp() {
     console.log('Initializing application...');
+    
+    // Load data first
     loadData();
+    
+    // Ensure admin user exists
+    ensureAdminUserExists();
+    
+    console.log('DOM loaded, checking login status...');
+    
+    // Check if user is already logged in
+    checkLoginStatus();
+    
+    // Setup login form event listener
+    document.getElementById('login-form').addEventListener('submit', handleLogin);
+    
+    // Setup other event listeners
     setupEventListeners();
+    
+    // Initialize all sections
     renderAll();
-    updateDashboard();
-    
-    // Apply user permissions
-    applyUserPermissions();
-    
-    // Restore the last active section (only if user has permission)
-    const lastSection = localStorage.getItem('lastActiveSection') || 'dashboard';
-    console.log('Attempting to restore section:', lastSection);
-    
-    // Add a small delay to ensure DOM is fully ready
-    setTimeout(() => {
-        if (hasPermission(lastSection)) {
-            showSection(lastSection);
-        } else {
-            // Show first available section
-            const availableSections = currentUser.permissions.filter(p => p !== 'users');
-            if (availableSections.length > 0) {
-                showSection(availableSections[0]);
-            }
-        }
-        console.log('Section restoration completed');
-    }, 100);
     
     console.log('Application initialized successfully');
-    console.log('Loaded quotations:', quotations);
-    console.log('Restored section:', lastSection);
 }
 
 // Global data
@@ -138,7 +198,6 @@ let pickDrops = [];
 let deliveries = [];
 let payments = [];
 let users = [];
-let currentUser = null;
 
 // User roles and permissions
 const userRoles = {
@@ -343,6 +402,12 @@ function getDefaultUsers() {
 function authenticateUser(username, password) {
     console.log('Attempting to authenticate user:', username);
     console.log('Available users:', users);
+    console.log('Users details:', users.map(u => ({ 
+        id: u.id, 
+        username: u.username, 
+        password: u.password, 
+        status: u.status 
+    })));
     
     const user = users.find(u => u.username === username && u.password === password && u.status === 'active');
     if (user) {
@@ -355,6 +420,17 @@ function authenticateUser(username, password) {
         console.log('Authentication failed. User not found or invalid credentials.');
         console.log('Looking for user with username:', username);
         console.log('Users in system:', users.map(u => ({ username: u.username, status: u.status })));
+        
+        // Check if admin user exists and is active
+        const adminUser = users.find(u => u.username === 'admin');
+        if (adminUser) {
+            console.log('Admin user found:', adminUser);
+            if (adminUser.status !== 'active') {
+                console.log('Admin user is not active, status:', adminUser.status);
+            }
+        } else {
+            console.log('Admin user not found in users array');
+        }
     }
     return null;
 }
