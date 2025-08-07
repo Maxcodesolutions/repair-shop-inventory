@@ -8369,6 +8369,49 @@ window.testCloudWrite = testCloudWrite;
 window.testCloudRead = testCloudRead;
 window.testFullSync = testFullSync;
 window.clearTestData = clearTestData;
+window.testFirebasePermissions = checkFirebasePermissions; // Alias for consistency
+
+// Function to show all available console functions
+function showAvailableFunctions() {
+    console.log('=== AVAILABLE CONSOLE FUNCTIONS ===');
+    console.log('');
+    console.log('🔧 Firebase Testing:');
+    console.log('  testFirebaseConnection() - Test Firebase connection');
+    console.log('  testCloudWrite() - Test writing to Firebase');
+    console.log('  testCloudRead() - Test reading from Firebase');
+    console.log('  testFullSync() - Test full data sync');
+    console.log('  clearTestData() - Clear test data');
+    console.log('  checkFirebasePermissions() - Check Firebase permissions');
+    console.log('  testFirebasePermissions() - Alias for checkFirebasePermissions');
+    console.log('');
+    console.log('🔄 Cross-Browser Sync:');
+    console.log('  checkCrossBrowserSyncStatus() - Check sync status');
+    console.log('  forceConsistentAuth() - Force consistent authentication');
+    console.log('  fixCrossBrowserSyncNow() - Immediate sync fix');
+    console.log('');
+    console.log('🔐 Authentication:');
+    console.log('  diagnoseFirebaseAuth() - Diagnose auth issues');
+    console.log('  fixFirebaseAuth() - Fix auth issues');
+    console.log('  testAuthentication() - Test authentication');
+    console.log('');
+    console.log('📊 Data Management:');
+    console.log('  forceSyncToCloud() - Force data sync to cloud');
+    console.log('  checkSyncStatus() - Check sync status');
+    console.log('  checkLocalStorageData() - Check local storage');
+    console.log('  clearLocalStorageData() - Clear local storage');
+    console.log('');
+    console.log('🔍 Debugging:');
+    console.log('  checkFirebaseConnection() - Check Firebase connection');
+    console.log('  handleFirebaseConnectionIssues() - Handle connection issues');
+    console.log('');
+    console.log('💡 Quick Fixes:');
+    console.log('  fixCrossBrowserSync() - Fix cross-browser sync');
+    console.log('  checkCrossBrowserSync() - Check cross-browser sync');
+}
+
+// Make the help function available globally
+window.showAvailableFunctions = showAvailableFunctions;
+window.help = showAvailableFunctions; // Short alias
 
 // Global function for anonymous authentication
 function tryAnonymousAuth() {
