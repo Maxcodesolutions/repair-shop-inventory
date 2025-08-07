@@ -606,6 +606,7 @@ async function loadDataFromCloud() {
             const data = docSnap.data();
             console.log('Cloud data found, loading...');
             console.log('Cloud data keys:', Object.keys(data));
+            console.log('Cloud data timestamp:', data.lastUpdated);
             
             // Load data from cloud
             inventory = data.inventory || getDefaultInventory();
@@ -624,7 +625,7 @@ async function loadDataFromCloud() {
             // Also save to localStorage as backup
             saveData();
             
-            console.log('Data loaded successfully from cloud:', {
+            console.log('✅ Data loaded successfully from cloud:', {
                 inventory: inventory.length,
                 vendors: vendors.length,
                 customers: customers.length,
@@ -632,6 +633,19 @@ async function loadDataFromCloud() {
                 invoices: invoices.length,
                 quotations: quotations.length
             });
+            
+            // Check sync timestamp
+            try {
+                const syncRef = window.doc(window.collection(window.db, 'sync'), user.uid);
+                const syncSnap = await window.getDoc(syncRef);
+                if (syncSnap.exists()) {
+                    const syncData = syncSnap.data();
+                    console.log('✅ Last sync info:', syncData);
+                }
+            } catch (syncError) {
+                console.log('No sync timestamp found');
+            }
+            
         } else {
             console.log('No cloud data found, loading from localStorage');
             loadDataFromLocal();
@@ -742,6 +756,19 @@ async function saveDataToCloud() {
         
         await window.setDoc(window.doc(window.collection(window.db, 'users'), user.uid), data);
         console.log('✅ Data saved successfully to cloud');
+        
+        // Also save a timestamp to verify sync
+        await window.setDoc(window.doc(window.collection(window.db, 'sync'), user.uid), {
+            lastSync: new Date().toISOString(),
+            userAgent: navigator.userAgent,
+            dataCount: {
+                inventory: inventory.length,
+                customers: customers.length,
+                repairs: repairs.length
+            }
+        });
+        console.log('✅ Sync timestamp saved to cloud');
+        
     } catch (error) {
         console.error('❌ Error saving to cloud:', error);
     }
