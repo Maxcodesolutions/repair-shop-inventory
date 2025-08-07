@@ -4396,6 +4396,55 @@ function verifyPickupOTP(pickDropId, enteredOtp) {
     }
 }
 
+// Send delivery OTP
+function sendDeliveryOTP(deliveryId) {
+    const delivery = deliveries.find(d => d.id === deliveryId);
+    if (!delivery) {
+        alert('Delivery service not found!');
+        return;
+    }
+    
+    const otp = generateOTP();
+    delivery.deliveryOtp = otp;
+    delivery.deliveryOtpSent = true;
+    delivery.deliveryOtpVerified = false;
+    delivery.deliveryOtpSentTime = new Date().toISOString();
+    
+    saveData();
+    
+    // In a real application, this would send the OTP via SMS/email
+    alert(`Delivery OTP sent to customer: ${otp}\n\nIn a real application, this would be sent via SMS or email.`);
+    
+    // Update the display
+    renderDeliveries();
+}
+
+// Verify delivery OTP
+function verifyDeliveryOTP(deliveryId, enteredOtp) {
+    const delivery = deliveries.find(d => d.id === deliveryId);
+    if (!delivery) {
+        alert('Delivery service not found!');
+        return false;
+    }
+    
+    if (!delivery.deliveryOtpSent) {
+        alert('Please send delivery OTP first!');
+        return false;
+    }
+    
+    if (enteredOtp === delivery.deliveryOtp) {
+        delivery.deliveryOtpVerified = true;
+        delivery.status = 'delivered';
+        saveData();
+        alert('Delivery OTP verified successfully! Status updated to "Delivered".');
+        renderDeliveries();
+        return true;
+    } else {
+        alert('Invalid delivery OTP! Please try again.');
+        return false;
+    }
+}
+
 
 
 function showOTPVerificationModal(pickDropId, type) {
