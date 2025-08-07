@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cloud Sync Debug</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .debug-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .btn {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .btn-primary { background: #007bff; color: white; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-warning { background: #ffc107; color: black; }
+        .btn-danger { background: #dc3545; color: white; }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .status.success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .status.error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .status.info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        .output {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 10px 0;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .test-result {
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 4px;
+            border-left: 4px solid #007bff;
+        }
+        .test-result.success { border-left-color: #28a745; background: #f8fff9; }
+        .test-result.error { border-left-color: #dc3545; background: #fff8f8; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Cloud Sync Debug Tool</h1>
+    
+    <div class="debug-section">
+        <h2>📊 Firebase Status Check</h2>
+        <div id="firebase-status">
+            <div class="status info">Checking Firebase status...</div>
+        </div>
+        <button class="btn btn-primary" onclick="checkFirebaseStatus()">🔄 Refresh Status</button>
+    </div>
+
+    <div class="debug-section">
+        <h2>🧪 Cloud Sync Tests</h2>
+        <button class="btn btn-success" onclick="testCloudWrite()">📝 Test Cloud Write</button>
+        <button class="btn btn-warning" onclick="testCloudRead()">📖 Test Cloud Read</button>
+        <button class="btn btn-primary" onclick="testFullSync()">🔄 Test Full Sync</button>
+        <button class="btn btn-danger" onclick="clearCloudData()">🗑️ Clear Cloud Data</button>
+    </div>
+
+    <div class="debug-section">
+        <h2>📱 Cross-Device Test</h2>
+        <p>Test data that will sync across devices:</p>
+        <input type="text" id="test-data-input" placeholder="Enter test data..." style="width: 300px; padding: 8px;">
+        <button class="btn btn-success" onclick="saveTestData()">💾 Save Test Data</button>
+        <button class="btn btn-warning" onclick="loadTestData()">📥 Load Test Data</button>
+        <div id="test-data-display"></div>
+    </div>
+
+    <div class="debug-section">
+        <h2>🔍 Debug Information</h2>
+        <div id="debug-output" class="output"></div>
+    </div>
+
+    <div class="debug-section">
+        <h2>🎯 Quick Actions</h2>
+        <a href="auto-sync-setup.html" class="btn btn-primary">⚙️ Auto Sync Setup</a>
+        <a href="index.html" class="btn btn-success">🏠 Main Application</a>
+        <button class="btn btn-warning" onclick="exportDebugInfo()">📋 Export Debug Info</button>
+    </div>
+
+    <script type="module">
+        // Import Firebase modules
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
+        import { getFirestore, collection, doc, setDoc, getDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
+
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCvuJuOlhqasNbpCkyJjOH1YKJKnjvxLvk",
+            authDomain: "repair-shop-inventory.firebaseapp.com",
+            projectId: "repair-shop-inventory",
+            storageBucket: "repair-shop-inventory.firebasestorage.app",
+            messagingSenderId: "91629691464",
+            appId: "1:91629691464:web:d20cabddb6dcbf755dee7d",
+            measurementId: "G-K78PVPW0MG"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        let currentUser = null;
+
+        function log(message) {
+            const debugOutput = document.getElementById('debug-output');
+            debugOutput.textContent += new Date().toLocaleTimeString() + ': ' + message + '\n';
+            console.log(message);
+        }
+
+        function updateStatus(message, type = 'info') {
+            const statusDisplay = document.getElementById('firebase-status');
+            statusDisplay.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+
+        function addTestResult(message, success = true) {
+            const container = document.createElement('div');
+            container.className = `test-result ${success ? 'success' : 'error'}`;
+            container.innerHTML = `<strong>${success ? '✅' : '❌'}</strong> ${message}`;
+            document.querySelector('.debug-section:nth-child(2)').appendChild(container);
+        }
+
+        // Check Firebase status
+        window.checkFirebaseStatus = function() {
+            log('=== FIREBASE STATUS CHECK ===');
+            
+            // Check if Firebase is initialized
+            if (app) {
+                log('✅ Firebase app initialized');
+                addTestResult('Firebase app initialized', true);
+            } else {
+                log('❌ Firebase app not initialized');
+                addTestResult('Firebase app initialized', false);
+            }
+
+            // Check if Firestore is available
+            if (db) {
+                log('✅ Firestore database available');
+                addTestResult('Firestore database available', true);
+            } else {
+                log('❌ Firestore database not available');
+                addTestResult('Firestore database available', false);
+            }
+
+            // Check if Auth is available
+            if (auth) {
+                log('✅ Firebase Auth available');
+                addTestResult('Firebase Auth available', true);
+            } else {
+                log('❌ Firebase Auth not available');
+                addTestResult('Firebase Auth available', false);
+            }
+
+            // Check global functions
+            const globalChecks = [
+                { name: 'window.db', value: window.db },
+                { name: 'window.auth', value: window.auth },
+                { name: 'window.collection', value: window.collection },
+                { name: 'window.doc', value: window.doc },
+                { name: 'window.setDoc', value: window.setDoc },
+                { name: 'window.getDoc', value: window.getDoc }
+            ];
+
+            globalChecks.forEach(check => {
+                if (check.value) {
+                    log(`✅ ${check.name} available`);
+                    addTestResult(`${check.name} available`, true);
+                } else {
+                    log(`❌ ${check.name} not available`);
+                    addTestResult(`${check.name} available`, false);
+                }
+            });
+
+            // Check current user
+            if (currentUser) {
+                log(`✅ User authenticated: ${currentUser.email || currentUser.uid}`);
+                addTestResult(`User authenticated: ${currentUser.email || 'Anonymous'}`, true);
+            } else {
+                log('❌ No user authenticated');
+                addTestResult('User authenticated', false);
+            }
+
+            updateStatus('Firebase status check completed. See results below.', 'success');
+        };
+
+        // Test cloud write
+        window.testCloudWrite = async function() {
+            if (!currentUser) {
+                log('❌ No user authenticated for cloud write test');
+                addTestResult('Cloud write test - No user authenticated', false);
+                return;
+            }
+
+            try {
+                log('Testing cloud write...');
+                const testData = {
+                    test: true,
+                    timestamp: new Date().toISOString(),
+                    message: 'Cloud write test successful!',
+                    randomId: Math.random().toString(36).substr(2, 9)
+                };
+
+                await setDoc(doc(collection(db, 'users'), currentUser.uid), testData);
+                log('✅ Cloud write test successful');
+                addTestResult('Cloud write test successful', true);
+            } catch (error) {
+                log('❌ Cloud write test failed: ' + error.message);
+                addTestResult('Cloud write test failed: ' + error.message, false);
+            }
+        };
+
+        // Test cloud read
+        window.testCloudRead = async function() {
+            if (!currentUser) {
+                log('❌ No user authenticated for cloud read test');
+                addTestResult('Cloud read test - No user authenticated', false);
+                return;
+            }
+
+            try {
+                log('Testing cloud read...');
+                const docRef = doc(collection(db, 'users'), currentUser.uid);
+                const docSnap = await getDoc(docRef);
+
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    log('✅ Cloud read test successful');
+                    log('Retrieved data: ' + JSON.stringify(data, null, 2));
+                    addTestResult('Cloud read test successful', true);
+                } else {
+                    log('❌ Cloud read test failed: No data found');
+                    addTestResult('Cloud read test failed: No data found', false);
+                }
+            } catch (error) {
+                log('❌ Cloud read test failed: ' + error.message);
+                addTestResult('Cloud read test failed: ' + error.message, false);
+            }
+        };
+
+        // Test full sync
+        window.testFullSync = async function() {
+            if (!currentUser) {
+                log('❌ No user authenticated for full sync test');
+                addTestResult('Full sync test - No user authenticated', false);
+                return;
+            }
+
+            try {
+                log('Testing full sync...');
+                
+                // Write test data
+                const testData = {
+                    inventory: [{ id: 1, name: 'Test Item', price: 100 }],
+                    customers: [{ id: 1, name: 'Test Customer', phone: '1234567890' }],
+                    repairs: [{ id: 1, customerName: 'Test Customer', device: 'Test Device' }],
+                    timestamp: new Date().toISOString(),
+                    syncTest: true
+                };
+
+                await setDoc(doc(collection(db, 'users'), currentUser.uid), testData);
+                log('✅ Test data written to cloud');
+
+                // Read test data
+                const docRef = doc(collection(db, 'users'), currentUser.uid);
+                const docSnap = await getDoc(docRef);
+
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    log('✅ Test data read from cloud');
+                    log('Sync test data: ' + JSON.stringify(data, null, 2));
+                    addTestResult('Full sync test successful', true);
+                } else {
+                    log('❌ Full sync test failed: No data found after write');
+                    addTestResult('Full sync test failed: No data found after write', false);
+                }
+            } catch (error) {
+                log('❌ Full sync test failed: ' + error.message);
+                addTestResult('Full sync test failed: ' + error.message, false);
+            }
+        };
+
+        // Clear cloud data
+        window.clearCloudData = async function() {
+            if (!currentUser) {
+                log('❌ No user authenticated for clear data test');
+                addTestResult('Clear data test - No user authenticated', false);
+                return;
+            }
+
+            try {
+                log('Clearing cloud data...');
+                await deleteDoc(doc(collection(db, 'users'), currentUser.uid));
+                log('✅ Cloud data cleared successfully');
+                addTestResult('Cloud data cleared successfully', true);
+            } catch (error) {
+                log('❌ Clear cloud data failed: ' + error.message);
+                addTestResult('Clear cloud data failed: ' + error.message, false);
+            }
+        };
+
+        // Save test data
+        window.saveTestData = async function() {
+            if (!currentUser) {
+                log('❌ No user authenticated for save test data');
+                return;
+            }
+
+            const testInput = document.getElementById('test-data-input').value;
+            if (!testInput) {
+                log('❌ Please enter test data first');
+                return;
+            }
+
+            try {
+                log('Saving test data to cloud...');
+                const testData = {
+                    testMessage: testInput,
+                    timestamp: new Date().toISOString(),
+                    device: navigator.userAgent,
+                    location: window.location.href
+                };
+
+                await setDoc(doc(collection(db, 'users'), currentUser.uid), testData);
+                log('✅ Test data saved to cloud: ' + testInput);
+                
+                const display = document.getElementById('test-data-display');
+                display.innerHTML = `<div class="status success">✅ Test data saved: "${testInput}"</div>`;
+            } catch (error) {
+                log('❌ Save test data failed: ' + error.message);
+                const display = document.getElementById('test-data-display');
+                display.innerHTML = `<div class="status error">❌ Save failed: ${error.message}</div>`;
+            }
+        };
+
+        // Load test data
+        window.loadTestData = async function() {
+            if (!currentUser) {
+                log('❌ No user authenticated for load test data');
+                return;
+            }
+
+            try {
+                log('Loading test data from cloud...');
+                const docRef = doc(collection(db, 'users'), currentUser.uid);
+                const docSnap = await getDoc(docRef);
+
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    log('✅ Test data loaded from cloud');
+                    log('Loaded data: ' + JSON.stringify(data, null, 2));
+                    
+                    const display = document.getElementById('test-data-display');
+                    display.innerHTML = `
+                        <div class="status success">
+                            ✅ Test data loaded:<br>
+                            <strong>Message:</strong> ${data.testMessage || 'No message'}<br>
+                            <strong>Timestamp:</strong> ${data.timestamp || 'No timestamp'}<br>
+                            <strong>Device:</strong> ${data.device || 'No device info'}
+                        </div>
+                    `;
+                } else {
+                    log('❌ No test data found in cloud');
+                    const display = document.getElementById('test-data-display');
+                    display.innerHTML = `<div class="status error">❌ No test data found in cloud</div>`;
+                }
+            } catch (error) {
+                log('❌ Load test data failed: ' + error.message);
+                const display = document.getElementById('test-data-display');
+                display.innerHTML = `<div class="status error">❌ Load failed: ${error.message}</div>`;
+            }
+        };
+
+        // Export debug info
+        window.exportDebugInfo = function() {
+            const debugInfo = {
+                timestamp: new Date().toISOString(),
+                userAgent: navigator.userAgent,
+                firebaseConfig: firebaseConfig,
+                currentUser: currentUser ? {
+                    uid: currentUser.uid,
+                    email: currentUser.email,
+                    isAnonymous: currentUser.isAnonymous
+                } : null,
+                localStorage: {
+                    inventory: localStorage.getItem('inventory') ? 'exists' : 'missing',
+                    customers: localStorage.getItem('customers') ? 'exists' : 'missing',
+                    repairs: localStorage.getItem('repairs') ? 'exists' : 'missing'
+                },
+                globalFunctions: {
+                    db: !!window.db,
+                    auth: !!window.auth,
+                    collection: !!window.collection,
+                    doc: !!window.doc,
+                    setDoc: !!window.setDoc,
+                    getDoc: !!window.getDoc
+                }
+            };
+
+            const blob = new Blob([JSON.stringify(debugInfo, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'cloud-sync-debug-info.json';
+            a.click();
+            URL.revokeObjectURL(url);
+            
+            log('Debug info exported to cloud-sync-debug-info.json');
+        };
+
+        // Monitor auth state
+        onAuthStateChanged(auth, (user) => {
+            currentUser = user;
+            if (user) {
+                log('User authenticated: ' + (user.email || 'Anonymous'));
+                updateStatus('✅ User authenticated: ' + (user.email || 'Anonymous'), 'success');
+            } else {
+                log('User not authenticated');
+                updateStatus('⏳ User not authenticated. Click "Enable Auto-Sync" in setup page.', 'info');
+            }
+        });
+
+        // Initial status check
+        log('Cloud Sync Debug Tool Loaded');
+        log('Firebase Config: ' + JSON.stringify(firebaseConfig, null, 2));
+        
+        // Auto-check status after a short delay
+        setTimeout(() => {
+            checkFirebaseStatus();
+        }, 1000);
+    </script>
+</body>
+</html>
