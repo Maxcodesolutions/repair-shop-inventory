@@ -6714,10 +6714,27 @@ function updatePaymentCustomer() {
 
 // Global Search Functionality
 function initializeGlobalSearch() {
+    console.log('=== INITIALIZING GLOBAL SEARCH ===');
     const searchInput = document.getElementById('search-input');
+    console.log('Search input element:', searchInput);
+    
     if (searchInput) {
-        searchInput.addEventListener('input', performGlobalSearch);
-        searchInput.addEventListener('keydown', function(e) {
+        console.log('Search input found, setting up event listeners...');
+        
+        // Remove any existing event listeners first
+        const newSearchInput = searchInput.cloneNode(true);
+        searchInput.parentNode.replaceChild(newSearchInput, searchInput);
+        
+        // Get the fresh reference
+        const freshSearchInput = document.getElementById('search-input');
+        
+        freshSearchInput.addEventListener('input', function(e) {
+            console.log('Search input event triggered:', e.target.value);
+            performGlobalSearch();
+        });
+        
+        freshSearchInput.addEventListener('keydown', function(e) {
+            console.log('Search keydown event:', e.key);
             if (e.key === 'Enter') {
                 e.preventDefault();
                 performGlobalSearch();
@@ -6733,25 +6750,55 @@ function initializeGlobalSearch() {
             }
         });
         
-        console.log('Global search initialized successfully');
+        console.log('✅ Global search initialized successfully');
     } else {
-        console.log('Search input not found, will retry later');
+        console.log('❌ Search input not found, will retry later');
+        // Retry after a short delay
+        setTimeout(initializeGlobalSearch, 1000);
     }
 }
 
 function performGlobalSearch() {
-    const searchTerm = document.getElementById('search-input').value.toLowerCase().trim();
+    console.log('=== PERFORMING GLOBAL SEARCH ===');
+    const searchInput = document.getElementById('search-input');
+    console.log('Search input element:', searchInput);
+    
+    if (!searchInput) {
+        console.log('❌ Search input not found');
+        return;
+    }
+    
+    const searchTerm = searchInput.value.toLowerCase().trim();
+    console.log('Search term:', searchTerm);
     
     if (searchTerm.length < 2) {
+        console.log('Search term too short, hiding results');
         hideGlobalSearchResults();
         return;
     }
 
+    console.log('Searching all data...');
     const results = searchAllData(searchTerm);
+    console.log('Search results:', results);
     displayGlobalSearchResults(results, searchTerm);
 }
 
 function searchAllData(searchTerm) {
+    console.log('=== SEARCHING ALL DATA ===');
+    console.log('Available data:', {
+        inventory: inventory ? inventory.length : 'undefined',
+        customers: customers ? customers.length : 'undefined',
+        vendors: vendors ? vendors.length : 'undefined',
+        repairs: repairs ? repairs.length : 'undefined',
+        invoices: invoices ? invoices.length : 'undefined',
+        quotations: quotations ? quotations.length : 'undefined',
+        outsourceRepairs: outsourceRepairs ? outsourceRepairs.length : 'undefined',
+        pickDrops: pickDrops ? pickDrops.length : 'undefined',
+        deliveries: deliveries ? deliveries.length : 'undefined',
+        payments: payments ? payments.length : 'undefined',
+        users: users ? users.length : 'undefined'
+    });
+    
     const results = {
         inventory: [],
         customers: [],
@@ -6759,8 +6806,8 @@ function searchAllData(searchTerm) {
         repairs: [],
         invoices: [],
         quotations: [],
-        outsource: [],
-        pickdrops: [],
+        outsourceRepairs: [],
+        pickDrops: [],
         deliveries: [],
         payments: [],
         users: []
@@ -6828,8 +6875,8 @@ function searchAllData(searchTerm) {
     }
 
     // Search Outsource
-    if (outsource) {
-        results.outsource = outsource.filter(item => 
+    if (outsourceRepairs) {
+        results.outsourceRepairs = outsourceRepairs.filter(item => 
             item.customer.toLowerCase().includes(searchTerm) ||
             item.deviceType.toLowerCase().includes(searchTerm) ||
             item.deviceBrand.toLowerCase().includes(searchTerm) ||
@@ -6838,8 +6885,8 @@ function searchAllData(searchTerm) {
     }
 
     // Search Pick & Drops
-    if (pickdrops) {
-        results.pickdrops = pickdrops.filter(item => 
+    if (pickDrops) {
+        results.pickDrops = pickDrops.filter(item => 
             item.customer.toLowerCase().includes(searchTerm) ||
             item.deviceType.toLowerCase().includes(searchTerm) ||
             item.deviceBrand.toLowerCase().includes(searchTerm) ||
@@ -7013,13 +7060,13 @@ function displayGlobalSearchResults(results, searchTerm) {
     }
 
     // Outsource Results
-    if (results.outsource.length > 0) {
+    if (results.outsourceRepairs.length > 0) {
         html += `
             <div class="search-category">
-                <h4><i class="fas fa-share-alt"></i> Outsource (${results.outsource.length})</h4>
+                <h4><i class="fas fa-share-alt"></i> Outsource (${results.outsourceRepairs.length})</h4>
                 <div class="search-items">
         `;
-        results.outsource.forEach(item => {
+        results.outsourceRepairs.forEach(item => {
             html += `
                 <div class="search-item" onclick="navigateToSection('outsource')">
                     <div class="item-name">${item.customer} - ${item.deviceBrand} ${item.deviceModel}</div>
@@ -7028,17 +7075,17 @@ function displayGlobalSearchResults(results, searchTerm) {
             `;
         });
         html += `</div></div>`;
-        totalResults += results.outsource.length;
+        totalResults += results.outsourceRepairs.length;
     }
 
     // Pick & Drop Results
-    if (results.pickdrops.length > 0) {
+    if (results.pickDrops.length > 0) {
         html += `
             <div class="search-category">
-                <h4><i class="fas fa-exchange-alt"></i> Pick & Drop (${results.pickdrops.length})</h4>
+                <h4><i class="fas fa-exchange-alt"></i> Pick & Drop (${results.pickDrops.length})</h4>
                 <div class="search-items">
         `;
-        results.pickdrops.forEach(item => {
+        results.pickDrops.forEach(item => {
             html += `
                 <div class="search-item" onclick="navigateToSection('pickdrop')">
                     <div class="item-name">${item.customer} - ${item.deviceBrand} ${item.deviceModel}</div>
@@ -7047,7 +7094,7 @@ function displayGlobalSearchResults(results, searchTerm) {
             `;
         });
         html += `</div></div>`;
-        totalResults += results.pickdrops.length;
+        totalResults += results.pickDrops.length;
     }
 
     // Delivery Results
