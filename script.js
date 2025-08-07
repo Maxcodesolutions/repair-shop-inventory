@@ -346,31 +346,67 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Data management
 function loadData() {
+    console.log('=== LOADING DATA ===');
+    
     // Initialize data manager for server-side storage
     if (typeof dataManager !== 'undefined') {
+        console.log('Data manager available, initializing...');
         dataManager.init();
-    } else {
-        // Fallback to localStorage if Firebase is not available
-        console.log('Loading data from localStorage (Firebase not available)...');
+    }
+    
+    // Always load from localStorage as primary source
+    console.log('Loading data from localStorage...');
+    
+    // Check if data already exists to prevent overwriting
+    const existingInventory = localStorage.getItem('inventory');
+    const existingVendors = localStorage.getItem('vendors');
+    const existingCustomers = localStorage.getItem('customers');
+    const existingRepairs = localStorage.getItem('repairs');
+    const existingInvoices = localStorage.getItem('invoices');
+    const existingQuotations = localStorage.getItem('quotations');
+    const existingPurchases = localStorage.getItem('purchases');
+    const existingOutsource = localStorage.getItem('outsource');
+    const existingPickDrops = localStorage.getItem('pickDrops');
+    const existingPayments = localStorage.getItem('payments');
+    const existingDeliveries = localStorage.getItem('deliveries');
+    const existingUsers = localStorage.getItem('users');
+    
+    console.log('Existing data check:', {
+        inventory: existingInventory ? 'exists' : 'missing',
+        vendors: existingVendors ? 'exists' : 'missing',
+        customers: existingCustomers ? 'exists' : 'missing',
+        repairs: existingRepairs ? 'exists' : 'missing',
+        invoices: existingInvoices ? 'exists' : 'missing',
+        quotations: existingQuotations ? 'exists' : 'missing',
+        purchases: existingPurchases ? 'exists' : 'missing',
+        outsource: existingOutsource ? 'exists' : 'missing',
+        pickDrops: existingPickDrops ? 'exists' : 'missing',
+        payments: existingPayments ? 'exists' : 'missing',
+        deliveries: existingDeliveries ? 'exists' : 'missing',
+        users: existingUsers ? 'exists' : 'missing'
+    });
+    
+    // Load data with proper error handling
+    try {
+        inventory = existingInventory ? JSON.parse(existingInventory) : getDefaultInventory();
+        vendors = existingVendors ? JSON.parse(existingVendors) : getDefaultVendors();
+        customers = existingCustomers ? JSON.parse(existingCustomers) : getDefaultCustomers();
+        purchases = existingPurchases ? JSON.parse(existingPurchases) : [];
+        repairs = existingRepairs ? JSON.parse(existingRepairs) : [];
+        outsource = existingOutsource ? JSON.parse(existingOutsource) : [];
+        invoices = existingInvoices ? JSON.parse(existingInvoices) : [];
+        quotations = existingQuotations ? JSON.parse(existingQuotations) : [];
+        pickDrops = existingPickDrops ? JSON.parse(existingPickDrops) : [];
+        payments = existingPayments ? JSON.parse(existingPayments) : [];
+        deliveries = existingDeliveries ? JSON.parse(existingDeliveries) : getDefaultDeliveries();
         
-        // Check if data already exists to prevent overwriting
-        const existingInventory = localStorage.getItem('inventory');
-        const existingVendors = localStorage.getItem('vendors');
-        const existingCustomers = localStorage.getItem('customers');
-        const existingRepairs = localStorage.getItem('repairs');
-        const existingInvoices = localStorage.getItem('invoices');
-        const existingQuotations = localStorage.getItem('quotations');
+        // Load users with error handling
+        if (existingUsers) {
+            users = JSON.parse(existingUsers);
+        } else {
+            users = getDefaultUsers();
+        }
         
-        console.log('Existing data check:', {
-            inventory: existingInventory ? 'exists' : 'missing',
-            vendors: existingVendors ? 'exists' : 'missing',
-            customers: existingCustomers ? 'exists' : 'missing',
-            repairs: existingRepairs ? 'exists' : 'missing',
-            invoices: existingInvoices ? 'exists' : 'missing',
-            quotations: existingQuotations ? 'exists' : 'missing'
-        });
-        
-        inventory = JSON.parse(existingInventory) || getDefaultInventory();
         // Migrate existing items to include units if they don't have them
         inventory.forEach(item => {
             if (!item.unit) {
@@ -378,29 +414,6 @@ function loadData() {
                 console.log('Migrated item:', item.name, 'to have unit:', item.unit);
             }
         });
-        vendors = JSON.parse(existingVendors) || getDefaultVendors();
-        customers = JSON.parse(existingCustomers) || getDefaultCustomers();
-        purchases = JSON.parse(localStorage.getItem('purchases')) || [];
-        repairs = JSON.parse(existingRepairs) || [];
-        outsource = JSON.parse(localStorage.getItem('outsource')) || [];
-        invoices = JSON.parse(existingInvoices) || [];
-        quotations = JSON.parse(existingQuotations) || [];
-        pickDrops = JSON.parse(localStorage.getItem('pickDrops')) || [];
-        payments = JSON.parse(localStorage.getItem('payments')) || [];
-        deliveries = JSON.parse(localStorage.getItem('deliveries')) || getDefaultDeliveries();
-        
-        // Load users with error handling
-        try {
-            const usersData = localStorage.getItem('users');
-            if (usersData) {
-                users = JSON.parse(usersData);
-            } else {
-                users = getDefaultUsers();
-            }
-        } catch (error) {
-            console.error('Error loading users from localStorage:', error);
-            users = getDefaultUsers();
-        }
         
         // Migrate existing users to include delivery and payment permissions
         users.forEach(user => {
@@ -414,8 +427,7 @@ function loadData() {
             }
         });
         
-        console.log('Final users after migration:', users);
-        console.log('All loaded data:', {
+        console.log('Data loaded successfully:', {
             inventory: inventory.length,
             vendors: vendors.length,
             customers: customers.length,
@@ -424,22 +436,45 @@ function loadData() {
             outsource: outsource.length,
             invoices: invoices.length,
             quotations: quotations.length,
+            pickDrops: pickDrops.length,
+            payments: payments.length,
+            deliveries: deliveries.length,
             users: users.length
         });
         
         // Save data immediately to ensure persistence
+        console.log('Saving data to ensure persistence...');
+        saveData();
+        
+    } catch (error) {
+        console.error('Error loading data:', error);
+        // Load default data if there's an error
+        inventory = getDefaultInventory();
+        vendors = getDefaultVendors();
+        customers = getDefaultCustomers();
+        purchases = [];
+        repairs = [];
+        outsource = [];
+        invoices = [];
+        quotations = [];
+        pickDrops = [];
+        payments = [];
+        deliveries = getDefaultDeliveries();
+        users = getDefaultUsers();
+        
+        console.log('Loaded default data due to error');
         saveData();
     }
+    
+    console.log('=== DATA LOADING COMPLETE ===');
 }
 
 function saveData() {
-    // Use data manager for server-side storage if available
-    if (typeof dataManager !== 'undefined' && dataManager.isOnline) {
-        dataManager.saveDataToServer();
-    } else {
-        // Fallback to localStorage
+    console.log('=== SAVING DATA ===');
+    
+    // Always save to localStorage first for immediate persistence
+    try {
         console.log('Saving data to localStorage...');
-        console.log('Saving quotations:', quotations);
         
         localStorage.setItem('inventory', JSON.stringify(inventory));
         localStorage.setItem('vendors', JSON.stringify(vendors));
@@ -455,8 +490,28 @@ function saveData() {
         localStorage.setItem('deliveries', JSON.stringify(deliveries));
         
         console.log('Data saved successfully to localStorage');
-        console.log('Quotations in localStorage after save:', localStorage.getItem('quotations'));
+        console.log('Data counts saved:', {
+            inventory: inventory.length,
+            vendors: vendors.length,
+            customers: customers.length,
+            repairs: repairs.length,
+            invoices: invoices.length,
+            quotations: quotations.length
+        });
+        
+    } catch (error) {
+        console.error('Error saving to localStorage:', error);
     }
+    
+    // Use data manager for server-side storage if available
+    if (typeof dataManager !== 'undefined' && dataManager.isOnline) {
+        console.log('Attempting to save to server...');
+        dataManager.saveDataToServer();
+    } else {
+        console.log('Server storage not available, localStorage only');
+    }
+    
+    console.log('=== DATA SAVING COMPLETE ===');
 }
 
 function getDefaultInventory() {

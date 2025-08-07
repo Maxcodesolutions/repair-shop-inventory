@@ -45,7 +45,7 @@ class DataManager {
             if (!window.auth || !window.onAuthStateChanged) {
                 console.log('Firebase not available, using localStorage only');
                 this.isOnline = false;
-                this.loadDataFromLocal();
+                // Don't load data here - let the main script handle it
                 return;
             }
 
@@ -55,18 +55,18 @@ class DataManager {
                     this.currentUser = user;
                     this.isOnline = true;
                     console.log('User authenticated:', user.email);
-                    this.loadDataFromServer();
+                    // Don't automatically load data - let main script handle it
                 } else {
                     this.currentUser = null;
                     this.isOnline = false;
                     console.log('User not authenticated');
-                    this.loadDataFromLocal();
+                    // Don't automatically load data - let main script handle it
                 }
             });
         } catch (error) {
             console.error('Firebase initialization error:', error);
             this.isOnline = false;
-            this.loadDataFromLocal();
+            // Don't load data here - let the main script handle it
         }
     }
 
