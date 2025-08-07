@@ -266,6 +266,13 @@ function initializeApp() {
     // Ensure admin user exists
     ensureAdminUserExists();
     
+    // Handle deferred data loading from Firebase
+    if (window.deferDataLoading && typeof dataManager !== 'undefined') {
+        console.log('Handling deferred data loading...');
+        dataManager.loadDataFromLocal();
+        window.deferDataLoading = false;
+    }
+    
     console.log('DOM loaded, checking login status...');
     
     // Check if user is already logged in
@@ -726,21 +733,6 @@ function setupEventListeners() {
     
     console.log('Navigation event listeners setup completed');
     
-    // Forms
-    document.getElementById('add-item-form').addEventListener('submit', handleAddItem);
-    document.getElementById('add-vendor-form').addEventListener('submit', handleAddVendor);
-    document.getElementById('add-customer-form').addEventListener('submit', handleAddCustomer);
-    document.getElementById('add-purchase-form').addEventListener('submit', handleAddPurchase);
-    document.getElementById('add-repair-form').addEventListener('submit', handleAddRepair);
-    document.getElementById('add-outsource-form').addEventListener('submit', handleAddOutsource);
-    document.getElementById('add-invoice-form').addEventListener('submit', handleAddInvoice);
-    document.getElementById('add-quotation-form').addEventListener('submit', handleAddQuotation);
-    document.getElementById('add-pickdrop-form').addEventListener('submit', handleAddPickDrop);
-    document.getElementById('add-delivery-form').addEventListener('submit', handleAddDelivery);
-    document.getElementById('add-payment-form').addEventListener('submit', handleAddPayment);
-    document.getElementById('add-user-form').addEventListener('submit', handleAddUser);
-}
-
     // Forms
     document.getElementById('add-item-form').addEventListener('submit', handleAddItem);
     document.getElementById('add-vendor-form').addEventListener('submit', handleAddVendor);

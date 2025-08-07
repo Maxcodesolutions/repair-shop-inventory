@@ -70,6 +70,30 @@ class DataManager {
         }
     }
 
+    // Wait for main script variables to be available
+    waitForMainScript() {
+        return new Promise((resolve) => {
+            const checkVariables = () => {
+                if (typeof inventory !== 'undefined' && 
+                    typeof vendors !== 'undefined' && 
+                    typeof customers !== 'undefined' &&
+                    typeof repairs !== 'undefined' &&
+                    typeof invoices !== 'undefined' &&
+                    typeof quotations !== 'undefined' &&
+                    typeof pickDrops !== 'undefined' &&
+                    typeof payments !== 'undefined' &&
+                    typeof users !== 'undefined') {
+                    console.log('Main script variables are available');
+                    resolve();
+                } else {
+                    console.log('Waiting for main script variables...');
+                    setTimeout(checkVariables, 100);
+                }
+            };
+            checkVariables();
+        });
+    }
+
     // Save data to server
     async saveDataToServer() {
         if (!this.currentUser || !this.isOnline || !window.setDoc || !window.doc || !window.collection) {
@@ -79,6 +103,9 @@ class DataManager {
         }
 
         try {
+            // Wait for main script variables to be available
+            await this.waitForMainScript();
+
             const userData = {
                 inventory: inventory,
                 vendors: vendors,
@@ -165,6 +192,14 @@ class DataManager {
     // Load data from local storage (fallback)
     loadDataFromLocal() {
         try {
+            // Check if main script variables are available
+            if (typeof inventory === 'undefined') {
+                console.log('Main script not loaded yet, deferring data loading');
+                // Set a flag to load data when main script is ready
+                window.deferDataLoading = true;
+                return;
+            }
+
             const inventoryData = localStorage.getItem('inventory');
             const vendorsData = localStorage.getItem('vendors');
             const customersData = localStorage.getItem('customers');
@@ -192,8 +227,14 @@ class DataManager {
             if (usersData) users = JSON.parse(usersData);
 
             console.log('Data loaded from local storage');
-            renderAll();
-            updateDashboard();
+            
+            // Only call render functions if they exist
+            if (typeof renderAll === 'function') {
+                renderAll();
+            }
+            if (typeof updateDashboard === 'function') {
+                updateDashboard();
+            }
         } catch (error) {
             console.error('Error loading from local storage:', error);
             this.loadDefaultData();
@@ -202,6 +243,25 @@ class DataManager {
 
     // Load default data
     loadDefaultData() {
+        // Check if main script functions are available
+        if (typeof getDefaultInventory === 'undefined') {
+            console.log('Main script functions not available, using basic defaults');
+            // Set basic defaults
+            if (typeof inventory !== 'undefined') inventory = [];
+            if (typeof vendors !== 'undefined') vendors = [];
+            if (typeof customers !== 'undefined') customers = [];
+            if (typeof purchases !== 'undefined') purchases = [];
+            if (typeof repairs !== 'undefined') repairs = [];
+            if (typeof outsource !== 'undefined') outsource = [];
+            if (typeof invoices !== 'undefined') invoices = [];
+            if (typeof quotations !== 'undefined') quotations = [];
+            if (typeof pickDrops !== 'undefined') pickDrops = [];
+            if (typeof deliveries !== 'undefined') deliveries = [];
+            if (typeof payments !== 'undefined') payments = [];
+            if (typeof users !== 'undefined') users = [];
+            return;
+        }
+
         inventory = getDefaultInventory();
         vendors = getDefaultVendors();
         customers = getDefaultCustomers();
@@ -216,8 +276,14 @@ class DataManager {
         users = getDefaultUsers();
         
         console.log('Default data loaded');
-        renderAll();
-        updateDashboard();
+        
+        // Only call render functions if they exist
+        if (typeof renderAll === 'function') {
+            renderAll();
+        }
+        if (typeof updateDashboard === 'function') {
+            updateDashboard();
+        }
     }
 
     // Sync data (save to both server and local)
