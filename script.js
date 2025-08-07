@@ -8796,6 +8796,48 @@ function forceConsistentAuthWithSignOut() {
         return;
     }
     
+    // Check if we have multiple different credentials stored
+    const allEmails = [];
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.includes('cloudSyncEmail')) {
+            allEmails.push(localStorage.getItem(key));
+        }
+    }
+    
+    if (allEmails.length > 1) {
+        console.log('⚠️ Multiple different credentials found:', allEmails);
+        console.log('This will cause cross-browser sync issues');
+        console.log('Clearing all credentials and setting up consistent ones...');
+        
+        // Clear all cloud sync related items
+        const keysToRemove = [];
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && (key.includes('cloudSync') || key.includes('consistentUserId') || key.includes('anonymousUserId'))) {
+                keysToRemove.push(key);
+            }
+        }
+        
+        keysToRemove.forEach(key => {
+            localStorage.removeItem(key);
+            console.log('Removed:', key);
+        });
+        
+        // Set up consistent credentials
+        const consistentEmail = 'admin@repairshop.local';
+        const consistentPassword = 'admin123456';
+        
+        localStorage.setItem('cloudSyncEmail', consistentEmail);
+        localStorage.setItem('cloudSyncPassword', consistentPassword);
+        
+        console.log('✅ Set up consistent credentials:', { email: consistentEmail, password: '***' });
+        
+        // Now proceed with the sign-in
+        storedEmail = consistentEmail;
+        storedPassword = consistentPassword;
+    }
+    
     // First, sign out any current session
     if (window.signOut && window.auth) {
         console.log('Signing out current session...');
@@ -8907,6 +8949,84 @@ function checkStoredCredentials() {
 
 // Make the function available globally
 window.checkStoredCredentials = checkStoredCredentials;
+
+// Function to fix credential inconsistency and ensure cross-browser sync
+function fixCredentialInconsistency() {
+    console.log('=== FIXING CREDENTIAL INCONSISTENCY ===');
+    
+    // Check for multiple different credentials
+    const allEmails = [];
+    const allKeys = [];
+    
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.includes('cloudSyncEmail')) {
+            allEmails.push(localStorage.getItem(key));
+            allKeys.push(key);
+        }
+    }
+    
+    console.log('Found credentials:', allEmails);
+    
+    if (allEmails.length > 1) {
+        console.log('⚠️ Multiple different credentials detected!');
+        console.log('This is causing cross-browser sync issues');
+        
+        // Clear all cloud sync related items
+        const keysToRemove = [];
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && (key.includes('cloudSync') || key.includes('consistentUserId') || key.includes('anonymousUserId'))) {
+                keysToRemove.push(key);
+            }
+        }
+        
+        console.log('Clearing all cloud sync data...');
+        keysToRemove.forEach(key => {
+            localStorage.removeItem(key);
+            console.log('Removed:', key);
+        });
+        
+        // Set up consistent credentials
+        const consistentEmail = 'admin@repairshop.local';
+        const consistentPassword = 'admin123456';
+        
+        localStorage.setItem('cloudSyncEmail', consistentEmail);
+        localStorage.setItem('cloudSyncPassword', consistentPassword);
+        
+        console.log('✅ Set up consistent credentials:', { email: consistentEmail, password: '***' });
+        console.log('✅ Cross-browser sync should now work with consistent UID');
+        
+        // Test the new credentials
+        setTimeout(() => {
+            testSpecificCredentialsNoSignOut(consistentEmail, consistentPassword);
+        }, 1000);
+        
+    } else if (allEmails.length === 1) {
+        console.log('✅ Only one set of credentials found');
+        console.log('Email:', allEmails[0]);
+        console.log('Cross-browser sync should work');
+    } else {
+        console.log('❌ No credentials found');
+        console.log('Setting up consistent credentials...');
+        
+        const consistentEmail = 'admin@repairshop.local';
+        const consistentPassword = 'admin123456';
+        
+        localStorage.setItem('cloudSyncEmail', consistentEmail);
+        localStorage.setItem('cloudSyncPassword', consistentPassword);
+        
+        console.log('✅ Set up consistent credentials:', { email: consistentEmail, password: '***' });
+        
+        // Test the new credentials
+        setTimeout(() => {
+            testSpecificCredentialsNoSignOut(consistentEmail, consistentPassword);
+        }, 1000);
+    }
+}
+
+// Make the function available globally
+window.fixCredentialInconsistency = fixCredentialInconsistency;
 
 // Global function for anonymous authentication
 function tryAnonymousAuth() {
