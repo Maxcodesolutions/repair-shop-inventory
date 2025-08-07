@@ -8240,6 +8240,136 @@ service cloud.firestore {
 // Make permission check function available globally
 window.checkFirebasePermissions = checkFirebasePermissions;
 
+// Firebase testing functions for console use
+function testFirebaseConnection() {
+    console.log('=== TESTING FIREBASE CONNECTION ===');
+    
+    if (typeof window !== 'undefined' && window.auth) {
+        console.log('✅ Firebase Auth available');
+        
+        if (window.auth.currentUser) {
+            console.log(`✅ User authenticated: ${window.auth.currentUser.uid}`);
+        } else {
+            console.log('⚠️ No authenticated user');
+        }
+    } else {
+        console.log('❌ Firebase Auth not available');
+    }
+    
+    if (typeof window !== 'undefined' && window.db) {
+        console.log('✅ Firestore Database available');
+    } else {
+        console.log('❌ Firestore Database not available');
+    }
+}
+
+function testCloudWrite() {
+    console.log('=== TESTING CLOUD WRITE ===');
+    
+    if (!window.auth || !window.auth.currentUser) {
+        console.log('❌ No authenticated user for write test');
+        return;
+    }
+    
+    if (!window.setDoc || !window.doc || !window.collection) {
+        console.log('❌ Firebase write functions not available');
+        return;
+    }
+    
+    const testData = {
+        test: true,
+        timestamp: new Date().toISOString(),
+        message: 'Test write from console'
+    };
+    
+    try {
+        window.setDoc(window.doc(window.collection(window.db, 'testData'), window.auth.currentUser.uid), testData)
+            .then(() => {
+                console.log('✅ Cloud write successful!');
+            })
+            .catch((error) => {
+                console.log(`❌ Cloud write failed: ${error.message}`);
+            });
+    } catch (error) {
+        console.log(`❌ Cloud write error: ${error.message}`);
+    }
+}
+
+function testCloudRead() {
+    console.log('=== TESTING CLOUD READ ===');
+    
+    if (!window.auth || !window.auth.currentUser) {
+        console.log('❌ No authenticated user for read test');
+        return;
+    }
+    
+    if (!window.getDoc || !window.doc || !window.collection) {
+        console.log('❌ Firebase read functions not available');
+        return;
+    }
+    
+    try {
+        window.getDoc(window.doc(window.collection(window.db, 'testData'), window.auth.currentUser.uid))
+            .then((doc) => {
+                if (doc.exists()) {
+                    console.log('✅ Cloud read successful!');
+                    console.log(`Data: ${JSON.stringify(doc.data())}`);
+                } else {
+                    console.log('⚠️ No test data found (this is normal)');
+                }
+            })
+            .catch((error) => {
+                console.log(`❌ Cloud read failed: ${error.message}`);
+            });
+    } catch (error) {
+        console.log(`❌ Cloud read error: ${error.message}`);
+    }
+}
+
+function testFullSync() {
+    console.log('=== TESTING FULL SYNC ===');
+    
+    if (typeof window !== 'undefined' && window.forceSyncToCloud) {
+        window.forceSyncToCloud();
+        console.log('✅ Full sync function called');
+    } else {
+        console.log('❌ Full sync function not available');
+    }
+}
+
+function clearTestData() {
+    console.log('=== CLEARING TEST DATA ===');
+    
+    if (!window.auth || !window.auth.currentUser) {
+        console.log('❌ No authenticated user for clear test');
+        return;
+    }
+    
+    if (!window.setDoc || !window.doc || !window.collection) {
+        console.log('❌ Firebase functions not available');
+        return;
+    }
+    
+    try {
+        window.setDoc(window.doc(window.collection(window.db, 'testData'), window.auth.currentUser.uid), {})
+            .then(() => {
+                console.log('✅ Test data cleared!');
+            })
+            .catch((error) => {
+                console.log(`❌ Clear failed: ${error.message}`);
+            });
+    } catch (error) {
+        console.log(`❌ Clear error: ${error.message}`);
+    }
+}
+
+// Make all testing functions available globally
+window.testFirebaseConnection = testFirebaseConnection;
+window.testCloudWrite = testCloudWrite;
+window.testCloudRead = testCloudRead;
+window.testFullSync = testFullSync;
+window.clearTestData = clearTestData;
+
 // Global function for anonymous authentication
 function tryAnonymousAuth() {
     if (window.signInAnonymously) {
