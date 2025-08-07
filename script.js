@@ -8175,6 +8175,71 @@ function testAuthentication() {
 // Make test function available globally
 window.testAuthentication = testAuthentication;
 
+// Function to check and fix Firebase permissions issue
+function checkFirebasePermissions() {
+    console.log('=== CHECKING FIREBASE PERMISSIONS ===');
+    
+    if (!window.auth || !window.auth.currentUser) {
+        console.error('❌ No authenticated user');
+        console.log('Please authenticate first');
+        return;
+    }
+    
+    if (!window.setDoc || !window.doc || !window.collection || !window.db) {
+        console.error('❌ Firebase functions not available');
+        return;
+    }
+    
+    console.log('Testing Firebase permissions...');
+    
+    // Test write permission
+    const testData = {
+        test: true,
+        timestamp: new Date().toISOString(),
+        message: 'Permission test'
+    };
+    
+    window.setDoc(window.doc(window.collection(window.db, 'testData'), window.auth.currentUser.uid), testData)
+        .then(() => {
+            console.log('✅ Write permission: OK');
+            
+            // Test read permission
+            return window.getDoc(window.doc(window.collection(window.db, 'testData'), window.auth.currentUser.uid));
+        })
+        .then((doc) => {
+            if (doc.exists()) {
+                console.log('✅ Read permission: OK');
+                console.log('✅ Firebase permissions are working correctly!');
+            } else {
+                console.log('⚠️ Read test: No data found (normal for first test)');
+            }
+        })
+        .catch((error) => {
+            console.error('❌ Permission test failed:', error.message);
+            
+            if (error.message.includes('Missing or insufficient permissions')) {
+                console.log('🔧 SOLUTION: Update Firebase Security Rules');
+                console.log('1. Go to Firebase Console → Firestore Database → Rules');
+                console.log('2. Replace rules with:');
+                console.log(`
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}
+                `);
+                console.log('3. Click "Publish" and wait 1-2 minutes');
+                console.log('4. Refresh this page and try again');
+            }
+        });
+}
+
+// Make permission check function available globally
+window.checkFirebasePermissions = checkFirebasePermissions;
+
 // Global function for anonymous authentication
 function tryAnonymousAuth() {
     if (window.signInAnonymously) {
