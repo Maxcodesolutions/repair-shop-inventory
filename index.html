@@ -2777,6 +2777,10 @@
       window.doc = doc;
       window.setDoc = setDoc;
       window.getDoc = getDoc;
+      
+      // Signal that Firebase is ready
+      window.firebaseReady = true;
+      window.dispatchEvent(new CustomEvent('firebaseReady'));
     </script>
     <script src="firebase-config.js"></script>
     <script src="script.js"></script>

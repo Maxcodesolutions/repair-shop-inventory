@@ -1,9 +1,35 @@
 // Firebase Configuration (v12 SDK)
 // Note: Firebase is initialized in the HTML module script
 
-// Initialize Firebase services (using global variables from module script)
-const db = window.db;
-const auth = window.auth;
+// Wait for Firebase to be ready
+let db, auth;
+
+function initializeFirebaseServices() {
+    if (window.db && window.auth) {
+        db = window.db;
+        auth = window.auth;
+        console.log('Firebase services initialized successfully');
+        
+        // Initialize data manager if it exists
+        if (typeof dataManager !== 'undefined') {
+            dataManager.init();
+        }
+    } else {
+        console.log('Firebase not ready yet, retrying...');
+        setTimeout(initializeFirebaseServices, 100);
+    }
+}
+
+// Listen for Firebase ready event
+window.addEventListener('firebaseReady', () => {
+    console.log('Firebase ready event received');
+    initializeFirebaseServices();
+});
+
+// Also try to initialize immediately (in case event was already fired)
+if (window.firebaseReady) {
+    initializeFirebaseServices();
+}
 
 // Data management functions
 class DataManager {
@@ -15,6 +41,14 @@ class DataManager {
     // Initialize data manager
     async init() {
         try {
+            // Check if Firebase is available
+            if (!window.auth || !window.onAuthStateChanged) {
+                console.log('Firebase not available, using localStorage only');
+                this.isOnline = false;
+                this.loadDataFromLocal();
+                return;
+            }
+
             // Check if user is authenticated
             window.onAuthStateChanged(auth, (user) => {
                 if (user) {
@@ -31,13 +65,15 @@ class DataManager {
             });
         } catch (error) {
             console.error('Firebase initialization error:', error);
+            this.isOnline = false;
             this.loadDataFromLocal();
         }
     }
 
     // Save data to server
     async saveDataToServer() {
-        if (!this.currentUser || !this.isOnline) {
+        if (!this.currentUser || !this.isOnline || !window.setDoc || !window.doc || !window.collection) {
+            console.log('Firebase not available, saving to localStorage only');
             this.saveDataToLocal();
             return;
         }
@@ -69,7 +105,8 @@ class DataManager {
 
     // Load data from server
     async loadDataFromServer() {
-        if (!this.currentUser || !this.isOnline) {
+        if (!this.currentUser || !this.isOnline || !window.getDoc || !window.doc || !window.collection) {
+            console.log('Firebase not available, loading from localStorage only');
             this.loadDataFromLocal();
             return;
         }
