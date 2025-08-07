@@ -125,36 +125,60 @@ function handleLogin(e) {
         localStorage.setItem('loginStatus', 'true');
         localStorage.setItem('currentUserId', authenticatedUser.id.toString());
         
+        // Create a consistent cross-browser user ID
+        const crossBrowserUserId = `user_${username}_${authenticatedUser.id}`;
+        localStorage.setItem('crossBrowserUserId', crossBrowserUserId);
+        
         // If Firebase auth is available, try to sign in for cloud sync
         if (window.auth) {
-            // Try anonymous auth first, if it fails, use email/password
-            if (window.signInAnonymously) {
-                window.signInAnonymously(window.auth).then((userCredential) => {
-                    console.log('Signed in anonymously for cloud sync:', userCredential.user.uid);
-                    // Data will be automatically loaded from cloud via the auth listener
-                }).catch((error) => {
-                    console.log('Anonymous sign-in failed, trying email/password:', error.message);
-                    // Try email/password if anonymous fails
-                    tryEmailPasswordAuth();
-                });
+            // Create a consistent email for cross-browser sync
+            const syncEmail = `${username}@repairshop.local`;
+            const syncPassword = password; // Use the same password
+            
+            // Store credentials for cross-browser sync
+            localStorage.setItem('cloudSyncEmail', syncEmail);
+            localStorage.setItem('cloudSyncPassword', syncPassword);
+            
+            // Try to sign in with email/password for consistent cross-browser sync
+            if (window.signInWithEmailAndPassword) {
+                window.signInWithEmailAndPassword(window.auth, syncEmail, syncPassword)
+                    .then((userCredential) => {
+                        console.log('Signed in with email for cross-browser sync:', userCredential.user.uid);
+                        console.log('Cross-browser user ID:', crossBrowserUserId);
+                        // Data will be automatically loaded from cloud via the auth listener
+                    })
+                    .catch((error) => {
+                        console.log('Email sign-in failed, trying to create account:', error.message);
+                        // Try to create account if sign-in fails
+                        if (window.createUserWithEmailAndPassword) {
+                            window.createUserWithEmailAndPassword(window.auth, syncEmail, syncPassword)
+                                .then((userCredential) => {
+                                    console.log('Account created for cross-browser sync:', userCredential.user.uid);
+                                    console.log('Cross-browser user ID:', crossBrowserUserId);
+                                    // Data will be automatically loaded from cloud via the auth listener
+                                })
+                                .catch((createError) => {
+                                    console.log('Account creation failed, trying anonymous auth:', createError.message);
+                                    // Fallback to anonymous auth
+                                    tryAnonymousAuth();
+                                });
+                        } else {
+                            tryAnonymousAuth();
+                        }
+                    });
             } else {
-                tryEmailPasswordAuth();
+                tryAnonymousAuth();
             }
         }
         
-        function tryEmailPasswordAuth() {
-            // Check if user has stored email/password for auto-login
-            const storedEmail = localStorage.getItem('cloudSyncEmail');
-            const storedPassword = localStorage.getItem('cloudSyncPassword');
-            
-            if (storedEmail && storedPassword && window.signInWithEmailAndPassword) {
-                window.signInWithEmailAndPassword(window.auth, storedEmail, storedPassword).then((userCredential) => {
-                    console.log('Signed in with email for cloud sync:', userCredential.user.email);
+        function tryAnonymousAuth() {
+            if (window.signInAnonymously) {
+                window.signInAnonymously(window.auth).then((userCredential) => {
+                    console.log('Signed in anonymously for cloud sync:', userCredential.user.uid);
+                    console.log('Cross-browser user ID:', crossBrowserUserId);
                 }).catch((error) => {
-                    console.log('Email sign-in failed, using local storage:', error.message);
+                    console.log('Anonymous sign-in failed:', error.message);
                 });
-            } else {
-                console.log('No stored credentials, using local storage only');
             }
         }
         
@@ -170,7 +194,7 @@ function handleLogin(e) {
     }
 }
 
-// Clear login status
+    // Clear login status
 function logout() {
     localStorage.removeItem('loginStatus');
     localStorage.removeItem('currentUserId');
@@ -189,7 +213,7 @@ function logout() {
     // Show login overlay
     showLogin();
 }
-
+    
 // Clear login form
 function clearLoginForm() {
     document.getElementById('username').value = '';
@@ -363,7 +387,7 @@ function setupFirebaseAuthListener() {
                         renderAll();
                     }
                 });
-            } else {
+        } else {
                 console.log('User signed out, switching to local storage');
                 // Load from local storage when user signs out
                 loadDataFromLocal();
@@ -1127,7 +1151,7 @@ function setupEventListeners() {
     });
     
     console.log('Navigation event listeners setup completed');
-    
+
     // Forms
     document.getElementById('add-item-form').addEventListener('submit', handleAddItem);
     document.getElementById('add-vendor-form').addEventListener('submit', handleAddVendor);
@@ -7385,6 +7409,91 @@ function checkSyncStatus() {
 // Make sync functions available globally
 window.forceSyncToCloud = forceSyncToCloud;
 window.checkSyncStatus = checkSyncStatus;
+
+// Function to fix cross-browser sync issues
+function fixCrossBrowserSync() {
+    console.log('=== FIXING CROSS-BROWSER SYNC ===');
+    
+    // Check current authentication
+    if (!window.auth || !window.auth.currentUser) {
+        console.log('❌ No authenticated user');
+        return;
+    }
+    
+    const user = window.auth.currentUser;
+    console.log('✅ Current user:', user.uid);
+    console.log('User type:', user.isAnonymous ? 'Anonymous' : 'Email/Password');
+    
+    // Check stored cross-browser credentials
+    const storedEmail = localStorage.getItem('cloudSyncEmail');
+    const storedPassword = localStorage.getItem('cloudSyncPassword');
+    const crossBrowserUserId = localStorage.getItem('crossBrowserUserId');
+    
+    console.log('Cross-browser credentials:', {
+        email: storedEmail,
+        password: storedPassword ? '***' : 'not set',
+        userId: crossBrowserUserId
+    });
+    
+    // If we have stored credentials, try to sign in with them
+    if (storedEmail && storedPassword && window.signInWithEmailAndPassword) {
+        console.log('Attempting to sign in with stored credentials...');
+        window.signInWithEmailAndPassword(window.auth, storedEmail, storedPassword)
+            .then((userCredential) => {
+                console.log('✅ Successfully signed in with stored credentials:', userCredential.user.uid);
+                // Force reload data from cloud
+                loadDataFromCloud();
+            })
+            .catch((error) => {
+                console.log('❌ Failed to sign in with stored credentials:', error.message);
+                console.log('Trying to create account...');
+                
+                if (window.createUserWithEmailAndPassword) {
+                    window.createUserWithEmailAndPassword(window.auth, storedEmail, storedPassword)
+                        .then((userCredential) => {
+                            console.log('✅ Account created for cross-browser sync:', userCredential.user.uid);
+                            // Force reload data from cloud
+                            loadDataFromCloud();
+                        })
+                        .catch((createError) => {
+                            console.log('❌ Failed to create account:', createError.message);
+                        });
+                }
+            });
+    } else {
+        console.log('No stored credentials found');
+    }
+}
+
+// Function to check cross-browser sync status
+function checkCrossBrowserSync() {
+    console.log('=== CHECKING CROSS-BROWSER SYNC STATUS ===');
+    
+    const storedEmail = localStorage.getItem('cloudSyncEmail');
+    const storedPassword = localStorage.getItem('cloudSyncPassword');
+    const crossBrowserUserId = localStorage.getItem('crossBrowserUserId');
+    
+    console.log('Stored credentials:', {
+        email: storedEmail,
+        hasPassword: !!storedPassword,
+        userId: crossBrowserUserId
+    });
+    
+    if (window.auth && window.auth.currentUser) {
+        const user = window.auth.currentUser;
+        console.log('Current Firebase user:', {
+            uid: user.uid,
+            email: user.email,
+            isAnonymous: user.isAnonymous
+        });
+    } else {
+        console.log('No Firebase user authenticated');
+    }
+}
+
+// Make cross-browser sync functions available globally
+window.fixCrossBrowserSync = fixCrossBrowserSync;
+window.checkCrossBrowserSync = checkCrossBrowserSync;
 
 // Function to check localStorage data
 function checkLocalStorageData() {
