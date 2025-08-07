@@ -7797,7 +7797,41 @@ function forceConsistentAuth() {
     
     if (!storedEmail || !storedPassword) {
         console.error('❌ No stored credentials found');
-        console.log('Please log in first to set up cross-browser sync');
+        console.log('Creating new consistent credentials...');
+        
+        // Create consistent credentials based on current user
+        const username = localStorage.getItem('currentUserId') || 'admin';
+        const email = `${username}@repairshop.local`;
+        const password = 'admin123'; // Consistent password
+        
+        localStorage.setItem('cloudSyncEmail', email);
+        localStorage.setItem('cloudSyncPassword', password);
+        
+        console.log('Created credentials:', { email, password });
+        
+        // Try to create account with new credentials
+        if (window.createUserWithEmailAndPassword) {
+            window.createUserWithEmailAndPassword(window.auth, email, password)
+                .then((userCredential) => {
+                    console.log('✅ Account created for consistent sync:', userCredential.user.uid);
+                    localStorage.setItem('consistentUserId', userCredential.user.uid);
+                    console.log('Cross-browser sync should now work properly');
+                })
+                .catch((createError) => {
+                    console.log('Account creation failed, trying to sign in:', createError.message);
+                    
+                    // Try to sign in with the credentials
+                    window.signInWithEmailAndPassword(window.auth, email, password)
+                        .then((userCredential) => {
+                            console.log('✅ Consistent authentication successful:', userCredential.user.uid);
+                            localStorage.setItem('consistentUserId', userCredential.user.uid);
+                            console.log('Cross-browser sync should now work properly');
+                        })
+                        .catch((signInError) => {
+                            console.error('❌ Both account creation and sign-in failed:', signInError.message);
+                        });
+                });
+        }
         return;
     }
     
@@ -7833,6 +7867,70 @@ function forceConsistentAuth() {
 // Make cross-browser sync functions available globally
 window.checkCrossBrowserSyncStatus = checkCrossBrowserSyncStatus;
 window.forceConsistentAuth = forceConsistentAuth;
+
+// Function to immediately fix cross-browser sync
+function fixCrossBrowserSyncNow() {
+    console.log('=== IMMEDIATE CROSS-BROWSER SYNC FIX ===');
+    
+    // Clear any existing anonymous UIDs
+    localStorage.removeItem('anonymousUserId');
+    
+    // Set up consistent credentials
+    const username = localStorage.getItem('currentUserId') || 'admin';
+    const email = `${username}@repairshop.local`;
+    const password = 'admin'; // Use the same password as login
+    
+    localStorage.setItem('cloudSyncEmail', email);
+    localStorage.setItem('cloudSyncPassword', password);
+    
+    console.log('Setting up consistent credentials:', { email, password });
+    
+    // Sign out from current session
+    if (window.auth && window.signOut) {
+        window.signOut(window.auth).then(() => {
+            console.log('Signed out from current session');
+            
+            // Try to create account first
+            if (window.createUserWithEmailAndPassword) {
+                window.createUserWithEmailAndPassword(window.auth, email, password)
+                    .then((userCredential) => {
+                        console.log('✅ Account created for consistent sync:', userCredential.user.uid);
+                        localStorage.setItem('consistentUserId', userCredential.user.uid);
+                        console.log('Cross-browser sync is now enabled!');
+                        
+                        // Force data sync
+                        if (typeof loadDataFromCloud === 'function') {
+                            loadDataFromCloud();
+                        }
+                    })
+                    .catch((createError) => {
+                        console.log('Account creation failed, trying to sign in:', createError.message);
+                        
+                        // Try to sign in
+                        if (window.signInWithEmailAndPassword) {
+                            window.signInWithEmailAndPassword(window.auth, email, password)
+                                .then((userCredential) => {
+                                    console.log('✅ Signed in to existing account:', userCredential.user.uid);
+                                    localStorage.setItem('consistentUserId', userCredential.user.uid);
+                                    console.log('Cross-browser sync is now enabled!');
+                                    
+                                    // Force data sync
+                                    if (typeof loadDataFromCloud === 'function') {
+                                        loadDataFromCloud();
+                                    }
+                                })
+                                .catch((signInError) => {
+                                    console.error('❌ Sign-in failed:', signInError.message);
+                                });
+                        }
+                    });
+            }
+        });
+    }
+}
+
+// Make the immediate fix function available globally
+window.fixCrossBrowserSyncNow = fixCrossBrowserSyncNow;
 
 // Global function for anonymous authentication
 function tryAnonymousAuth() {
