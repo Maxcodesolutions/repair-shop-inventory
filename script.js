@@ -455,13 +455,25 @@ function loadData() {
         dataManager.init();
     }
     
-    // Check if user is authenticated with Firebase
+    // Always try to load from cloud first, fallback to localStorage only if cloud fails
     if (window.auth && window.auth.currentUser) {
-        console.log('User authenticated, attempting to load from cloud...');
+        console.log('User authenticated, loading from cloud...');
         loadDataFromCloud();
     } else {
-        console.log('No Firebase auth, loading from localStorage...');
-        loadDataFromLocal();
+        console.log('No Firebase auth, attempting anonymous auth for cloud sync...');
+        // Try anonymous authentication for cloud sync
+        if (window.signInAnonymously) {
+            window.signInAnonymously(window.auth).then(() => {
+                console.log('Anonymous auth successful, loading from cloud...');
+                loadDataFromCloud();
+            }).catch((error) => {
+                console.log('Anonymous auth failed, using localStorage as fallback:', error);
+                loadDataFromLocal();
+            });
+        } else {
+            console.log('Firebase auth not available, using localStorage as fallback...');
+            loadDataFromLocal();
+        }
     }
 }
 
@@ -663,16 +675,47 @@ async function loadDataFromCloud() {
 function saveData() {
     console.log('=== SAVING DATA ===');
     
-    // Always save to localStorage first for immediate persistence
+    // Always try to save to cloud first
+    if (window.auth && window.auth.currentUser) {
+        console.log('User authenticated, saving to cloud...');
+        saveDataToCloud();
+    } else {
+        console.log('No authenticated user, attempting anonymous auth for cloud save...');
+        // Try anonymous authentication for cloud sync
+        if (window.signInAnonymously) {
+            window.signInAnonymously(window.auth).then(() => {
+                console.log('Anonymous auth successful, saving to cloud...');
+                saveDataToCloud();
+            }).catch((error) => {
+                console.log('Anonymous auth failed, saving to localStorage as fallback:', error);
+                saveDataToLocal();
+            });
+        } else {
+            console.log('Firebase auth not available, saving to localStorage as fallback...');
+            saveDataToLocal();
+        }
+    }
+    
+    // Use data manager for server-side storage if available
+    if (typeof dataManager !== 'undefined' && dataManager.isOnline) {
+        console.log('Attempting to save to server...');
+        dataManager.saveDataToServer();
+    }
+    
+    console.log('=== DATA SAVING COMPLETE ===');
+}
+
+// Separate function for localStorage saving as fallback
+function saveDataToLocal() {
     try {
-        console.log('Saving data to localStorage...');
+        console.log('Saving data to localStorage (fallback)...');
         
         localStorage.setItem('inventory', JSON.stringify(inventory));
         localStorage.setItem('vendors', JSON.stringify(vendors));
         localStorage.setItem('customers', JSON.stringify(customers));
         localStorage.setItem('purchases', JSON.stringify(purchases));
         localStorage.setItem('repairs', JSON.stringify(repairs));
-        localStorage.setItem('outsource', JSON.stringify(outsource));
+        localStorage.setItem('outsourceRepairs', JSON.stringify(outsourceRepairs));
         localStorage.setItem('invoices', JSON.stringify(invoices));
         localStorage.setItem('quotations', JSON.stringify(quotations));
         localStorage.setItem('pickDrops', JSON.stringify(pickDrops));
@@ -680,7 +723,7 @@ function saveData() {
         localStorage.setItem('users', JSON.stringify(users));
         localStorage.setItem('deliveries', JSON.stringify(deliveries));
         
-        console.log('Data saved successfully to localStorage');
+        console.log('Data saved successfully to localStorage (fallback)');
         console.log('Data counts saved:', {
             inventory: inventory.length,
             vendors: vendors.length,
@@ -693,22 +736,6 @@ function saveData() {
     } catch (error) {
         console.error('Error saving to localStorage:', error);
     }
-    
-    // Save to cloud if user is authenticated
-    if (window.auth && window.auth.currentUser) {
-        console.log('User authenticated, saving to cloud...');
-        saveDataToCloud();
-    } else {
-        console.log('No authenticated user, localStorage only');
-    }
-    
-    // Use data manager for server-side storage if available
-    if (typeof dataManager !== 'undefined' && dataManager.isOnline) {
-        console.log('Attempting to save to server...');
-        dataManager.saveDataToServer();
-    }
-    
-    console.log('=== DATA SAVING COMPLETE ===');
 }
 
 async function saveDataToCloud() {
@@ -6785,6 +6812,7 @@ function performGlobalSearch() {
 
 function searchAllData(searchTerm) {
     console.log('=== SEARCHING ALL DATA ===');
+    console.log('Search term:', searchTerm);
     console.log('Available data:', {
         inventory: inventory ? inventory.length : 'undefined',
         customers: customers ? customers.length : 'undefined',
@@ -6798,6 +6826,17 @@ function searchAllData(searchTerm) {
         payments: payments ? payments.length : 'undefined',
         users: users ? users.length : 'undefined'
     });
+    
+    // Log actual data samples to see what's available
+    if (inventory && inventory.length > 0) {
+        console.log('Sample inventory item:', inventory[0]);
+    }
+    if (customers && customers.length > 0) {
+        console.log('Sample customer:', customers[0]);
+    }
+    if (repairs && repairs.length > 0) {
+        console.log('Sample repair:', repairs[0]);
+    }
     
     const results = {
         inventory: [],
@@ -7176,3 +7215,102 @@ function hideGlobalSearchResults() {
         existingResults.remove();
     }
 }
+
+// Test function to manually test search from browser console
+function testGlobalSearch(searchTerm = 'test') {
+    console.log('=== TESTING GLOBAL SEARCH ===');
+    console.log('Test search term:', searchTerm);
+    
+    // Check if data is loaded
+    console.log('Data status:', {
+        inventory: inventory ? inventory.length : 'undefined',
+        customers: customers ? customers.length : 'undefined',
+        repairs: repairs ? repairs.length : 'undefined'
+    });
+    
+    // Perform search
+    const results = searchAllData(searchTerm);
+    console.log('Search results:', results);
+    
+    // Display results
+    displayGlobalSearchResults(results, searchTerm);
+    
+    return results;
+}
+
+// Make test function available globally
+window.testGlobalSearch = testGlobalSearch;
+
+// Function to clear localStorage and ensure cloud-only storage
+function clearLocalStorageData() {
+    console.log('=== CLEARING LOCAL STORAGE DATA ===');
+    try {
+        localStorage.removeItem('inventory');
+        localStorage.removeItem('vendors');
+        localStorage.removeItem('customers');
+        localStorage.removeItem('purchases');
+        localStorage.removeItem('repairs');
+        localStorage.removeItem('outsourceRepairs');
+        localStorage.removeItem('invoices');
+        localStorage.removeItem('quotations');
+        localStorage.removeItem('pickDrops');
+        localStorage.removeItem('payments');
+        localStorage.removeItem('users');
+        localStorage.removeItem('deliveries');
+        
+        console.log('✅ LocalStorage data cleared successfully');
+        console.log('Data will now be stored only in the cloud');
+    } catch (error) {
+        console.error('❌ Error clearing localStorage:', error);
+    }
+}
+
+// Function to check if data exists in localStorage
+function checkLocalStorageData() {
+    console.log('=== CHECKING LOCAL STORAGE DATA ===');
+    const dataKeys = [
+        'inventory', 'vendors', 'customers', 'purchases', 'repairs', 
+        'outsourceRepairs', 'invoices', 'quotations', 'pickDrops', 
+        'payments', 'users', 'deliveries'
+    ];
+    
+    dataKeys.forEach(key => {
+        const data = localStorage.getItem(key);
+        if (data) {
+            const parsed = JSON.parse(data);
+            console.log(`${key}: ${parsed.length} items`);
+        } else {
+            console.log(`${key}: not found`);
+        }
+    });
+}
+
+// Make functions available globally
+window.clearLocalStorageData = clearLocalStorageData;
+window.checkLocalStorageData = checkLocalStorageData;
+
+// Function to check localStorage data
+function checkLocalStorageData() {
+    console.log('=== CHECKING LOCALSTORAGE DATA ===');
+    const keys = ['inventory', 'customers', 'vendors', 'repairs', 'invoices', 'quotations', 'outsourceRepairs', 'pickDrops', 'deliveries', 'payments', 'users'];
+    
+    keys.forEach(key => {
+        const data = localStorage.getItem(key);
+        if (data) {
+            try {
+                const parsed = JSON.parse(data);
+                console.log(`${key}: ${parsed.length} items`);
+                if (parsed.length > 0) {
+                    console.log(`Sample ${key}:`, parsed[0]);
+                }
+            } catch (e) {
+                console.log(`${key}: Error parsing data`);
+            }
+        } else {
+            console.log(`${key}: No data found`);
+        }
+    });
+}
+
+// Make localStorage check function available globally
+window.checkLocalStorageData = checkLocalStorageData;
