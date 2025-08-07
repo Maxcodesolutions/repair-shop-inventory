@@ -450,10 +450,51 @@ function setupFirebaseAuthListener() {
                             tryAnonymousAuth();
                         }
                     });
+                    } else {
+            console.log('No stored credentials found, attempting to create consistent credentials...');
+            
+            // Create consistent credentials based on current user
+            const username = localStorage.getItem('currentUserId') || 'admin';
+            const email = `${username}@repairshop.local`;
+            const password = 'admin123456';
+            
+            localStorage.setItem('cloudSyncEmail', email);
+            localStorage.setItem('cloudSyncPassword', password);
+            
+            console.log('Created consistent credentials:', { email, password });
+            
+            // Try to create account with new credentials
+            if (window.createUserWithEmailAndPassword) {
+                window.createUserWithEmailAndPassword(window.auth, email, password)
+                    .then((userCredential) => {
+                        console.log('✅ Account created for consistent sync:', userCredential.user.uid);
+                        localStorage.setItem('consistentUserId', userCredential.user.uid);
+                        loadDataFromCloud();
+                    })
+                    .catch((createError) => {
+                        console.log('Account creation failed, trying to sign in:', createError.message);
+                        
+                        // Try to sign in with the credentials
+                        if (window.signInWithEmailAndPassword) {
+                            window.signInWithEmailAndPassword(window.auth, email, password)
+                                .then((userCredential) => {
+                                    console.log('✅ Signed in to existing account:', userCredential.user.uid);
+                                    localStorage.setItem('consistentUserId', userCredential.user.uid);
+                                    loadDataFromCloud();
+                                })
+                                .catch((signInError) => {
+                                    console.error('❌ Sign-in failed:', signInError.message);
+                                    console.log('Falling back to anonymous auth (will create different UIDs)');
+                                    tryAnonymousAuth();
+                                });
+                        } else {
+                            tryAnonymousAuth();
+                        }
+                    });
             } else {
-                // Fall back to anonymous authentication
                 tryAnonymousAuth();
             }
+        }
         }
     } else {
         console.log('Firebase auth not available, using local storage only');
@@ -8412,6 +8453,71 @@ function showAvailableFunctions() {
 // Make the help function available globally
 window.showAvailableFunctions = showAvailableFunctions;
 window.help = showAvailableFunctions; // Short alias
+
+// Function to force consistent authentication and clear anonymous sessions
+function forceConsistentAuthAndClear() {
+    console.log('=== FORCING CONSISTENT AUTHENTICATION AND CLEARING ANONYMOUS ===');
+    
+    // Sign out from current session (including anonymous)
+    if (window.auth && window.signOut) {
+        window.signOut(window.auth).then(() => {
+            console.log('✅ Signed out from current session');
+            
+            // Clear any stored anonymous UIDs
+            localStorage.removeItem('anonymousUserId');
+            
+            // Set up consistent credentials
+            const username = localStorage.getItem('currentUserId') || 'admin';
+            const email = `${username}@repairshop.local`;
+            const password = 'admin123456';
+            
+            localStorage.setItem('cloudSyncEmail', email);
+            localStorage.setItem('cloudSyncPassword', password);
+            
+            console.log('Setting up consistent credentials:', { email, password });
+            
+            // Try to create account first
+            if (window.createUserWithEmailAndPassword) {
+                window.createUserWithEmailAndPassword(window.auth, email, password)
+                    .then((userCredential) => {
+                        console.log('✅ Account created for consistent sync:', userCredential.user.uid);
+                        localStorage.setItem('consistentUserId', userCredential.user.uid);
+                        console.log('Cross-browser sync is now enabled!');
+                        
+                        // Force data sync
+                        if (typeof loadDataFromCloud === 'function') {
+                            loadDataFromCloud();
+                        }
+                    })
+                    .catch((createError) => {
+                        console.log('Account creation failed, trying to sign in:', createError.message);
+                        
+                        // Try to sign in
+                        if (window.signInWithEmailAndPassword) {
+                            window.signInWithEmailAndPassword(window.auth, email, password)
+                                .then((userCredential) => {
+                                    console.log('✅ Signed in to existing account:', userCredential.user.uid);
+                                    localStorage.setItem('consistentUserId', userCredential.user.uid);
+                                    console.log('Cross-browser sync is now enabled!');
+                                    
+                                    // Force data sync
+                                    if (typeof loadDataFromCloud === 'function') {
+                                        loadDataFromCloud();
+                                    }
+                                })
+                                .catch((signInError) => {
+                                    console.error('❌ Sign-in failed:', signInError.message);
+                                    console.log('Both account creation and sign-in failed');
+                                });
+                        }
+                    });
+            }
+        });
+    }
+}
+
+// Make the force function available globally
+window.forceConsistentAuthAndClear = forceConsistentAuthAndClear;
 
 // Global function for anonymous authentication
 function tryAnonymousAuth() {
