@@ -149,6 +149,14 @@ function handleLogin(e) {
                     })
                     .catch((error) => {
                         console.log('Email sign-in failed, trying to create account:', error.message);
+                        
+                        // Check for 400 error (authentication disabled)
+                        if (error.message.includes('400') || error.message.includes('auth/admin-restricted-operation')) {
+                            console.log('Authentication disabled in Firebase Console, trying anonymous auth');
+                            tryAnonymousAuth();
+                            return;
+                        }
+                        
                         // Try to create account if sign-in fails
                         if (window.createUserWithEmailAndPassword) {
                             window.createUserWithEmailAndPassword(window.auth, syncEmail, syncPassword)
@@ -159,6 +167,14 @@ function handleLogin(e) {
                                 })
                                 .catch((createError) => {
                                     console.log('Account creation failed, trying anonymous auth:', createError.message);
+                                    
+                                    // Check for 400 error (authentication disabled)
+                                    if (createError.message.includes('400') || createError.message.includes('auth/admin-restricted-operation')) {
+                                        console.log('Authentication disabled in Firebase Console, trying anonymous auth');
+                                        tryAnonymousAuth();
+                                        return;
+                                    }
+                                    
                                     // Fallback to anonymous auth
                                     tryAnonymousAuth();
                                 });
@@ -178,7 +194,21 @@ function handleLogin(e) {
                     console.log('Cross-browser user ID:', crossBrowserUserId);
                 }).catch((error) => {
                     console.log('Anonymous sign-in failed:', error.message);
+                    
+                    // Check for authentication disabled error
+                    if (error.message.includes('400') || error.message.includes('auth/admin-restricted-operation')) {
+                        console.error('❌ Firebase Authentication is disabled in Firebase Console');
+                        console.log('To fix this:');
+                        console.log('1. Go to Firebase Console > Authentication');
+                        console.log('2. Enable "Anonymous" authentication method');
+                        console.log('3. Or enable "Email/Password" authentication method');
+                        console.log('4. Refresh the page and try again');
+                    } else {
+                        console.error('❌ All authentication methods failed:', error.message);
+                    }
                 });
+            } else {
+                console.log('Anonymous authentication not available');
             }
         }
         
@@ -7608,6 +7638,108 @@ function checkFirebaseConnection() {
 // Make connection functions available globally
 window.handleFirebaseConnectionIssues = handleFirebaseConnectionIssues;
 window.checkFirebaseConnection = checkFirebaseConnection;
+
+// Function to diagnose and fix Firebase authentication issues
+function diagnoseFirebaseAuth() {
+    console.log('=== FIREBASE AUTHENTICATION DIAGNOSIS ===');
+    
+    // Check Firebase availability
+    const authStatus = {
+        auth: !!window.auth,
+        signInAnonymously: !!window.signInAnonymously,
+        signInWithEmailAndPassword: !!window.signInWithEmailAndPassword,
+        createUserWithEmailAndPassword: !!window.createUserWithEmailAndPassword,
+        currentUser: window.auth?.currentUser ? 'authenticated' : 'not authenticated'
+    };
+    
+    console.log('Firebase Auth Status:', authStatus);
+    
+    if (!authStatus.auth) {
+        console.error('❌ Firebase Auth not available');
+        console.log('Check if Firebase SDK is properly loaded');
+        return;
+    }
+    
+    // Test anonymous authentication
+    if (authStatus.signInAnonymously) {
+        console.log('Testing anonymous authentication...');
+        window.signInAnonymously(window.auth)
+            .then((userCredential) => {
+                console.log('✅ Anonymous authentication successful:', userCredential.user.uid);
+                // Sign out after test
+                if (window.signOut) {
+                    window.signOut(window.auth);
+                }
+            })
+            .catch((error) => {
+                console.error('❌ Anonymous authentication failed:', error.message);
+                if (error.message.includes('400') || error.message.includes('auth/admin-restricted-operation')) {
+                    console.log('🔧 SOLUTION: Enable Anonymous authentication in Firebase Console');
+                    console.log('1. Go to Firebase Console > Authentication > Sign-in method');
+                    console.log('2. Enable "Anonymous" authentication');
+                    console.log('3. Refresh the page and try again');
+                }
+            });
+    }
+    
+    // Test email/password authentication
+    if (authStatus.signInWithEmailAndPassword) {
+        console.log('Testing email/password authentication...');
+        const testEmail = 'test@repairshop.local';
+        const testPassword = 'testpassword123';
+        
+        window.signInWithEmailAndPassword(window.auth, testEmail, testPassword)
+            .then((userCredential) => {
+                console.log('✅ Email/password authentication successful:', userCredential.user.uid);
+                // Sign out after test
+                if (window.signOut) {
+                    window.signOut(window.auth);
+                }
+            })
+            .catch((error) => {
+                console.log('Email/password authentication failed (expected):', error.message);
+                if (error.message.includes('400') || error.message.includes('auth/admin-restricted-operation')) {
+                    console.log('🔧 SOLUTION: Enable Email/Password authentication in Firebase Console');
+                    console.log('1. Go to Firebase Console > Authentication > Sign-in method');
+                    console.log('2. Enable "Email/Password" authentication');
+                    console.log('3. Refresh the page and try again');
+                }
+            });
+    }
+}
+
+// Function to fix Firebase authentication issues
+function fixFirebaseAuth() {
+    console.log('=== FIXING FIREBASE AUTHENTICATION ===');
+    
+    // Check current authentication status
+    const currentUser = window.auth?.currentUser;
+    if (currentUser) {
+        console.log('✅ User is already authenticated:', currentUser.uid);
+        return;
+    }
+    
+    console.log('No authenticated user, attempting to sign in...');
+    
+    // Try anonymous authentication first
+    if (window.signInAnonymously) {
+        window.signInAnonymously(window.auth)
+            .then((userCredential) => {
+                console.log('✅ Successfully signed in anonymously:', userCredential.user.uid);
+                console.log('Data sync should now work properly');
+            })
+            .catch((error) => {
+                console.error('❌ Anonymous authentication failed:', error.message);
+                console.log('Please enable authentication in Firebase Console');
+            });
+    } else {
+        console.error('❌ Anonymous authentication not available');
+    }
+}
+
+// Make auth functions available globally
+window.diagnoseFirebaseAuth = diagnoseFirebaseAuth;
+window.fixFirebaseAuth = fixFirebaseAuth;
 
 // Function to check localStorage data
 function checkLocalStorageData() {
