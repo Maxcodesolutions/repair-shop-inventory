@@ -8492,23 +8492,31 @@ function forceConsistentAuthAndClear() {
                     .catch((createError) => {
                         console.log('Account creation failed, trying to sign in:', createError.message);
                         
-                        // Try to sign in
-                        if (window.signInWithEmailAndPassword) {
-                            window.signInWithEmailAndPassword(window.auth, email, password)
-                                .then((userCredential) => {
-                                    console.log('✅ Signed in to existing account:', userCredential.user.uid);
-                                    localStorage.setItem('consistentUserId', userCredential.user.uid);
-                                    console.log('Cross-browser sync is now enabled!');
-                                    
-                                    // Force data sync
-                                    if (typeof loadDataFromCloud === 'function') {
-                                        loadDataFromCloud();
-                                    }
-                                })
-                                .catch((signInError) => {
-                                    console.error('❌ Sign-in failed:', signInError.message);
-                                    console.log('Both account creation and sign-in failed');
-                                });
+                        // Check if it's an "email already in use" error
+                        if (createError.message.includes('email-already-in-use')) {
+                            console.log('Account already exists, attempting to sign in...');
+                            
+                            // Try to sign in
+                            if (window.signInWithEmailAndPassword) {
+                                window.signInWithEmailAndPassword(window.auth, email, password)
+                                    .then((userCredential) => {
+                                        console.log('✅ Signed in to existing account:', userCredential.user.uid);
+                                        localStorage.setItem('consistentUserId', userCredential.user.uid);
+                                        console.log('Cross-browser sync is now enabled!');
+                                        
+                                        // Force data sync
+                                        if (typeof loadDataFromCloud === 'function') {
+                                            loadDataFromCloud();
+                                        }
+                                    })
+                                    .catch((signInError) => {
+                                        console.error('❌ Sign-in failed:', signInError.message);
+                                        console.log('Both account creation and sign-in failed');
+                                        console.log('This might be due to Firebase Console settings');
+                                    });
+                            }
+                        } else {
+                            console.error('❌ Account creation failed for other reason:', createError.message);
                         }
                     });
             }
@@ -8518,6 +8526,76 @@ function forceConsistentAuthAndClear() {
 
 // Make the force function available globally
 window.forceConsistentAuthAndClear = forceConsistentAuthAndClear;
+
+// Function to check and fix credential consistency
+function checkAndFixCredentials() {
+    console.log('=== CHECKING AND FIXING CREDENTIALS ===');
+    
+    const currentUserId = localStorage.getItem('currentUserId');
+    const storedEmail = localStorage.getItem('cloudSyncEmail');
+    const storedPassword = localStorage.getItem('cloudSyncPassword');
+    
+    console.log('Current user ID:', currentUserId);
+    console.log('Stored email:', storedEmail);
+    console.log('Stored password:', storedPassword ? '***' : 'Not set');
+    
+    // Check if credentials are consistent
+    const expectedEmail = `${currentUserId}@repairshop.local`;
+    const expectedPassword = 'admin123456';
+    
+    if (storedEmail !== expectedEmail || storedPassword !== expectedPassword) {
+        console.log('❌ Credentials are not consistent');
+        console.log('Expected email:', expectedEmail);
+        console.log('Expected password:', expectedPassword);
+        
+        // Fix credentials
+        localStorage.setItem('cloudSyncEmail', expectedEmail);
+        localStorage.setItem('cloudSyncPassword', expectedPassword);
+        
+        console.log('✅ Credentials fixed');
+        console.log('New email:', expectedEmail);
+        console.log('New password:', expectedPassword);
+        
+        return false; // Credentials were inconsistent
+    } else {
+        console.log('✅ Credentials are consistent');
+        return true; // Credentials are consistent
+    }
+}
+
+// Function to sign in with current credentials
+function signInWithCurrentCredentials() {
+    console.log('=== SIGNING IN WITH CURRENT CREDENTIALS ===');
+    
+    const email = localStorage.getItem('cloudSyncEmail');
+    const password = localStorage.getItem('cloudSyncPassword');
+    
+    if (!email || !password) {
+        console.error('❌ No credentials found');
+        return;
+    }
+    
+    console.log('Attempting to sign in with:', { email, password: '***' });
+    
+    if (window.signInWithEmailAndPassword) {
+        window.signInWithEmailAndPassword(window.auth, email, password)
+            .then((userCredential) => {
+                console.log('✅ Signed in successfully:', userCredential.user.uid);
+                localStorage.setItem('consistentUserId', userCredential.user.uid);
+                console.log('Cross-browser sync should now work!');
+            })
+            .catch((error) => {
+                console.error('❌ Sign-in failed:', error.message);
+                console.log('This might be due to Firebase Console settings');
+            });
+    } else {
+        console.error('❌ Firebase sign-in function not available');
+    }
+}
+
+// Make the credential functions available globally
+window.checkAndFixCredentials = checkAndFixCredentials;
+window.signInWithCurrentCredentials = signInWithCurrentCredentials;
 
 // Global function for anonymous authentication
 function tryAnonymousAuth() {
