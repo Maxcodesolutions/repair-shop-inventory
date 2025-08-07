@@ -338,9 +338,13 @@ function initializeApp() {
 // Setup Firebase authentication listener for automatic cloud sync
 function setupFirebaseAuthListener() {
     if (window.onAuthStateChanged && window.auth) {
+        console.log('Setting up Firebase auth listener for cross-device sync...');
+        
         window.onAuthStateChanged(window.auth, (user) => {
             if (user) {
                 console.log('User authenticated automatically:', user.email || 'Anonymous');
+                console.log('User UID for cross-device sync:', user.uid);
+                
                 // Automatically load data from cloud when user signs in
                 loadDataFromCloud().then(() => {
                     console.log('Data loaded from cloud after authentication');
@@ -350,6 +354,13 @@ function setupFirebaseAuthListener() {
                     }
                     if (typeof updateDashboard === 'function') {
                         updateDashboard();
+                    }
+                }).catch((error) => {
+                    console.error('Error loading from cloud:', error);
+                    // Fallback to local storage
+                    loadDataFromLocal();
+                    if (typeof renderAll === 'function') {
+                        renderAll();
                     }
                 });
             } else {
@@ -364,6 +375,25 @@ function setupFirebaseAuthListener() {
                 }
             }
         });
+        
+        // Check current auth state immediately
+        const currentUser = window.auth.currentUser;
+        if (currentUser) {
+            console.log('Current user found for cross-device sync:', currentUser.uid);
+            loadDataFromCloud();
+        } else {
+            console.log('No current user, attempting anonymous auth for cross-device sync...');
+            // Try anonymous authentication for cross-device sync
+            if (window.signInAnonymously) {
+                window.signInAnonymously(window.auth).then((userCredential) => {
+                    console.log('Anonymous auth successful for cross-device sync:', userCredential.user.uid);
+                    loadDataFromCloud();
+                }).catch((error) => {
+                    console.log('Anonymous auth failed for cross-device sync:', error.message);
+                    loadDataFromLocal();
+                });
+            }
+        }
     } else {
         console.log('Firebase auth not available, using local storage only');
     }
@@ -629,7 +659,7 @@ async function loadDataFromCloud() {
             customers = data.customers || getDefaultCustomers();
             purchases = data.purchases || [];
             repairs = data.repairs || [];
-            outsource = data.outsource || [];
+            outsourceRepairs = data.outsourceRepairs || [];
             invoices = data.invoices || [];
             quotations = data.quotations || [];
             pickDrops = data.pickDrops || [];
@@ -7288,6 +7318,73 @@ function checkLocalStorageData() {
 // Make functions available globally
 window.clearLocalStorageData = clearLocalStorageData;
 window.checkLocalStorageData = checkLocalStorageData;
+
+// Function to force sync data to cloud
+function forceSyncToCloud() {
+    console.log('=== FORCING SYNC TO CLOUD ===');
+    
+    if (!window.auth || !window.auth.currentUser) {
+        console.log('No authenticated user, attempting anonymous auth...');
+        if (window.signInAnonymously) {
+            window.signInAnonymously(window.auth).then((userCredential) => {
+                console.log('Anonymous auth successful, syncing to cloud...');
+                saveDataToCloud();
+            }).catch((error) => {
+                console.log('Anonymous auth failed:', error.message);
+            });
+        }
+        return;
+    }
+    
+    console.log('User authenticated, syncing to cloud...');
+    saveDataToCloud();
+}
+
+// Function to check sync status
+function checkSyncStatus() {
+    console.log('=== CHECKING SYNC STATUS ===');
+    
+    if (!window.auth || !window.auth.currentUser) {
+        console.log('❌ No authenticated user');
+        return;
+    }
+    
+    const user = window.auth.currentUser;
+    console.log('✅ User authenticated:', user.uid);
+    console.log('User type:', user.isAnonymous ? 'Anonymous' : 'Email/Password');
+    
+    // Check if Firebase functions are available
+    if (!window.getDoc || !window.doc || !window.collection || !window.db) {
+        console.log('❌ Firebase functions not available');
+        return;
+    }
+    
+    // Check if data exists in cloud
+    const docRef = window.doc(window.collection(window.db, 'users'), user.uid);
+    window.getDoc(docRef).then((docSnap) => {
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            console.log('✅ Cloud data found:', Object.keys(data));
+            console.log('Last updated:', data.lastUpdated);
+            
+            // Check data counts
+            console.log('Cloud data counts:', {
+                inventory: data.inventory ? data.inventory.length : 0,
+                customers: data.customers ? data.customers.length : 0,
+                repairs: data.repairs ? data.repairs.length : 0,
+                invoices: data.invoices ? data.invoices.length : 0
+            });
+        } else {
+            console.log('❌ No cloud data found');
+        }
+    }).catch((error) => {
+        console.log('❌ Error checking cloud data:', error);
+    });
+}
+
+// Make sync functions available globally
+window.forceSyncToCloud = forceSyncToCloud;
+window.checkSyncStatus = checkSyncStatus;
 
 // Function to check localStorage data
 function checkLocalStorageData() {
