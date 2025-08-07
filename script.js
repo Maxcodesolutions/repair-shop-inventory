@@ -65,6 +65,37 @@ function showApp() {
     console.log('App initialization completed');
 }
 
+// Force re-initialize navigation (for debugging)
+function reinitializeNavigation() {
+    console.log('Re-initializing navigation...');
+    
+    // Remove existing event listeners
+    document.querySelectorAll('.nav-link').forEach(link => {
+        link.replaceWith(link.cloneNode(true));
+    });
+    
+    // Re-setup event listeners
+    setupEventListeners();
+    
+    console.log('Navigation re-initialized');
+}
+
+// Test navigation manually
+function testNavigation(sectionName) {
+    console.log('Testing navigation to:', sectionName);
+    showSection(sectionName);
+}
+
+// Force update dashboard and charts
+function forceUpdateDashboard() {
+    console.log('Force updating dashboard...');
+    updateDashboard();
+    updateRepairStatusChart();
+    updateRevenueChart();
+    updateQuotationValueChart();
+    console.log('Dashboard force update completed');
+}
+
 // Handle login form submission
 function handleLogin(e) {
     e.preventDefault();
@@ -163,6 +194,24 @@ function debugAppState() {
         const element = document.getElementById(id);
         console.log(`${id}: ${element ? 'EXISTS' : 'MISSING'}`);
     });
+    
+    // Check navigation elements
+    const navLinks = document.querySelectorAll('.nav-link');
+    console.log('Navigation links found:', navLinks.length);
+    navLinks.forEach(link => {
+        const section = link.getAttribute('data-section');
+        console.log(`Nav link: ${link.textContent} -> ${section}`);
+    });
+    
+    // Check chart elements
+    const chartElements = ['repairStatusChart', 'revenueChart', 'quotationValueChart'];
+    chartElements.forEach(id => {
+        const element = document.getElementById(id);
+        console.log(`${id}: ${element ? 'EXISTS' : 'MISSING'}`);
+    });
+    
+    // Check Chart.js availability
+    console.log('Chart.js available:', typeof Chart !== 'undefined');
     
     console.log('=== END DEBUG ===');
 }
@@ -626,12 +675,23 @@ function editUser(userId) {
 
 // Event listeners
 function setupEventListeners() {
-    // Navigation
-    document.querySelectorAll('.nav-link').forEach(link => {
+    console.log('Setting up event listeners...');
+    
+    // Navigation - with better error handling
+    const navLinks = document.querySelectorAll('.nav-link');
+    console.log('Found nav links:', navLinks.length);
+    
+    navLinks.forEach(link => {
         link.addEventListener('click', function(e) {
             e.preventDefault();
             const section = this.getAttribute('data-section');
-            showSection(section);
+            console.log('Nav link clicked:', section);
+            
+            if (section) {
+                showSection(section);
+            } else {
+                console.error('No data-section attribute found on nav link');
+            }
         });
     });
 
@@ -1690,17 +1750,20 @@ let revenueChart = null;
 let quotationValueChart = null;
 
 function updateRepairStatusChart() {
+    console.log('Updating repair status chart...');
     const ctx = document.getElementById('repairStatusChart');
     if (!ctx) {
-        console.log('Repair status chart canvas not found');
+        console.error('Repair status chart canvas not found');
         return;
     }
     
     // Check if Chart is available
     if (typeof Chart === 'undefined') {
-        console.log('Chart.js not loaded');
+        console.error('Chart.js not loaded - charts will not display');
         return;
     }
+    
+    console.log('Chart.js is available, proceeding with chart creation');
     
     // Destroy existing chart if it exists
     if (repairStatusChart) {

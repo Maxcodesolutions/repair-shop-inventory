@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>App Debug Tool - Repair Shop Inventory</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .debug-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .debug-button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .debug-button:hover {
+            background: #0056b3;
+        }
+        .debug-button.success {
+            background: #28a745;
+        }
+        .debug-button.danger {
+            background: #dc3545;
+        }
+        .debug-button.warning {
+            background: #ffc107;
+            color: #212529;
+        }
+        .debug-output {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 10px 0;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .status-success {
+            color: #28a745;
+            font-weight: bold;
+        }
+        .status-error {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        .status-warning {
+            color: #ffc107;
+            font-weight: bold;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .test-section {
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+        .test-section h3 {
+            margin-top: 0;
+            color: #495057;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 App Debug Tool</h1>
+    <p>Use this tool to debug navigation, charts, and dashboard issues.</p>
+
+    <div class="debug-section">
+        <h2>📊 App State Check</h2>
+        <button class="debug-button" onclick="checkAppState()">Check App State</button>
+        <button class="debug-button" onclick="checkNavigation()">Check Navigation</button>
+        <button class="debug-button" onclick="checkCharts()">Check Charts</button>
+        <button class="debug-button" onclick="checkDashboard()">Check Dashboard</button>
+        <div id="app-state-output" class="debug-output"></div>
+    </div>
+
+    <div class="grid">
+        <div class="debug-section">
+            <h2>🧪 Navigation Tests</h2>
+            <div class="test-section">
+                <h3>Manual Navigation</h3>
+                <button class="debug-button" onclick="testNavigation('dashboard')">Dashboard</button>
+                <button class="debug-button" onclick="testNavigation('inventory')">Inventory</button>
+                <button class="debug-button" onclick="testNavigation('customers')">Customers</button>
+                <button class="debug-button" onclick="testNavigation('repairs')">Repairs</button>
+                <button class="debug-button" onclick="testNavigation('invoices')">Invoices</button>
+            </div>
+            <div class="test-section">
+                <h3>Navigation Fixes</h3>
+                <button class="debug-button warning" onclick="reinitializeNavigation()">Re-initialize Navigation</button>
+                <button class="debug-button success" onclick="testAllNavigation()">Test All Navigation</button>
+            </div>
+        </div>
+
+        <div class="debug-section">
+            <h2>📈 Chart Tests</h2>
+            <div class="test-section">
+                <h3>Chart Updates</h3>
+                <button class="debug-button" onclick="updateRepairStatusChart()">Update Repair Chart</button>
+                <button class="debug-button" onclick="updateRevenueChart()">Update Revenue Chart</button>
+                <button class="debug-button" onclick="updateQuotationValueChart()">Update Quotation Chart</button>
+            </div>
+            <div class="test-section">
+                <h3>Dashboard Updates</h3>
+                <button class="debug-button success" onclick="forceUpdateDashboard()">Force Update Dashboard</button>
+                <button class="debug-button" onclick="updateDashboard()">Update Dashboard</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="debug-section">
+        <h2>🔧 Advanced Fixes</h2>
+        <button class="debug-button warning" onclick="clearAndReload()">Clear Cache & Reload</button>
+        <button class="debug-button danger" onclick="resetAllData()">Reset All Data</button>
+        <button class="debug-button" onclick="reloadScripts()">Reload Scripts</button>
+        <div id="advanced-output" class="debug-output"></div>
+    </div>
+
+    <div class="debug-section">
+        <h2>📱 Go to Main App</h2>
+        <a href="index.html" class="debug-button" style="text-decoration: none; display: inline-block;">Open Main Application</a>
+        <p><strong>Instructions:</strong></p>
+        <ol>
+            <li>Use the debug tools above to identify issues</li>
+            <li>Test navigation manually</li>
+            <li>Check if charts are loading</li>
+            <li>If issues persist, try the advanced fixes</li>
+            <li>Open the main app and test functionality</li>
+        </ol>
+    </div>
+
+    <script>
+        // Load the main script functions
+        let inventory = [];
+        let repairs = [];
+        let customers = [];
+        let users = [];
+        let currentUser = null;
+        let currentUserId = null;
+
+        function loadData() {
+            try {
+                inventory = JSON.parse(localStorage.getItem('inventory')) || [];
+                repairs = JSON.parse(localStorage.getItem('repairs')) || [];
+                customers = JSON.parse(localStorage.getItem('customers')) || [];
+                users = JSON.parse(localStorage.getItem('users')) || [];
+            } catch (error) {
+                console.error('Error loading data:', error);
+            }
+        }
+
+        function checkAppState() {
+            loadData();
+            let output = '=== APP STATE CHECK ===\n';
+            output += `Inventory Items: ${inventory.length}\n`;
+            output += `Repairs: ${repairs.length}\n`;
+            output += `Customers: ${customers.length}\n`;
+            output += `Users: ${users.length}\n`;
+            output += `Login Status: ${localStorage.getItem('loginStatus')}\n`;
+            output += `Current User ID: ${localStorage.getItem('currentUserId')}\n`;
+            output += `Chart.js Available: ${typeof Chart !== 'undefined'}\n`;
+            output += `App Container: ${document.getElementById('app-container') ? 'EXISTS' : 'MISSING'}\n`;
+            output += `Dashboard Element: ${document.getElementById('dashboard') ? 'EXISTS' : 'MISSING'}\n`;
+            document.getElementById('app-state-output').textContent = output;
+        }
+
+        function checkNavigation() {
+            let output = '=== NAVIGATION CHECK ===\n';
+            const navLinks = document.querySelectorAll('.nav-link');
+            output += `Navigation Links Found: ${navLinks.length}\n\n`;
+            
+            navLinks.forEach((link, index) => {
+                const section = link.getAttribute('data-section');
+                const text = link.textContent.trim();
+                output += `${index + 1}. "${text}" -> ${section || 'NO SECTION'}\n`;
+            });
+            
+            document.getElementById('app-state-output').textContent = output;
+        }
+
+        function checkCharts() {
+            let output = '=== CHART CHECK ===\n';
+            const chartIds = ['repairStatusChart', 'revenueChart', 'quotationValueChart'];
+            
+            chartIds.forEach(id => {
+                const element = document.getElementById(id);
+                output += `${id}: ${element ? 'EXISTS' : 'MISSING'}\n`;
+            });
+            
+            output += `\nChart.js Available: ${typeof Chart !== 'undefined'}\n`;
+            if (typeof Chart !== 'undefined') {
+                output += 'Chart.js Version: ' + Chart.version + '\n';
+            }
+            
+            document.getElementById('app-state-output').textContent = output;
+        }
+
+        function checkDashboard() {
+            let output = '=== DASHBOARD CHECK ===\n';
+            const dashboardElements = [
+                'total-items', 'low-stock', 'pending-orders', 'active-repairs',
+                'total-inventory-value', 'total-purchases', 'total-spent', 'active-repairs-count'
+            ];
+            
+            dashboardElements.forEach(id => {
+                const element = document.getElementById(id);
+                output += `${id}: ${element ? 'EXISTS' : 'MISSING'}\n`;
+            });
+            
+            document.getElementById('app-state-output').textContent = output;
+        }
+
+        function testNavigation(sectionName) {
+            console.log('Testing navigation to:', sectionName);
+            
+            // Try to call the showSection function if it exists
+            if (typeof showSection === 'function') {
+                showSection(sectionName);
+            } else {
+                console.log('showSection function not available');
+            }
+            
+            let output = `=== NAVIGATION TEST ===\n`;
+            output += `Attempted to navigate to: ${sectionName}\n`;
+            output += `showSection function available: ${typeof showSection === 'function'}\n`;
+            document.getElementById('app-state-output').textContent = output;
+        }
+
+        function testAllNavigation() {
+            const sections = ['dashboard', 'inventory', 'customers', 'repairs', 'invoices'];
+            let output = '=== TESTING ALL NAVIGATION ===\n';
+            
+            sections.forEach(section => {
+                output += `Testing ${section}...\n`;
+                testNavigation(section);
+            });
+            
+            output += '\nNavigation test completed!';
+            document.getElementById('app-state-output').textContent = output;
+        }
+
+        function reinitializeNavigation() {
+            console.log('Re-initializing navigation...');
+            
+            // Remove existing event listeners
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.replaceWith(link.cloneNode(true));
+            });
+            
+            // Re-setup event listeners if function exists
+            if (typeof setupEventListeners === 'function') {
+                setupEventListeners();
+            }
+            
+            let output = '=== NAVIGATION RE-INITIALIZED ===\n';
+            output += 'All navigation links have been refreshed.\n';
+            output += 'Event listeners have been re-attached.\n';
+            document.getElementById('advanced-output').textContent = output;
+        }
+
+        function forceUpdateDashboard() {
+            console.log('Force updating dashboard...');
+            
+            if (typeof updateDashboard === 'function') {
+                updateDashboard();
+            }
+            
+            if (typeof updateRepairStatusChart === 'function') {
+                updateRepairStatusChart();
+            }
+            
+            if (typeof updateRevenueChart === 'function') {
+                updateRevenueChart();
+            }
+            
+            if (typeof updateQuotationValueChart === 'function') {
+                updateQuotationValueChart();
+            }
+            
+            let output = '=== DASHBOARD FORCE UPDATE ===\n';
+            output += 'Dashboard update functions called.\n';
+            output += 'Check the main app for updates.\n';
+            document.getElementById('advanced-output').textContent = output;
+        }
+
+        function clearAndReload() {
+            console.log('Clearing cache and reloading...');
+            
+            // Clear localStorage
+            localStorage.clear();
+            
+            // Reload the page
+            location.reload();
+        }
+
+        function resetAllData() {
+            console.log('Resetting all data...');
+            
+            // Clear all data
+            localStorage.clear();
+            
+            let output = '=== ALL DATA RESET ===\n';
+            output += 'All localStorage data has been cleared.\n';
+            output += 'Please refresh the page to see changes.\n';
+            document.getElementById('advanced-output').textContent = output;
+        }
+
+        function reloadScripts() {
+            console.log('Reloading scripts...');
+            
+            // Reload the main script
+            const script = document.createElement('script');
+            script.src = 'script.js?v=' + Date.now();
+            document.head.appendChild(script);
+            
+            let output = '=== SCRIPTS RELOADED ===\n';
+            output += 'Main script has been reloaded.\n';
+            output += 'Check console for any errors.\n';
+            document.getElementById('advanced-output').textContent = output;
+        }
+
+        // Initialize
+        loadData();
+        console.log('Debug tool initialized');
+    </script>
+</body>
+</html>
