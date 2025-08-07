@@ -8698,6 +8698,66 @@ function testSpecificCredentials(email, password) {
         });
 }
 
+// Function to test specific credentials without signing out
+function testSpecificCredentialsNoSignOut(email, password) {
+    console.log('=== TESTING SPECIFIC CREDENTIALS (NO SIGN OUT) ===');
+    console.log('Email:', email);
+    console.log('Password:', password ? '***' : 'Not provided');
+    
+    if (!email || !password) {
+        console.error('❌ Email and password are required');
+        return;
+    }
+    
+    if (!window.signInWithEmailAndPassword) {
+        console.error('❌ Firebase sign-in function not available');
+        return;
+    }
+    
+    console.log('Attempting to sign in...');
+    
+    window.signInWithEmailAndPassword(window.auth, email, password)
+        .then((userCredential) => {
+            console.log('✅ Sign-in successful!');
+            console.log('User UID:', userCredential.user.uid);
+            console.log('User email:', userCredential.user.email);
+            console.log('Cross-browser sync should work with this UID');
+            
+            // Store the UID for consistency
+            localStorage.setItem('consistentUserId', userCredential.user.uid);
+            console.log('✅ User will remain signed in for cross-browser sync');
+            
+            // Force data sync
+            if (typeof loadDataFromCloud === 'function') {
+                loadDataFromCloud();
+            }
+        })
+        .catch((error) => {
+            console.error('❌ Sign-in failed:', error.message);
+            console.log('Error code:', error.code);
+            console.log('Full error:', error);
+            
+            if (error.code === 'auth/user-not-found') {
+                console.log('🔧 SOLUTION: Account does not exist');
+                console.log('Try creating the account first');
+            } else if (error.code === 'auth/wrong-password') {
+                console.log('🔧 SOLUTION: Wrong password');
+                console.log('Check the password you are using');
+            } else if (error.code === 'auth/invalid-email') {
+                console.log('🔧 SOLUTION: Invalid email format');
+                console.log('Check the email format');
+            } else if (error.code === 'auth/too-many-requests') {
+                console.log('🔧 SOLUTION: Too many failed attempts');
+                console.log('Wait a few minutes and try again');
+            } else {
+                console.log('🔧 SOLUTION: Check Firebase Console settings');
+                console.log('1. Go to Firebase Console → Authentication → Sign-in method');
+                console.log('2. Enable Email/Password authentication');
+                console.log('3. Wait a few minutes for changes to take effect');
+            }
+        });
+}
+
 // Function to test the current user's credentials
 function testCurrentUserCredentials() {
     console.log('=== TESTING CURRENT USER CREDENTIALS ===');
@@ -8715,6 +8775,7 @@ function testCurrentUserCredentials() {
 
 // Make the test functions available globally
 window.testSpecificCredentials = testSpecificCredentials;
+window.testSpecificCredentialsNoSignOut = testSpecificCredentialsNoSignOut;
 window.testCurrentUserCredentials = testCurrentUserCredentials;
 
 // Function to force consistent authentication by signing out and using stored credentials
@@ -8837,7 +8898,7 @@ function checkStoredCredentials() {
     
     if (storedEmail && storedPassword) {
         console.log('✅ Credentials found, testing sign-in...');
-        testSpecificCredentials(storedEmail, storedPassword);
+        testSpecificCredentialsNoSignOut(storedEmail, storedPassword);
     } else {
         console.log('❌ No stored credentials found');
         console.log('Run forceConsistentAuthAndClear() to set up credentials');
