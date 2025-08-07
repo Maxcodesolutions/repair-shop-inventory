@@ -59,6 +59,9 @@ function showApp() {
     // Apply user permissions
     applyUserPermissions();
     
+    // Initialize global search after app is shown
+    initializeGlobalSearch();
+    
     // Debug the app state
     debugAppState();
     
@@ -440,9 +443,6 @@ function initializeApplication() {
     
     // Setup customer autocomplete
     setupCustomerAutocomplete();
-    
-    // Initialize global search
-    initializeGlobalSearch();
 }
 
 // Data management
@@ -1084,6 +1084,9 @@ function setupEventListeners() {
     document.getElementById('add-delivery-form').addEventListener('submit', handleAddDelivery);
     document.getElementById('add-payment-form').addEventListener('submit', handleAddPayment);
     document.getElementById('add-user-form').addEventListener('submit', handleAddUser);
+
+    // Global search functionality
+    initializeGlobalSearch();
 
     // Search functionality
     document.getElementById('search-inventory').addEventListener('input', filterInventory);
@@ -6720,6 +6723,19 @@ function initializeGlobalSearch() {
                 performGlobalSearch();
             }
         });
+        
+        // Add click outside to close search results
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.global-search-results') && 
+                !e.target.closest('.search-bar') && 
+                !e.target.closest('#search-input')) {
+                hideGlobalSearchResults();
+            }
+        });
+        
+        console.log('Global search initialized successfully');
+    } else {
+        console.log('Search input not found, will retry later');
     }
 }
 
