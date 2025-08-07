@@ -2266,17 +2266,25 @@
                 <div class="invoice-summary">
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="invoice-tax-rate">Tax Rate (%)</label>
-                            <input type="number" id="invoice-tax-rate" min="0" max="100" step="0.01" value="18" required>
+                            <label>
+                                <input type="checkbox" id="invoice-apply-tax" checked>
+                                Apply Tax
+                            </label>
                         </div>
                         <div class="form-group">
                             <label for="invoice-discount">Discount (₹)</label>
                             <input type="number" id="invoice-discount" min="0" step="0.01" value="0">
                         </div>
                     </div>
+                    <div class="form-row" id="invoice-tax-row">
+                        <div class="form-group">
+                            <label for="invoice-tax-rate">Tax Rate (%)</label>
+                            <input type="number" id="invoice-tax-rate" min="0" max="100" step="0.01" value="18">
+                        </div>
+                    </div>
                     <div class="invoice-totals">
                         <p><strong>Subtotal: ₹<span id="invoice-subtotal">0.00</span></strong></p>
-                        <p><strong>Tax: ₹<span id="invoice-tax-amount">0.00</span></strong></p>
+                        <p id="invoice-tax-line"><strong>Tax: ₹<span id="invoice-tax-amount">0.00</span></strong></p>
                         <p><strong>Discount: ₹<span id="invoice-discount-amount">0.00</span></strong></p>
                         <p><strong>Total: ₹<span id="invoice-total">0.00</span></strong></p>
                     </div>
@@ -2357,17 +2365,25 @@
                 <div class="quotation-summary">
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="quotation-tax-rate">Tax Rate (%)</label>
-                            <input type="number" id="quotation-tax-rate" min="0" max="100" step="0.01" value="18" required>
+                            <label>
+                                <input type="checkbox" id="quotation-apply-tax" checked>
+                                Apply Tax
+                            </label>
                         </div>
                         <div class="form-group">
                             <label for="quotation-discount">Discount (₹)</label>
                             <input type="number" id="quotation-discount" min="0" step="0.01" value="0">
                         </div>
                     </div>
+                    <div class="form-row" id="quotation-tax-row">
+                        <div class="form-group">
+                            <label for="quotation-tax-rate">Tax Rate (%)</label>
+                            <input type="number" id="quotation-tax-rate" min="0" max="100" step="0.01" value="18">
+                        </div>
+                    </div>
                     <div class="quotation-totals">
                         <p><strong>Subtotal: ₹<span id="quotation-subtotal">0.00</span></strong></p>
-                        <p><strong>Tax: ₹<span id="quotation-tax-amount">0.00</span></strong></p>
+                        <p id="quotation-tax-line"><strong>Tax: ₹<span id="quotation-tax-amount">0.00</span></strong></p>
                         <p><strong>Discount: ₹<span id="quotation-discount-amount">0.00</span></strong></p>
                         <p><strong>Total: ₹<span id="quotation-total">0.00</span></strong></p>
                     </div>

@@ -563,6 +563,13 @@ function setupEventListeners() {
         }
     });
     
+    // Invoice tax checkbox
+    document.addEventListener('change', function(e) {
+        if (e.target.id === 'invoice-apply-tax') {
+            calculateInvoiceTotals();
+        }
+    });
+    
     // Invoice item search functionality
     document.addEventListener('input', function(e) {
         if (e.target.classList.contains('invoice-item-name')) {
@@ -591,6 +598,13 @@ function setupEventListeners() {
             e.target.classList.contains('quotation-price') ||
             e.target.id === 'quotation-tax-rate' ||
             e.target.id === 'quotation-discount') {
+            calculateQuotationTotals();
+        }
+    });
+    
+    // Quotation tax checkbox
+    document.addEventListener('change', function(e) {
+        if (e.target.id === 'quotation-apply-tax') {
             calculateQuotationTotals();
         }
     });
@@ -1262,9 +1276,10 @@ function handleAddInvoice(e) {
         }
     });
     
-    const taxRate = parseFloat(document.getElementById('invoice-tax-rate').value);
+    const applyTax = document.getElementById('invoice-apply-tax').checked;
+    const taxRate = applyTax ? (parseFloat(document.getElementById('invoice-tax-rate').value) || 0) : 0;
     const discount = parseFloat(document.getElementById('invoice-discount').value) || 0;
-    const taxAmount = (subtotal - discount) * (taxRate / 100);
+    const taxAmount = applyTax ? (subtotal - discount) * (taxRate / 100) : 0;
     const total = subtotal - discount + taxAmount;
     
     // Check if this invoice is being created from a repair
@@ -1324,9 +1339,10 @@ function handleAddQuotation(e) {
         }
     });
     
-    const taxRate = parseFloat(document.getElementById('quotation-tax-rate').value);
+    const applyTax = document.getElementById('quotation-apply-tax').checked;
+    const taxRate = applyTax ? (parseFloat(document.getElementById('quotation-tax-rate').value) || 0) : 0;
     const discount = parseFloat(document.getElementById('quotation-discount').value) || 0;
-    const taxAmount = (subtotal - discount) * (taxRate / 100);
+    const taxAmount = applyTax ? (subtotal - discount) * (taxRate / 100) : 0;
     const total = subtotal - discount + taxAmount;
     
     const newQuotation = {
@@ -1879,14 +1895,12 @@ function renderRepairs() {
     repairs.forEach((repair, index) => {
         console.log(`Processing repair ${index + 1}:`, repair);
         
-        // Check if required fields exist
-        if (!repair.startDate || !repair.estimate) {
-            console.error('Repair missing required fields:', repair);
-            return;
-        }
+        // Provide default values for missing required fields
+        const startDate = repair.startDate || new Date().toISOString().split('T')[0];
+        const estimate = repair.estimate || 7; // Default 7 days if not specified
         
-        const estimatedDate = new Date(repair.startDate);
-        estimatedDate.setDate(estimatedDate.getDate() + repair.estimate);
+        const estimatedDate = new Date(startDate);
+        estimatedDate.setDate(estimatedDate.getDate() + estimate);
         
         const row = `
             <tr>
@@ -1898,7 +1912,7 @@ function renderRepairs() {
                 <td>${repair.serial || 'N/A'}</td>
                 <td>${repair.issue.substring(0, 50)}${repair.issue.length > 50 ? '...' : ''}</td>
                 <td><span class="status-badge status-${repair.status}">${repair.status}</span></td>
-                <td>${repair.startDate}</td>
+                <td>${startDate}</td>
                 <td>${estimatedDate.toISOString().split('T')[0]}</td>
                 <td>
                     <button class="btn btn-sm btn-info" onclick="viewJobCard(${repair.id})" title="View Job Card">
@@ -2217,8 +2231,16 @@ function viewInvoice(id) {
     
     // Populate customer details
     document.getElementById('invoice-customer-name').textContent = invoice.customer;
-    document.getElementById('invoice-customer-address').textContent = 'Customer Address'; // You can add address field to invoice
-    document.getElementById('invoice-customer-phone').textContent = 'Customer Phone'; // You can add phone field to invoice
+    
+    // Find the actual customer data to get address and phone
+    const customer = customers.find(c => c.name === invoice.customer);
+    if (customer) {
+        document.getElementById('invoice-customer-address').textContent = customer.address || 'Address not available';
+        document.getElementById('invoice-customer-phone').textContent = customer.phone || 'Phone not available';
+    } else {
+        document.getElementById('invoice-customer-address').textContent = 'Address not available';
+        document.getElementById('invoice-customer-phone').textContent = 'Phone not available';
+    }
     
     // Populate invoice items
     const tbody = document.getElementById('invoice-items-detail-tbody');
@@ -2362,6 +2384,11 @@ function printInvoice() {
         return;
     }
     
+    // Find customer data for address and phone
+    const customer = customers.find(c => c.name === invoice.customer);
+    const customerAddress = customer ? customer.address : 'Address not available';
+    const customerPhone = customer ? customer.phone : 'Phone not available';
+    
     // Create a new window for printing
     const printWindow = window.open('', '_blank');
     printWindow.document.write(`
@@ -2378,13 +2405,17 @@ function printInvoice() {
                 th { background-color: #f2f2f2; }
                 .totals { text-align: right; margin-top: 20px; }
                 .total { font-weight: bold; font-size: 1.2em; }
+                .company-details { margin-bottom: 20px; }
+                .customer-details { margin-bottom: 20px; }
             </style>
         </head>
         <body>
             <div class="header">
                 <h1>REPAIR MANIAC</h1>
-                <p>123 Main Street, City, State 12345</p>
-                <p>Phone: (555) 123-4567</p>
+                <p>O-109, First Floor, The Shopping Mall</p>
+                <p>Arjun Marg, DLF City Phase-1</p>
+                <p>Gurugram, Haryana-122002</p>
+                <p>Phone: 9560455637</p>
             </div>
             
             <div class="invoice-info">
@@ -2396,7 +2427,9 @@ function printInvoice() {
             
             <div class="customer-info">
                 <h3>Bill To:</h3>
-                <p>${invoice.customer}</p>
+                <p><strong>${invoice.customer}</strong></p>
+                <p>${customerAddress}</p>
+                <p>Phone: ${customerPhone}</p>
             </div>
             
             <table>
@@ -2471,8 +2504,237 @@ function editInvoice() {
         return;
     }
     
-    // For now, just show an alert. You can implement full edit functionality later
-    alert('Edit functionality will be implemented in the next update.');
+    // Switch to edit mode
+    enableInvoiceEditMode(invoice);
+}
+
+function enableInvoiceEditMode(invoice) {
+    // Change the edit button to save/cancel buttons
+    const editBtn = document.querySelector('.edit-invoice-btn');
+    editBtn.innerHTML = '<i class="fas fa-save"></i> Save Changes';
+    editBtn.onclick = saveInvoiceChanges;
+    editBtn.className = 'btn btn-success edit-invoice-btn';
+    
+    // Add cancel button
+    const actionsDiv = document.querySelector('.invoice-actions');
+    const cancelBtn = document.createElement('button');
+    cancelBtn.className = 'btn btn-danger cancel-edit-btn';
+    cancelBtn.innerHTML = '<i class="fas fa-times"></i> Cancel';
+    cancelBtn.onclick = cancelInvoiceEdit;
+    actionsDiv.appendChild(cancelBtn);
+    
+    // Make customer name editable
+    const customerNameElement = document.getElementById('invoice-customer-name');
+    const customerInput = document.createElement('input');
+    customerInput.type = 'text';
+    customerInput.value = invoice.customer;
+    customerInput.className = 'form-control';
+    customerInput.id = 'edit-invoice-customer';
+    customerNameElement.parentNode.replaceChild(customerInput, customerNameElement);
+    
+    // Make dates editable
+    const dateElement = document.getElementById('invoice-date');
+    const dateInput = document.createElement('input');
+    dateInput.type = 'date';
+    dateInput.value = invoice.date;
+    dateInput.className = 'form-control';
+    dateInput.id = 'edit-invoice-date';
+    dateElement.parentNode.replaceChild(dateInput, dateElement);
+    
+    const dueDateElement = document.getElementById('invoice-due-date');
+    const dueDateInput = document.createElement('input');
+    dueDateInput.type = 'date';
+    dueDateInput.value = invoice.dueDate;
+    dueDateInput.className = 'form-control';
+    dueDateInput.id = 'edit-invoice-due-date';
+    dueDateElement.parentNode.replaceChild(dueDateInput, dueDateElement);
+    
+    // Make items editable
+    makeInvoiceItemsEditable(invoice);
+    
+    // Add item management buttons
+    const itemsTable = document.querySelector('.invoice-items-detail table');
+    const addItemBtn = document.createElement('button');
+    addItemBtn.className = 'btn btn-primary btn-sm';
+    addItemBtn.innerHTML = '<i class="fas fa-plus"></i> Add Item';
+    addItemBtn.onclick = addInvoiceItemToEdit;
+    itemsTable.parentNode.insertBefore(addItemBtn, itemsTable);
+    
+    // Store original invoice data for cancel functionality
+    document.getElementById('invoice-detail-view').setAttribute('data-original-invoice', JSON.stringify(invoice));
+}
+
+function makeInvoiceItemsEditable(invoice) {
+    const tbody = document.getElementById('invoice-items-detail-tbody');
+    tbody.innerHTML = '';
+    
+    invoice.items.forEach((item, index) => {
+        const row = `
+            <tr>
+                <td><input type="text" class="form-control edit-item-name" value="${item.name}" required></td>
+                <td><input type="number" class="form-control edit-item-quantity" value="${item.quantity}" min="1" required></td>
+                <td><input type="number" class="form-control edit-item-price" value="${item.price}" min="0" step="0.01" required></td>
+                <td>₹${(item.quantity * item.price).toFixed(2)}</td>
+                <td><button type="button" class="btn btn-danger btn-sm" onclick="removeInvoiceItemFromEdit(this)">Remove</button></td>
+            </tr>
+        `;
+        tbody.innerHTML += row;
+    });
+    
+    // Add event listeners for real-time calculation
+    tbody.addEventListener('input', function(e) {
+        if (e.target.classList.contains('edit-item-quantity') || e.target.classList.contains('edit-item-price')) {
+            updateInvoiceItemTotal(e.target);
+        }
+    });
+}
+
+function updateInvoiceItemTotal(inputElement) {
+    const row = inputElement.closest('tr');
+    const quantity = parseFloat(row.querySelector('.edit-item-quantity').value) || 0;
+    const price = parseFloat(row.querySelector('.edit-item-price').value) || 0;
+    const totalCell = row.querySelector('td:nth-child(4)');
+    totalCell.textContent = `₹${(quantity * price).toFixed(2)}`;
+    updateInvoiceEditTotals();
+}
+
+function updateInvoiceEditTotals() {
+    const rows = document.querySelectorAll('#invoice-items-detail-tbody tr');
+    let subtotal = 0;
+    
+    rows.forEach(row => {
+        const quantity = parseFloat(row.querySelector('.edit-item-quantity').value) || 0;
+        const price = parseFloat(row.querySelector('.edit-item-price').value) || 0;
+        subtotal += quantity * price;
+    });
+    
+    const taxRate = 18; // Default tax rate
+    const taxAmount = subtotal * (taxRate / 100);
+    const discount = 0; // Default discount
+    
+    document.getElementById('invoice-subtotal').textContent = `₹${subtotal.toFixed(2)}`;
+    document.getElementById('invoice-tax').textContent = `₹${taxAmount.toFixed(2)}`;
+    document.getElementById('invoice-discount').textContent = `₹${discount.toFixed(2)}`;
+    document.getElementById('invoice-total-amount').textContent = `₹${(subtotal + taxAmount - discount).toFixed(2)}`;
+}
+
+function addInvoiceItemToEdit() {
+    const tbody = document.getElementById('invoice-items-detail-tbody');
+    const newRow = document.createElement('tr');
+    newRow.innerHTML = `
+        <td><input type="text" class="form-control edit-item-name" value="" required></td>
+        <td><input type="number" class="form-control edit-item-quantity" value="1" min="1" required></td>
+        <td><input type="number" class="form-control edit-item-price" value="0" min="0" step="0.01" required></td>
+        <td>₹0.00</td>
+        <td><button type="button" class="btn btn-danger btn-sm" onclick="removeInvoiceItemFromEdit(this)">Remove</button></td>
+    `;
+    tbody.appendChild(newRow);
+    
+    // Add event listeners
+    const quantityInput = newRow.querySelector('.edit-item-quantity');
+    const priceInput = newRow.querySelector('.edit-item-price');
+    quantityInput.addEventListener('input', () => updateInvoiceItemTotal(quantityInput));
+    priceInput.addEventListener('input', () => updateInvoiceItemTotal(priceInput));
+}
+
+function removeInvoiceItemFromEdit(button) {
+    button.closest('tr').remove();
+    updateInvoiceEditTotals();
+}
+
+function saveInvoiceChanges() {
+    const invoiceId = document.getElementById('invoice-detail-view').getAttribute('data-invoice-id');
+    const invoice = invoices.find(i => i.id === parseInt(invoiceId));
+    
+    if (!invoice) {
+        alert('Invoice not found!');
+        return;
+    }
+    
+    // Collect updated data
+    const updatedCustomer = document.getElementById('edit-invoice-customer').value;
+    const updatedDate = document.getElementById('edit-invoice-date').value;
+    const updatedDueDate = document.getElementById('edit-invoice-due-date').value;
+    
+    // Collect updated items
+    const updatedItems = [];
+    const itemRows = document.querySelectorAll('#invoice-items-detail-tbody tr');
+    
+    itemRows.forEach(row => {
+        const name = row.querySelector('.edit-item-name').value;
+        const quantity = parseInt(row.querySelector('.edit-item-quantity').value);
+        const price = parseFloat(row.querySelector('.edit-item-price').value);
+        
+        if (name && quantity && price) {
+            updatedItems.push({
+                name,
+                quantity,
+                price,
+                total: quantity * price
+            });
+        }
+    });
+    
+    // Validate data
+    if (!updatedCustomer || !updatedDate || !updatedDueDate || updatedItems.length === 0) {
+        alert('Please fill in all required fields and add at least one item.');
+        return;
+    }
+    
+    // Update invoice data
+    invoice.customer = updatedCustomer;
+    invoice.date = updatedDate;
+    invoice.dueDate = updatedDueDate;
+    invoice.items = updatedItems;
+    
+    // Recalculate totals
+    const subtotal = updatedItems.reduce((sum, item) => sum + item.total, 0);
+    const applyTax = document.getElementById('invoice-apply-tax') ? document.getElementById('invoice-apply-tax').checked : true;
+    const taxRate = applyTax ? 18 : 0; // Default tax rate
+    const taxAmount = applyTax ? subtotal * (taxRate / 100) : 0;
+    const discount = 0; // Default discount
+    
+    invoice.subtotal = subtotal;
+    invoice.taxAmount = taxAmount;
+    invoice.discount = discount;
+    invoice.total = subtotal + taxAmount - discount;
+    
+    // Save data
+    saveData();
+    
+    // Exit edit mode and refresh view
+    exitInvoiceEditMode();
+    viewInvoice(invoice.id);
+    
+    alert('Invoice updated successfully!');
+}
+
+function cancelInvoiceEdit() {
+    const originalInvoiceData = document.getElementById('invoice-detail-view').getAttribute('data-original-invoice');
+    if (originalInvoiceData) {
+        const originalInvoice = JSON.parse(originalInvoiceData);
+        exitInvoiceEditMode();
+        viewInvoice(originalInvoice.id);
+    }
+}
+
+function exitInvoiceEditMode() {
+    // Remove cancel button
+    const cancelBtn = document.querySelector('.cancel-edit-btn');
+    if (cancelBtn) cancelBtn.remove();
+    
+    // Reset edit button
+    const editBtn = document.querySelector('.edit-invoice-btn');
+    editBtn.innerHTML = '<i class="fas fa-edit"></i> Edit Invoice';
+    editBtn.onclick = editInvoice;
+    editBtn.className = 'btn btn-secondary edit-invoice-btn';
+    
+    // Remove add item button
+    const addItemBtn = document.querySelector('.invoice-items-detail .btn-primary');
+    if (addItemBtn) addItemBtn.remove();
+    
+    // Clear original invoice data
+    document.getElementById('invoice-detail-view').removeAttribute('data-original-invoice');
 }
 
 function searchCustomersForInvoice() {
@@ -2578,15 +2840,27 @@ function calculateInvoiceTotals() {
         subtotal += quantity * price;
     });
     
-    const taxRate = parseFloat(document.getElementById('invoice-tax-rate').value) || 0;
+    const applyTax = document.getElementById('invoice-apply-tax').checked;
+    const taxRate = applyTax ? (parseFloat(document.getElementById('invoice-tax-rate').value) || 0) : 0;
     const discount = parseFloat(document.getElementById('invoice-discount').value) || 0;
-    const taxAmount = (subtotal - discount) * (taxRate / 100);
+    const taxAmount = applyTax ? (subtotal - discount) * (taxRate / 100) : 0;
     const total = subtotal - discount + taxAmount;
     
     document.getElementById('invoice-subtotal').textContent = subtotal.toFixed(2);
     document.getElementById('invoice-tax-amount').textContent = taxAmount.toFixed(2);
     document.getElementById('invoice-discount-amount').textContent = discount.toFixed(2);
     document.getElementById('invoice-total').textContent = total.toFixed(2);
+    
+    // Show/hide tax line based on checkbox
+    const taxLine = document.getElementById('invoice-tax-line');
+    const taxRow = document.getElementById('invoice-tax-row');
+    if (applyTax) {
+        taxLine.style.display = 'block';
+        taxRow.style.display = 'flex';
+    } else {
+        taxLine.style.display = 'none';
+        taxRow.style.display = 'none';
+    }
 }
 
 function filterInvoices() {
@@ -3223,15 +3497,27 @@ function calculateQuotationTotals() {
         subtotal += quantity * price;
     });
     
-    const taxRate = parseFloat(document.getElementById('quotation-tax-rate').value) || 0;
+    const applyTax = document.getElementById('quotation-apply-tax').checked;
+    const taxRate = applyTax ? (parseFloat(document.getElementById('quotation-tax-rate').value) || 0) : 0;
     const discount = parseFloat(document.getElementById('quotation-discount').value) || 0;
-    const taxAmount = (subtotal - discount) * (taxRate / 100);
+    const taxAmount = applyTax ? (subtotal - discount) * (taxRate / 100) : 0;
     const total = subtotal - discount + taxAmount;
     
     document.getElementById('quotation-subtotal').textContent = subtotal.toFixed(2);
     document.getElementById('quotation-tax-amount').textContent = taxAmount.toFixed(2);
     document.getElementById('quotation-discount-amount').textContent = discount.toFixed(2);
     document.getElementById('quotation-total').textContent = total.toFixed(2);
+    
+    // Show/hide tax line based on checkbox
+    const taxLine = document.getElementById('quotation-tax-line');
+    const taxRow = document.getElementById('quotation-tax-row');
+    if (applyTax) {
+        taxLine.style.display = 'block';
+        taxRow.style.display = 'flex';
+    } else {
+        taxLine.style.display = 'none';
+        taxRow.style.display = 'none';
+    }
 }
 
 function searchInventoryForQuotation(inputElement) {
@@ -5673,6 +5959,79 @@ function renderFilteredDeliveries(filteredItems) {
         `;
         tbody.innerHTML += row;
     });
+}
+
+function filterPayments() {
+    const searchTerm = document.getElementById('search-payments').value.toLowerCase();
+    const statusFilter = document.getElementById('payment-status-filter').value;
+    const methodFilter = document.getElementById('payment-method-filter').value;
+    const customerFilter = document.getElementById('payment-customer-filter').value;
+    
+    const filtered = payments.filter(payment => {
+        const matchesSearch = `PAY-${payment.id.toString().padStart(4, '0')}`.toLowerCase().includes(searchTerm) || 
+                           payment.customer.toLowerCase().includes(searchTerm) ||
+                           payment.reference?.toLowerCase().includes(searchTerm) ||
+                           payment.amount.toString().includes(searchTerm);
+        const matchesStatus = !statusFilter || payment.status === statusFilter;
+        const matchesMethod = !methodFilter || payment.method === methodFilter;
+        const matchesCustomer = !customerFilter || payment.customer === customerFilter;
+        
+        return matchesSearch && matchesStatus && matchesMethod && matchesCustomer;
+    });
+    
+    renderFilteredPayments(filtered);
+}
+
+function renderFilteredPayments(filteredItems) {
+    const tbody = document.getElementById('payments-tbody');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '';
+    
+    filteredItems.forEach(payment => {
+        const statusClass = `status-${payment.status}`;
+        const invoice = payment.invoiceId ? invoices.find(inv => inv.id === parseInt(payment.invoiceId)) : null;
+        
+        const row = `
+            <tr>
+                <td>PAY-${payment.id.toString().padStart(4, '0')}</td>
+                <td>${payment.customer}</td>
+                <td>${invoice ? `INV-${invoice.id.toString().padStart(4, '0')}` : 'N/A'}</td>
+                <td>₹${payment.amount.toFixed(2)}</td>
+                <td>${payment.method}</td>
+                <td>${payment.date}</td>
+                <td><span class="status-badge ${statusClass}">${payment.status}</span></td>
+                <td>${payment.reference || 'N/A'}</td>
+                <td>
+                    <button class="btn btn-sm btn-secondary" onclick="viewPayment(${payment.id})">View</button>
+                    <button class="btn btn-sm btn-primary" onclick="editPayment(${payment.id})">Edit</button>
+                    <button class="btn btn-sm btn-danger" onclick="deletePayment(${payment.id})">Delete</button>
+                </td>
+            </tr>
+        `;
+        tbody.innerHTML += row;
+    });
+}
+
+function updatePaymentCustomer() {
+    const invoiceSelect = document.getElementById('payment-invoice');
+    const customerInput = document.getElementById('payment-customer');
+    const amountInput = document.getElementById('payment-amount');
+    
+    if (!invoiceSelect || !customerInput || !amountInput) return;
+    
+    const selectedInvoiceId = invoiceSelect.value;
+    
+    if (selectedInvoiceId) {
+        const selectedInvoice = invoices.find(inv => inv.id === parseInt(selectedInvoiceId));
+        if (selectedInvoice) {
+            customerInput.value = selectedInvoice.customer;
+            amountInput.value = selectedInvoice.totalAmount.toFixed(2);
+        }
+    } else {
+        customerInput.value = '';
+        amountInput.value = '';
+    }
 }
 
 // ... existing code ...
