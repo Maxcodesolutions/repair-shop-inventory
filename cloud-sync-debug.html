@@ -73,6 +73,13 @@
     </div>
 
     <div class="debug-section">
+        <h2>🔐 Authentication</h2>
+        <button class="btn btn-primary" onclick="signInAnonymously()">👤 Sign In Anonymously</button>
+        <button class="btn btn-success" onclick="signInWithEmail()">📧 Sign In with Email</button>
+        <button class="btn btn-warning" onclick="signOut()">🚪 Sign Out</button>
+    </div>
+
+    <div class="debug-section">
         <h2>🧪 Cloud Sync Tests</h2>
         <button class="btn btn-success" onclick="testCloudWrite()">📝 Test Cloud Write</button>
         <button class="btn btn-warning" onclick="testCloudRead()">📖 Test Cloud Read</button>
@@ -421,6 +428,51 @@
             }
         };
 
+        // Authentication functions
+        window.signInAnonymously = async function() {
+            try {
+                log('Attempting anonymous sign-in...');
+                const userCredential = await signInAnonymously(auth);
+                log('✅ Anonymous sign-in successful: ' + userCredential.user.uid);
+                addTestResult('Anonymous sign-in successful', true);
+            } catch (error) {
+                log('❌ Anonymous sign-in failed: ' + error.message);
+                addTestResult('Anonymous sign-in failed: ' + error.message, false);
+            }
+        };
+
+        window.signInWithEmail = async function() {
+            const email = prompt('Enter email address:');
+            const password = prompt('Enter password:');
+            
+            if (!email || !password) {
+                log('❌ Email and password required');
+                return;
+            }
+            
+            try {
+                log('Attempting email sign-in...');
+                const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                log('✅ Email sign-in successful: ' + userCredential.user.email);
+                addTestResult('Email sign-in successful', true);
+            } catch (error) {
+                log('❌ Email sign-in failed: ' + error.message);
+                addTestResult('Email sign-in failed: ' + error.message, false);
+            }
+        };
+
+        window.signOut = async function() {
+            try {
+                log('Signing out...');
+                await signOut(auth);
+                log('✅ Sign out successful');
+                addTestResult('Sign out successful', true);
+            } catch (error) {
+                log('❌ Sign out failed: ' + error.message);
+                addTestResult('Sign out failed: ' + error.message, false);
+            }
+        };
+
         // Export debug info
         window.exportDebugInfo = function() {
             const debugInfo = {
@@ -474,6 +526,16 @@
                         updateStatus('⏳ User not authenticated. Click "Enable Auto-Sync" in setup page.', 'info');
                     }
                 });
+
+                // Try to authenticate automatically
+                try {
+                    log('Attempting automatic anonymous authentication...');
+                    const userCredential = await signInAnonymously(auth);
+                    log('✅ Automatic authentication successful: ' + userCredential.user.uid);
+                } catch (authError) {
+                    log('❌ Automatic authentication failed: ' + authError.message);
+                    log('This might be due to anonymous auth being disabled in Firebase Console');
+                }
 
                 // Initial status check
                 log('Cloud Sync Debug Tool Loaded');
