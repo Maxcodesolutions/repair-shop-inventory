@@ -385,25 +385,49 @@ function setupFirebaseAuthListener() {
         console.log('Stored password:', storedPassword ? '✅ Set' : '❌ Not set');
         console.log('Consistent user ID:', consistentUserId || '❌ Not set');
         
-        // If we have stored credentials, try to sign in immediately
-        if (storedEmail && storedPassword && window.signInWithEmailAndPassword) {
-            console.log('Attempting immediate sign-in with stored credentials...');
-            
-            window.signInWithEmailAndPassword(window.auth, storedEmail, storedPassword)
-                .then((userCredential) => {
-                    console.log('✅ Immediate sign-in successful:', userCredential.user.uid);
-                    localStorage.setItem('consistentUserId', userCredential.user.uid);
+                        // If we have stored credentials, try to sign in immediately
+                if (storedEmail && storedPassword && window.signInWithEmailAndPassword) {
+                    console.log('Attempting immediate sign-in with stored credentials...');
+                    console.log('Email:', storedEmail);
+                    console.log('Password:', storedPassword ? '***' : 'Not provided');
                     
-                    // Load data from cloud
-                    if (typeof loadDataFromCloud === 'function') {
-                        loadDataFromCloud();
-                    }
-                })
-                .catch((error) => {
-                    console.log('❌ Immediate sign-in failed:', error.message);
-                    console.log('Will try anonymous auth in auth state listener');
-                });
-        }
+                    window.signInWithEmailAndPassword(window.auth, storedEmail, storedPassword)
+                        .then((userCredential) => {
+                            console.log('✅ Immediate sign-in successful:', userCredential.user.uid);
+                            localStorage.setItem('consistentUserId', userCredential.user.uid);
+                            
+                            // Load data from cloud
+                            if (typeof loadDataFromCloud === 'function') {
+                                loadDataFromCloud();
+                            }
+                        })
+                        .catch((error) => {
+                            console.error('❌ Immediate sign-in failed:', error.message);
+                            console.log('Error code:', error.code);
+                            console.log('Full error:', error);
+                            
+                            if (error.code === 'auth/user-not-found') {
+                                console.log('🔧 SOLUTION: Account does not exist');
+                                console.log('Will try to create account in auth state listener');
+                            } else if (error.code === 'auth/wrong-password') {
+                                console.log('🔧 SOLUTION: Wrong password');
+                                console.log('Check stored password');
+                            } else if (error.code === 'auth/invalid-email') {
+                                console.log('🔧 SOLUTION: Invalid email format');
+                                console.log('Check stored email format');
+                            } else {
+                                console.log('🔧 SOLUTION: Check Firebase Console settings');
+                                console.log('1. Go to Firebase Console → Authentication → Sign-in method');
+                                console.log('2. Enable Email/Password authentication');
+                            }
+                            console.log('Will try anonymous auth in auth state listener');
+                        });
+                } else {
+                    console.log('❌ Cannot attempt sign-in:');
+                    console.log('- Stored email:', storedEmail ? '✅ Set' : '❌ Not set');
+                    console.log('- Stored password:', storedPassword ? '✅ Set' : '❌ Not set');
+                    console.log('- Firebase sign-in function:', window.signInWithEmailAndPassword ? '✅ Available' : '❌ Not available');
+                }
         
         window.onAuthStateChanged(window.auth, (user) => {
             if (user) {
@@ -8722,6 +8746,10 @@ function forceConsistentAuthWithSignOut() {
                 console.log('Attempting to sign in with stored credentials...');
                 
                 if (window.signInWithEmailAndPassword) {
+                    console.log('Attempting sign-in with stored credentials...');
+                    console.log('Email:', storedEmail);
+                    console.log('Password:', storedPassword ? '***' : 'Not provided');
+                    
                     window.signInWithEmailAndPassword(window.auth, storedEmail, storedPassword)
                         .then((userCredential) => {
                             console.log('✅ Sign-in successful with stored credentials:', userCredential.user.uid);
@@ -8735,7 +8763,8 @@ function forceConsistentAuthWithSignOut() {
                         })
                         .catch((error) => {
                             console.error('❌ Sign-in failed:', error.message);
-                            console.log('Error details:', error);
+                            console.log('Error code:', error.code);
+                            console.log('Full error:', error);
                             
                             if (error.code === 'auth/user-not-found') {
                                 console.log('🔧 SOLUTION: Account does not exist, creating it...');
@@ -8791,6 +8820,32 @@ function forceConsistentAuthWithSignOut() {
 
 // Make the function available globally
 window.forceConsistentAuthWithSignOut = forceConsistentAuthWithSignOut;
+
+// Function to check what credentials are actually stored
+function checkStoredCredentials() {
+    console.log('=== CHECKING STORED CREDENTIALS ===');
+    
+    const storedEmail = localStorage.getItem('cloudSyncEmail');
+    const storedPassword = localStorage.getItem('cloudSyncPassword');
+    const consistentUserId = localStorage.getItem('consistentUserId');
+    const currentUserId = localStorage.getItem('currentUserId');
+    
+    console.log('Stored email:', storedEmail || '❌ Not set');
+    console.log('Stored password:', storedPassword ? '✅ Set' : '❌ Not set');
+    console.log('Consistent user ID:', consistentUserId || '❌ Not set');
+    console.log('Current user ID:', currentUserId || '❌ Not set');
+    
+    if (storedEmail && storedPassword) {
+        console.log('✅ Credentials found, testing sign-in...');
+        testSpecificCredentials(storedEmail, storedPassword);
+    } else {
+        console.log('❌ No stored credentials found');
+        console.log('Run forceConsistentAuthAndClear() to set up credentials');
+    }
+}
+
+// Make the function available globally
+window.checkStoredCredentials = checkStoredCredentials;
 
 // Global function for anonymous authentication
 function tryAnonymousAuth() {
