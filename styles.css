@@ -2484,3 +2484,177 @@ textarea {
 .payment-summary-cards .summary-card p {
     color: #27ae60;
 }
+
+/* User Management Edit Mode Styles */
+.user-modal-edit-mode .modal-header {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    color: white;
+}
+
+.user-modal-edit-mode .modal-header h3::before {
+    content: "✏️ ";
+    margin-right: 8px;
+}
+
+.user-modal-edit-mode .btn-primary {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+}
+
+.user-modal-edit-mode .btn-primary:hover {
+    background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+}
+
+/* Password field styling for edit mode */
+#user-password:placeholder-shown {
+    border-color: #fbbf24;
+    background-color: #fef3c7;
+}
+
+#user-password:placeholder-shown:focus {
+    border-color: #f59e0b;
+    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
+}
+
+/* User edit button styling */
+.btn-edit-user {
+    background: #f59e0b;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    transition: background-color 0.3s ease;
+}
+
+.btn-edit-user:hover {
+    background: #d97706;
+}
+
+.btn-edit-user i {
+    margin-right: 4px;
+}
+
+/* User table row hover effect */
+#users-table tbody tr:hover {
+    background-color: #fef3c7;
+    transition: background-color 0.2s ease;
+}
+
+/* User status indicators */
+.user-status-active {
+    color: #059669;
+    font-weight: 600;
+    background: #d1fae5;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+}
+
+.user-status-inactive {
+    color: #dc2626;
+    font-weight: 600;
+    background: #fee2e2;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+}
+
+/* Permission tags styling */
+.permission-tag {
+    background-color: #e0e7ff;
+    color: #3730a3;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 500;
+    margin: 1px;
+    display: inline-block;
+}
+
+/* User management filters styling */
+#user-role-filter,
+#user-status-filter {
+    padding: 8px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    background: white;
+    font-size: 0.9rem;
+}
+
+#user-role-filter:focus,
+#user-status-filter:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+/* User search input styling */
+#search-users {
+    padding: 8px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    width: 100%;
+    max-width: 300px;
+}
+
+#search-users:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+/* User management section header */
+#users .section-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+#users .section-header h2 {
+    color: white;
+    margin: 0;
+}
+
+#users .section-header .btn {
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+}
+
+#users .section-header .btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+/* Responsive design for user management */
+@media (max-width: 768px) {
+    .permissions-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .user-permissions {
+        max-width: 100%;
+    }
+    
+    #users-table {
+        font-size: 0.8rem;
+    }
+    
+    #users-table th,
+    #users-table td {
+        padding: 8px 4px;
+    }
+    
+    .user-role-badge {
+        font-size: 10px;
+        padding: 2px 6px;
+    }
+    
+    .permission-tag {
+        font-size: 10px;
+        padding: 1px 4px;
+    }
+} 

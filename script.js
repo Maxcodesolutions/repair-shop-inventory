@@ -1112,11 +1112,25 @@ function deleteUser(userId) {
         return false;
     }
     
+    const user = users.find(u => u.id === userId);
+    if (!user) {
+        alert('User not found!');
+        return false;
+    }
+    
+    // Show confirmation dialog
+    const confirmed = confirm(`Are you sure you want to delete user "${user.fullName}" (${user.username})? This action cannot be undone.`);
+    
+    if (!confirmed) {
+        return false;
+    }
+    
     const userIndex = users.findIndex(u => u.id === userId);
     if (userIndex !== -1) {
         users.splice(userIndex, 1);
         saveData();
         renderUsers();
+        showSuccessMessage('User deleted successfully!');
         return true;
     }
     return false;
@@ -1144,11 +1158,11 @@ function renderUsers() {
             <td>${user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : 'Never'}</td>
             <td><span class="user-status-${user.status}">${user.status}</span></td>
             <td>
-                <button class="btn btn-sm btn-secondary" onclick="editUser(${user.id})">
-                    <i class="fas fa-edit"></i>
+                <button class="btn btn-sm btn-edit-user" onclick="editUser(${user.id})" title="Edit User">
+                    <i class="fas fa-edit"></i> Edit
                 </button>
-                ${user.id !== currentUser?.id ? `<button class="btn btn-sm btn-danger" onclick="deleteUser(${user.id})">
-                    <i class="fas fa-trash"></i>
+                ${user.id !== currentUser?.id ? `<button class="btn btn-sm btn-danger" onclick="deleteUser(${user.id})" title="Delete User">
+                    <i class="fas fa-trash"></i> Delete
                 </button>` : ''}
             </td>
         `;
@@ -1156,9 +1170,15 @@ function renderUsers() {
     });
 }
 
+// Global variable to track which user is being edited
+let editingUserId = null;
+
 function editUser(userId) {
     const user = users.find(u => u.id === userId);
     if (!user) return;
+    
+    // Set the editing user ID
+    editingUserId = userId;
     
     // Populate the modal with user data
     document.getElementById('user-username').value = user.username;
@@ -1167,11 +1187,28 @@ function editUser(userId) {
     document.getElementById('user-role').value = user.role;
     document.getElementById('user-status').value = user.status;
     
+    // Clear password field for edit mode (optional to change)
+    document.getElementById('user-password').value = '';
+    
+    // Clear all permission checkboxes first
+    document.querySelectorAll('.permissions-grid input[type="checkbox"]').forEach(checkbox => {
+        checkbox.checked = false;
+    });
+    
     // Set permissions
     user.permissions.forEach(permission => {
         const checkbox = document.getElementById(`perm-${permission}`);
         if (checkbox) checkbox.checked = true;
     });
+    
+    // Update modal title and button text for edit mode
+    const modalTitle = document.querySelector('#add-user-modal .modal-header h3');
+    const submitButton = document.querySelector('#add-user-modal .form-actions button[type="submit"]');
+    const modal = document.getElementById('add-user-modal');
+    
+    if (modalTitle) modalTitle.textContent = 'Edit User';
+    if (submitButton) submitButton.textContent = 'Update User';
+    if (modal) modal.classList.add('user-modal-edit-mode');
     
     // Show modal in edit mode
     showModal('add-user-modal');
@@ -2181,22 +2218,160 @@ function handleAddUser(e) {
         permissions: permissions
     };
     
-    // Check if username already exists
-    const existingUser = users.find(u => u.username === userData.username);
-    if (existingUser) {
-        alert('Username already exists! Please choose a different username.');
+    // Validate required fields
+    if (!userData.username || !userData.fullName || !userData.email || !userData.role || !userData.status) {
+        alert('Please fill in all required fields.');
         return;
     }
     
-    createUser(userData);
-    closeModal('add-user-modal');
-    e.target.reset();
+    // Password is required for new users
+    if (!editingUserId && !userData.password) {
+        alert('Password is required for new users.');
+        return;
+    }
+    
+    if (editingUserId) {
+        // Edit mode - update existing user
+        const existingUser = users.find(u => u.id === editingUserId);
+        if (!existingUser) {
+            alert('User not found!');
+            return;
+        }
+        
+        // Check if username already exists (excluding the current user being edited)
+        const usernameExists = users.find(u => u.username === userData.username && u.id !== editingUserId);
+        if (usernameExists) {
+            alert('Username already exists! Please choose a different username.');
+            return;
+        }
+        
+        // If password is empty, keep the existing password
+        if (!userData.password) {
+            userData.password = existingUser.password;
+        }
+        
+        // Prevent users from deactivating their own account
+        if (editingUserId === currentUser.id && userData.status === 'inactive') {
+            alert('You cannot deactivate your own account!');
+            return;
+        }
+        
+        updateUser(editingUserId, userData);
+        showSuccessMessage('User updated successfully!');
+    } else {
+        // Add mode - create new user
+        // Check if username already exists
+        const existingUser = users.find(u => u.username === userData.username);
+        if (existingUser) {
+            alert('Username already exists! Please choose a different username.');
+            return;
+        }
+        
+        createUser(userData);
+        showSuccessMessage('User created successfully!');
+    }
+    
+    // Reset the form and close modal
+    resetUserModal();
+}
+
+function resetUserModal() {
+    // Reset form
+    document.getElementById('add-user-form').reset();
     
     // Reset all permission checkboxes
     document.querySelectorAll('.permissions-grid input[type="checkbox"]').forEach(checkbox => {
         checkbox.checked = false;
     });
+    
+    // Reset modal title and button text for add mode
+    const modalTitle = document.querySelector('#add-user-modal .modal-header h3');
+    const submitButton = document.querySelector('#add-user-modal .form-actions button[type="submit"]');
+    const modal = document.getElementById('add-user-modal');
+    
+    if (modalTitle) modalTitle.textContent = 'Add New User';
+    if (submitButton) submitButton.textContent = 'Add User';
+    if (modal) modal.classList.remove('user-modal-edit-mode');
+    
+    // Clear editing user ID
+    editingUserId = null;
+    
+    // Close modal
+    closeModal('add-user-modal');
 }
+
+function showSuccessMessage(message) {
+    // Create success message element
+    const successDiv = document.createElement('div');
+    successDiv.className = 'success-message';
+    successDiv.innerHTML = `
+        <div class="success-content">
+            <i class="fas fa-check-circle"></i>
+            <span>${message}</span>
+        </div>
+    `;
+    
+    // Add styles
+    successDiv.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: #10b981;
+        color: white;
+        padding: 15px 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        z-index: 10000;
+        font-weight: 500;
+        animation: slideInRight 0.3s ease;
+    `;
+    
+    successDiv.querySelector('.success-content').style.cssText = `
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    `;
+    
+    // Add to page
+    document.body.appendChild(successDiv);
+    
+    // Remove after 3 seconds
+    setTimeout(() => {
+        successDiv.style.animation = 'slideOutRight 0.3s ease';
+        setTimeout(() => {
+            if (successDiv.parentNode) {
+                successDiv.parentNode.removeChild(successDiv);
+            }
+        }, 300);
+    }, 3000);
+}
+
+// Add CSS animations for success message
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes slideInRight {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+    
+    @keyframes slideOutRight {
+        from {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        to {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+    }
+`;
+document.head.appendChild(style);
 
 function handleAddPayment(e) {
     e.preventDefault();
