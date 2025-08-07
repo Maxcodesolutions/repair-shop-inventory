@@ -213,6 +213,7 @@ class DataManager {
             const paymentsData = localStorage.getItem('payments');
             const usersData = localStorage.getItem('users');
 
+            // Only load data if it exists in localStorage
             if (inventoryData) inventory = JSON.parse(inventoryData);
             if (vendorsData) vendors = JSON.parse(vendorsData);
             if (customersData) customers = JSON.parse(customersData);
@@ -227,6 +228,14 @@ class DataManager {
             if (usersData) users = JSON.parse(usersData);
 
             console.log('Data loaded from local storage');
+            console.log('Loaded data counts:', {
+                inventory: inventory ? inventory.length : 0,
+                vendors: vendors ? vendors.length : 0,
+                customers: customers ? customers.length : 0,
+                repairs: repairs ? repairs.length : 0,
+                invoices: invoices ? invoices.length : 0,
+                quotations: quotations ? quotations.length : 0
+            });
             
             // Only call render functions if they exist
             if (typeof renderAll === 'function') {

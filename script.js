@@ -353,7 +353,24 @@ function loadData() {
         // Fallback to localStorage if Firebase is not available
         console.log('Loading data from localStorage (Firebase not available)...');
         
-        inventory = JSON.parse(localStorage.getItem('inventory')) || getDefaultInventory();
+        // Check if data already exists to prevent overwriting
+        const existingInventory = localStorage.getItem('inventory');
+        const existingVendors = localStorage.getItem('vendors');
+        const existingCustomers = localStorage.getItem('customers');
+        const existingRepairs = localStorage.getItem('repairs');
+        const existingInvoices = localStorage.getItem('invoices');
+        const existingQuotations = localStorage.getItem('quotations');
+        
+        console.log('Existing data check:', {
+            inventory: existingInventory ? 'exists' : 'missing',
+            vendors: existingVendors ? 'exists' : 'missing',
+            customers: existingCustomers ? 'exists' : 'missing',
+            repairs: existingRepairs ? 'exists' : 'missing',
+            invoices: existingInvoices ? 'exists' : 'missing',
+            quotations: existingQuotations ? 'exists' : 'missing'
+        });
+        
+        inventory = JSON.parse(existingInventory) || getDefaultInventory();
         // Migrate existing items to include units if they don't have them
         inventory.forEach(item => {
             if (!item.unit) {
@@ -361,13 +378,13 @@ function loadData() {
                 console.log('Migrated item:', item.name, 'to have unit:', item.unit);
             }
         });
-        vendors = JSON.parse(localStorage.getItem('vendors')) || getDefaultVendors();
-        customers = JSON.parse(localStorage.getItem('customers')) || getDefaultCustomers();
+        vendors = JSON.parse(existingVendors) || getDefaultVendors();
+        customers = JSON.parse(existingCustomers) || getDefaultCustomers();
         purchases = JSON.parse(localStorage.getItem('purchases')) || [];
-        repairs = JSON.parse(localStorage.getItem('repairs')) || [];
-        outsourceRepairs = JSON.parse(localStorage.getItem('outsourceRepairs')) || [];
-        invoices = JSON.parse(localStorage.getItem('invoices')) || [];
-        quotations = JSON.parse(localStorage.getItem('quotations')) || [];
+        repairs = JSON.parse(existingRepairs) || [];
+        outsource = JSON.parse(localStorage.getItem('outsource')) || [];
+        invoices = JSON.parse(existingInvoices) || [];
+        quotations = JSON.parse(existingQuotations) || [];
         pickDrops = JSON.parse(localStorage.getItem('pickDrops')) || [];
         payments = JSON.parse(localStorage.getItem('payments')) || [];
         deliveries = JSON.parse(localStorage.getItem('deliveries')) || getDefaultDeliveries();
@@ -404,11 +421,14 @@ function loadData() {
             customers: customers.length,
             purchases: purchases.length,
             repairs: repairs.length,
-            outsourceRepairs: outsourceRepairs.length,
+            outsource: outsource.length,
             invoices: invoices.length,
             quotations: quotations.length,
             users: users.length
         });
+        
+        // Save data immediately to ensure persistence
+        saveData();
     }
 }
 
@@ -426,7 +446,7 @@ function saveData() {
         localStorage.setItem('customers', JSON.stringify(customers));
         localStorage.setItem('purchases', JSON.stringify(purchases));
         localStorage.setItem('repairs', JSON.stringify(repairs));
-        localStorage.setItem('outsourceRepairs', JSON.stringify(outsourceRepairs));
+        localStorage.setItem('outsource', JSON.stringify(outsource));
         localStorage.setItem('invoices', JSON.stringify(invoices));
         localStorage.setItem('quotations', JSON.stringify(quotations));
         localStorage.setItem('pickDrops', JSON.stringify(pickDrops));
