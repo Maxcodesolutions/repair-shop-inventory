@@ -139,52 +139,56 @@ function handleLogin(e) {
             localStorage.setItem('cloudSyncEmail', syncEmail);
             localStorage.setItem('cloudSyncPassword', syncPassword);
             
-            // Try to sign in with email/password for consistent cross-browser sync
-            if (window.signInWithEmailAndPassword) {
-                window.signInWithEmailAndPassword(window.auth, syncEmail, syncPassword)
-                    .then((userCredential) => {
-                        console.log('Signed in with email for cross-browser sync:', userCredential.user.uid);
-                        console.log('Cross-browser user ID:', crossBrowserUserId);
-                        // Data will be automatically loaded from cloud via the auth listener
-                    })
-                    .catch((error) => {
-                        console.log('Email sign-in failed, trying to create account:', error.message);
-                        
-                        // Check for 400 error (authentication disabled)
-                        if (error.message.includes('400') || error.message.includes('auth/admin-restricted-operation')) {
-                            console.log('Authentication disabled in Firebase Console, trying anonymous auth');
-                            tryAnonymousAuth();
-                            return;
-                        }
-                        
-                        // Try to create account if sign-in fails
-                        if (window.createUserWithEmailAndPassword) {
-                            window.createUserWithEmailAndPassword(window.auth, syncEmail, syncPassword)
-                                .then((userCredential) => {
-                                    console.log('Account created for cross-browser sync:', userCredential.user.uid);
-                                    console.log('Cross-browser user ID:', crossBrowserUserId);
-                                    // Data will be automatically loaded from cloud via the auth listener
-                                })
-                                .catch((createError) => {
-                                    console.log('Account creation failed, trying anonymous auth:', createError.message);
-                                    
-                                    // Check for 400 error (authentication disabled)
-                                    if (createError.message.includes('400') || createError.message.includes('auth/admin-restricted-operation')) {
-                                        console.log('Authentication disabled in Firebase Console, trying anonymous auth');
-                                        tryAnonymousAuth();
-                                        return;
-                                    }
-                                    
-                                    // Fallback to anonymous auth
+                    // Try to sign in with email/password for consistent cross-browser sync
+        if (window.signInWithEmailAndPassword) {
+            window.signInWithEmailAndPassword(window.auth, syncEmail, syncPassword)
+                .then((userCredential) => {
+                    console.log('✅ Signed in with email for cross-browser sync:', userCredential.user.uid);
+                    console.log('Cross-browser user ID:', crossBrowserUserId);
+                    // Store the consistent UID for future reference
+                    localStorage.setItem('consistentUserId', userCredential.user.uid);
+                    // Data will be automatically loaded from cloud via the auth listener
+                })
+                .catch((error) => {
+                    console.log('Email sign-in failed, trying to create account:', error.message);
+                    
+                    // Check for 400 error (authentication disabled)
+                    if (error.message.includes('400') || error.message.includes('auth/admin-restricted-operation')) {
+                        console.log('Authentication disabled in Firebase Console, trying anonymous auth');
+                        tryAnonymousAuth();
+                        return;
+                    }
+                    
+                    // Try to create account if sign-in fails
+                    if (window.createUserWithEmailAndPassword) {
+                        window.createUserWithEmailAndPassword(window.auth, syncEmail, syncPassword)
+                            .then((userCredential) => {
+                                console.log('✅ Account created for cross-browser sync:', userCredential.user.uid);
+                                console.log('Cross-browser user ID:', crossBrowserUserId);
+                                // Store the consistent UID for future reference
+                                localStorage.setItem('consistentUserId', userCredential.user.uid);
+                                // Data will be automatically loaded from cloud via the auth listener
+                            })
+                            .catch((createError) => {
+                                console.log('Account creation failed, trying anonymous auth:', createError.message);
+                                
+                                // Check for 400 error (authentication disabled)
+                                if (createError.message.includes('400') || createError.message.includes('auth/admin-restricted-operation')) {
+                                    console.log('Authentication disabled in Firebase Console, trying anonymous auth');
                                     tryAnonymousAuth();
-                                });
-                        } else {
-                            tryAnonymousAuth();
-                        }
-                    });
-            } else {
-                tryAnonymousAuth();
-            }
+                                    return;
+                                }
+                                
+                                // Fallback to anonymous auth
+                                tryAnonymousAuth();
+                            });
+                    } else {
+                        tryAnonymousAuth();
+                    }
+                });
+        } else {
+            tryAnonymousAuth();
+        }
         }
         
         function tryAnonymousAuth() {
@@ -192,6 +196,10 @@ function handleLogin(e) {
                 window.signInAnonymously(window.auth).then((userCredential) => {
                     console.log('Signed in anonymously for cloud sync:', userCredential.user.uid);
                     console.log('Cross-browser user ID:', crossBrowserUserId);
+                    // Store the UID for reference (though it will be different per browser)
+                    localStorage.setItem('anonymousUserId', userCredential.user.uid);
+                    console.log('⚠️ Warning: Anonymous UID will be different per browser session');
+                    console.log('For consistent cross-browser sync, use email/password authentication');
                 }).catch((error) => {
                     console.log('Anonymous sign-in failed:', error.message);
                     
@@ -434,18 +442,44 @@ function setupFirebaseAuthListener() {
         const currentUser = window.auth.currentUser;
         if (currentUser) {
             console.log('Current user found for cross-device sync:', currentUser.uid);
+            localStorage.setItem('consistentUserId', currentUser.uid);
             loadDataFromCloud();
         } else {
-            console.log('No current user, attempting anonymous auth for cross-device sync...');
-            // Try anonymous authentication for cross-device sync
-            if (window.signInAnonymously) {
-                window.signInAnonymously(window.auth).then((userCredential) => {
-                    console.log('Anonymous auth successful for cross-device sync:', userCredential.user.uid);
-                    loadDataFromCloud();
-                }).catch((error) => {
-                    console.log('Anonymous auth failed for cross-device sync:', error.message);
-                    loadDataFromLocal();
-                });
+            console.log('No current user, attempting consistent authentication for cross-device sync...');
+            
+            // Try to use stored credentials for consistent authentication
+            const storedEmail = localStorage.getItem('cloudSyncEmail');
+            const storedPassword = localStorage.getItem('cloudSyncPassword');
+            
+            if (storedEmail && storedPassword && window.signInWithEmailAndPassword) {
+                console.log('Attempting consistent authentication with stored credentials');
+                window.signInWithEmailAndPassword(window.auth, storedEmail, storedPassword)
+                    .then((userCredential) => {
+                        console.log('✅ Consistent authentication successful:', userCredential.user.uid);
+                        localStorage.setItem('consistentUserId', userCredential.user.uid);
+                        loadDataFromCloud();
+                    })
+                    .catch((error) => {
+                        console.log('Consistent authentication failed, trying to create account:', error.message);
+                        
+                        if (window.createUserWithEmailAndPassword) {
+                            window.createUserWithEmailAndPassword(window.auth, storedEmail, storedPassword)
+                                .then((userCredential) => {
+                                    console.log('✅ Account created for consistent sync:', userCredential.user.uid);
+                                    localStorage.setItem('consistentUserId', userCredential.user.uid);
+                                    loadDataFromCloud();
+                                })
+                                .catch((createError) => {
+                                    console.log('Account creation failed, falling back to anonymous:', createError.message);
+                                    tryAnonymousAuth();
+                                });
+                        } else {
+                            tryAnonymousAuth();
+                        }
+                    });
+            } else {
+                // Fall back to anonymous authentication
+                tryAnonymousAuth();
             }
         }
     } else {
@@ -7740,6 +7774,92 @@ function fixFirebaseAuth() {
 // Make auth functions available globally
 window.diagnoseFirebaseAuth = diagnoseFirebaseAuth;
 window.fixFirebaseAuth = fixFirebaseAuth;
+
+// Function to check cross-browser sync status
+function checkCrossBrowserSyncStatus() {
+    console.log('=== CROSS-BROWSER SYNC STATUS ===');
+    
+    const storedEmail = localStorage.getItem('cloudSyncEmail');
+    const storedPassword = localStorage.getItem('cloudSyncPassword');
+    const consistentUserId = localStorage.getItem('consistentUserId');
+    const anonymousUserId = localStorage.getItem('anonymousUserId');
+    const currentUser = window.auth?.currentUser;
+    
+    console.log('Stored credentials:', {
+        email: storedEmail ? '✅ Set' : '❌ Not set',
+        password: storedPassword ? '✅ Set' : '❌ Not set'
+    });
+    
+    console.log('User IDs:', {
+        consistentUserId: consistentUserId || '❌ Not set',
+        anonymousUserId: anonymousUserId || '❌ Not set',
+        currentUser: currentUser?.uid || '❌ Not authenticated'
+    });
+    
+    console.log('Authentication method:', currentUser?.isAnonymous ? 'Anonymous' : 'Email/Password');
+    
+    if (currentUser?.isAnonymous) {
+        console.log('⚠️ WARNING: Using anonymous authentication');
+        console.log('This will create different UIDs per browser session');
+        console.log('For consistent cross-browser sync, use email/password authentication');
+    } else if (currentUser && !currentUser.isAnonymous) {
+        console.log('✅ Using email/password authentication');
+        console.log('This should provide consistent cross-browser sync');
+    }
+    
+    return {
+        hasCredentials: !!(storedEmail && storedPassword),
+        hasConsistentUserId: !!consistentUserId,
+        isAnonymous: currentUser?.isAnonymous,
+        currentUserId: currentUser?.uid
+    };
+}
+
+// Function to force consistent cross-browser authentication
+function forceConsistentAuth() {
+    console.log('=== FORCING CONSISTENT AUTHENTICATION ===');
+    
+    const storedEmail = localStorage.getItem('cloudSyncEmail');
+    const storedPassword = localStorage.getItem('cloudSyncPassword');
+    
+    if (!storedEmail || !storedPassword) {
+        console.error('❌ No stored credentials found');
+        console.log('Please log in first to set up cross-browser sync');
+        return;
+    }
+    
+    if (!window.signInWithEmailAndPassword) {
+        console.error('❌ Email/password authentication not available');
+        return;
+    }
+    
+    console.log('Attempting to sign in with stored credentials...');
+    window.signInWithEmailAndPassword(window.auth, storedEmail, storedPassword)
+        .then((userCredential) => {
+            console.log('✅ Consistent authentication successful:', userCredential.user.uid);
+            localStorage.setItem('consistentUserId', userCredential.user.uid);
+            console.log('Cross-browser sync should now work properly');
+        })
+        .catch((error) => {
+            console.log('Sign-in failed, trying to create account:', error.message);
+            
+            if (window.createUserWithEmailAndPassword) {
+                window.createUserWithEmailAndPassword(window.auth, storedEmail, storedPassword)
+                    .then((userCredential) => {
+                        console.log('✅ Account created for consistent sync:', userCredential.user.uid);
+                        localStorage.setItem('consistentUserId', userCredential.user.uid);
+                        console.log('Cross-browser sync should now work properly');
+                    })
+                    .catch((createError) => {
+                        console.error('❌ Account creation failed:', createError.message);
+                    });
+            }
+        });
+}
+
+// Make cross-browser sync functions available globally
+window.checkCrossBrowserSyncStatus = checkCrossBrowserSyncStatus;
+window.forceConsistentAuth = forceConsistentAuth;
 
 // Function to check localStorage data
 function checkLocalStorageData() {
