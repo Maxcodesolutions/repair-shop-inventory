@@ -131,9 +131,9 @@ function handleLogin(e) {
         
         // If Firebase auth is available, try to sign in for cloud sync
         if (window.auth) {
-            // Create a consistent email for cross-browser sync
-            const syncEmail = `${username}@repairshop.local`;
-            const syncPassword = password; // Use the same password
+                    // Create a consistent email for cross-browser sync
+        const syncEmail = `${username}@repairshop.local`;
+        const syncPassword = 'admin123456'; // Use stronger password for Firebase
             
             // Store credentials for cross-browser sync
             localStorage.setItem('cloudSyncEmail', syncEmail);
@@ -7977,7 +7977,7 @@ function forceConsistentAuth() {
         // Create consistent credentials based on current user
         const username = localStorage.getItem('currentUserId') || 'admin';
         const email = `${username}@repairshop.local`;
-        const password = 'admin123'; // Consistent password
+        const password = 'admin123456'; // Stronger password for Firebase
         
         localStorage.setItem('cloudSyncEmail', email);
         localStorage.setItem('cloudSyncPassword', password);
@@ -8050,10 +8050,10 @@ function fixCrossBrowserSyncNow() {
     // Clear any existing anonymous UIDs
     localStorage.removeItem('anonymousUserId');
     
-    // Set up consistent credentials
+    // Set up consistent credentials with stronger password
     const username = localStorage.getItem('currentUserId') || 'admin';
     const email = `${username}@repairshop.local`;
-    const password = 'admin'; // Use the same password as login
+    const password = 'admin123456'; // Stronger password for Firebase
     
     localStorage.setItem('cloudSyncEmail', email);
     localStorage.setItem('cloudSyncPassword', password);
@@ -8096,6 +8096,20 @@ function fixCrossBrowserSyncNow() {
                                 })
                                 .catch((signInError) => {
                                     console.error('❌ Sign-in failed:', signInError.message);
+                                    console.log('Both account creation and sign-in failed. Using anonymous auth as fallback.');
+                                    
+                                    // Fall back to anonymous authentication
+                                    if (window.signInAnonymously) {
+                                        window.signInAnonymously(window.auth)
+                                            .then((userCredential) => {
+                                                console.log('⚠️ Using anonymous auth as fallback:', userCredential.user.uid);
+                                                localStorage.setItem('anonymousUserId', userCredential.user.uid);
+                                                console.log('Note: Anonymous auth will create different UIDs per browser');
+                                            })
+                                            .catch((anonError) => {
+                                                console.error('❌ Anonymous auth also failed:', anonError.message);
+                                            });
+                                    }
                                 });
                         }
                     });
@@ -8106,6 +8120,60 @@ function fixCrossBrowserSyncNow() {
 
 // Make the immediate fix function available globally
 window.fixCrossBrowserSyncNow = fixCrossBrowserSyncNow;
+
+// Function to test authentication and provide detailed feedback
+function testAuthentication() {
+    console.log('=== TESTING AUTHENTICATION ===');
+    
+    const email = 'admin@repairshop.local';
+    const password = 'admin123456';
+    
+    console.log('Testing with credentials:', { email, password });
+    
+    if (!window.createUserWithEmailAndPassword) {
+        console.error('❌ Firebase authentication not available');
+        return;
+    }
+    
+    // Test account creation
+    console.log('Testing account creation...');
+    window.createUserWithEmailAndPassword(window.auth, email, password)
+        .then((userCredential) => {
+            console.log('✅ Account creation successful:', userCredential.user.uid);
+            console.log('Cross-browser sync should work with this UID');
+            
+            // Sign out after test
+            if (window.signOut) {
+                window.signOut(window.auth);
+            }
+        })
+        .catch((error) => {
+            console.log('Account creation failed:', error.message);
+            
+            // Test sign in
+            console.log('Testing sign in...');
+            if (window.signInWithEmailAndPassword) {
+                window.signInWithEmailAndPassword(window.auth, email, password)
+                    .then((userCredential) => {
+                        console.log('✅ Sign in successful:', userCredential.user.uid);
+                        console.log('Cross-browser sync should work with this UID');
+                        
+                        // Sign out after test
+                        if (window.signOut) {
+                            window.signOut(window.auth);
+                        }
+                    })
+                    .catch((signInError) => {
+                        console.error('❌ Sign in failed:', signInError.message);
+                        console.log('Both account creation and sign in failed');
+                        console.log('This might be due to Firebase Console settings');
+                    });
+            }
+        });
+}
+
+// Make test function available globally
+window.testAuthentication = testAuthentication;
 
 // Global function for anonymous authentication
 function tryAnonymousAuth() {
