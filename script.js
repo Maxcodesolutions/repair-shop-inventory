@@ -8498,6 +8498,7 @@ function forceConsistentAuthAndClear() {
                             
                             // Try to sign in
                             if (window.signInWithEmailAndPassword) {
+                                console.log('Attempting to sign in with existing account...');
                                 window.signInWithEmailAndPassword(window.auth, email, password)
                                     .then((userCredential) => {
                                         console.log('✅ Signed in to existing account:', userCredential.user.uid);
@@ -8511,9 +8512,13 @@ function forceConsistentAuthAndClear() {
                                     })
                                     .catch((signInError) => {
                                         console.error('❌ Sign-in failed:', signInError.message);
-                                        console.log('Both account creation and sign-in failed');
+                                        console.log('Sign-in error details:', signInError);
                                         console.log('This might be due to Firebase Console settings');
+                                        console.log('Please check Firebase Console → Authentication → Sign-in method');
+                                        console.log('Make sure Email/Password is enabled');
                                     });
+                            } else {
+                                console.error('❌ Firebase sign-in function not available');
                             }
                         } else {
                             console.error('❌ Account creation failed for other reason:', createError.message);
@@ -8596,6 +8601,85 @@ function signInWithCurrentCredentials() {
 // Make the credential functions available globally
 window.checkAndFixCredentials = checkAndFixCredentials;
 window.signInWithCurrentCredentials = signInWithCurrentCredentials;
+
+// Function to test specific credentials
+function testSpecificCredentials(email, password) {
+    console.log('=== TESTING SPECIFIC CREDENTIALS ===');
+    console.log('Email:', email);
+    console.log('Password:', password ? '***' : 'Not provided');
+    
+    if (!email || !password) {
+        console.error('❌ Email and password are required');
+        return;
+    }
+    
+    if (!window.signInWithEmailAndPassword) {
+        console.error('❌ Firebase sign-in function not available');
+        return;
+    }
+    
+    console.log('Attempting to sign in...');
+    
+    window.signInWithEmailAndPassword(window.auth, email, password)
+        .then((userCredential) => {
+            console.log('✅ Sign-in successful!');
+            console.log('User UID:', userCredential.user.uid);
+            console.log('User email:', userCredential.user.email);
+            console.log('Cross-browser sync should work with this UID');
+            
+            // Store the UID for consistency
+            localStorage.setItem('consistentUserId', userCredential.user.uid);
+            
+            // Sign out after test
+            if (window.signOut) {
+                window.signOut(window.auth);
+                console.log('Signed out after test');
+            }
+        })
+        .catch((error) => {
+            console.error('❌ Sign-in failed:', error.message);
+            console.log('Error code:', error.code);
+            console.log('Full error:', error);
+            
+            if (error.code === 'auth/user-not-found') {
+                console.log('🔧 SOLUTION: Account does not exist');
+                console.log('Try creating the account first');
+            } else if (error.code === 'auth/wrong-password') {
+                console.log('🔧 SOLUTION: Wrong password');
+                console.log('Check the password you are using');
+            } else if (error.code === 'auth/invalid-email') {
+                console.log('🔧 SOLUTION: Invalid email format');
+                console.log('Check the email format');
+            } else if (error.code === 'auth/too-many-requests') {
+                console.log('🔧 SOLUTION: Too many failed attempts');
+                console.log('Wait a few minutes and try again');
+            } else {
+                console.log('🔧 SOLUTION: Check Firebase Console settings');
+                console.log('1. Go to Firebase Console → Authentication → Sign-in method');
+                console.log('2. Enable Email/Password authentication');
+                console.log('3. Wait a few minutes for changes to take effect');
+            }
+        });
+}
+
+// Function to test the current user's credentials
+function testCurrentUserCredentials() {
+    console.log('=== TESTING CURRENT USER CREDENTIALS ===');
+    
+    const currentUserId = localStorage.getItem('currentUserId');
+    const email = `${currentUserId}@repairshop.local`;
+    const password = 'admin123456';
+    
+    console.log('Current user ID:', currentUserId);
+    console.log('Testing with email:', email);
+    console.log('Testing with password:', password);
+    
+    testSpecificCredentials(email, password);
+}
+
+// Make the test functions available globally
+window.testSpecificCredentials = testSpecificCredentials;
+window.testCurrentUserCredentials = testCurrentUserCredentials;
 
 // Global function for anonymous authentication
 function tryAnonymousAuth() {
