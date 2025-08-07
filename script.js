@@ -9028,6 +9028,85 @@ function fixCredentialInconsistency() {
 // Make the function available globally
 window.fixCredentialInconsistency = fixCredentialInconsistency;
 
+// Function to force all browsers to use the same credentials
+function forceConsistentCredentialsAcrossBrowsers() {
+    console.log('=== FORCING CONSISTENT CREDENTIALS ACROSS ALL BROWSERS ===');
+    
+    // Clear ALL cloud sync related data
+    console.log('Clearing all cloud sync data...');
+    const keysToRemove = [];
+    
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && (key.includes('cloudSync') || key.includes('consistentUserId') || key.includes('anonymousUserId'))) {
+            keysToRemove.push(key);
+        }
+    }
+    
+    keysToRemove.forEach(key => {
+        localStorage.removeItem(key);
+        console.log('Removed:', key);
+    });
+    
+    // Set up the SAME credentials for ALL browsers
+    const consistentEmail = 'admin@repairshop.local';
+    const consistentPassword = 'admin123456';
+    
+    localStorage.setItem('cloudSyncEmail', consistentEmail);
+    localStorage.setItem('cloudSyncPassword', consistentPassword);
+    
+    console.log('✅ Set up consistent credentials for ALL browsers:');
+    console.log('Email:', consistentEmail);
+    console.log('Password: ***');
+    console.log('');
+    console.log('📋 INSTRUCTIONS FOR OTHER BROWSERS:');
+    console.log('1. Open the app in other browsers');
+    console.log('2. Run this same command: forceConsistentCredentialsAcrossBrowsers()');
+    console.log('3. This will set the SAME credentials in all browsers');
+    console.log('4. All browsers will then use the SAME Firebase account');
+    console.log('');
+    console.log('🧪 Testing the new credentials...');
+    
+    // Test the new credentials
+    setTimeout(() => {
+        testSpecificCredentialsNoSignOut(consistentEmail, consistentPassword);
+    }, 1000);
+}
+
+// Function to check what credentials are currently stored
+function checkAllStoredCredentials() {
+    console.log('=== CHECKING ALL STORED CREDENTIALS ===');
+    
+    const allCredentials = [];
+    
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.includes('cloudSync')) {
+            allCredentials.push({
+                key: key,
+                value: localStorage.getItem(key)
+            });
+        }
+    }
+    
+    console.log('All cloud sync related data:');
+    allCredentials.forEach(cred => {
+        console.log(`- ${cred.key}: ${cred.value}`);
+    });
+    
+    if (allCredentials.length === 0) {
+        console.log('❌ No cloud sync credentials found');
+    } else if (allCredentials.length === 2) {
+        console.log('✅ Standard cloud sync credentials found');
+    } else {
+        console.log('⚠️ Unexpected number of credentials found');
+    }
+}
+
+// Make the functions available globally
+window.forceConsistentCredentialsAcrossBrowsers = forceConsistentCredentialsAcrossBrowsers;
+window.checkAllStoredCredentials = checkAllStoredCredentials;
+
 // Global function for anonymous authentication
 function tryAnonymousAuth() {
     if (window.signInAnonymously) {
