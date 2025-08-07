@@ -230,9 +230,50 @@
                 log('Enabling automatic cloud sync...');
                 updateStatus('🔄 Enabling auto-sync...', 'info');
                 
-                // Sign in anonymously
-                const userCredential = await signInAnonymously(auth);
-                log('Anonymous sign-in successful: ' + userCredential.user.uid);
+                // Try anonymous auth first, if it fails, use email/password
+                let userCredential;
+                try {
+                    userCredential = await signInAnonymously(auth);
+                    log('Anonymous sign-in successful: ' + userCredential.user.uid);
+                } catch (anonymousError) {
+                    log('Anonymous auth failed, trying email/password: ' + anonymousError.message);
+                    
+                    // Prompt for email and password
+                    const email = prompt('Enter email address for cloud sync:');
+                    const password = prompt('Enter password (min 6 characters):');
+                    
+                    if (!email || !password) {
+                        throw new Error('Email and password are required');
+                    }
+                    
+                    // Import signInWithEmailAndPassword
+                    const { signInWithEmailAndPassword, createUserWithEmailAndPassword } = await import("https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js");
+                    
+                    try {
+                        userCredential = await signInWithEmailAndPassword(auth, email, password);
+                        log('Email sign-in successful: ' + userCredential.user.email);
+                        
+                        // Store credentials for future auto-login
+                        localStorage.setItem('cloudSyncEmail', email);
+                        localStorage.setItem('cloudSyncPassword', password);
+                        log('Credentials stored for future auto-login');
+                        
+                    } catch (signInError) {
+                        // If sign-in fails, try to create account
+                        if (signInError.code === 'auth/user-not-found') {
+                            userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                            log('Account created and signed in: ' + userCredential.user.email);
+                            
+                            // Store credentials for future auto-login
+                            localStorage.setItem('cloudSyncEmail', email);
+                            localStorage.setItem('cloudSyncPassword', password);
+                            log('Credentials stored for future auto-login');
+                            
+                        } else {
+                            throw signInError;
+                        }
+                    }
+                }
                 
                 // Upload current data to cloud
                 const data = {

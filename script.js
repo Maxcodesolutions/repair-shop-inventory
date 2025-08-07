@@ -122,14 +122,37 @@ function handleLogin(e) {
         localStorage.setItem('loginStatus', 'true');
         localStorage.setItem('currentUserId', authenticatedUser.id.toString());
         
-        // If Firebase auth is available, try to sign in anonymously for cloud sync
-        if (window.auth && window.signInAnonymously) {
-            window.signInAnonymously(window.auth).then((userCredential) => {
-                console.log('Signed in anonymously for cloud sync:', userCredential.user.uid);
-                // Data will be automatically loaded from cloud via the auth listener
-            }).catch((error) => {
-                console.log('Anonymous sign-in failed, using local storage:', error.message);
-            });
+        // If Firebase auth is available, try to sign in for cloud sync
+        if (window.auth) {
+            // Try anonymous auth first, if it fails, use email/password
+            if (window.signInAnonymously) {
+                window.signInAnonymously(window.auth).then((userCredential) => {
+                    console.log('Signed in anonymously for cloud sync:', userCredential.user.uid);
+                    // Data will be automatically loaded from cloud via the auth listener
+                }).catch((error) => {
+                    console.log('Anonymous sign-in failed, trying email/password:', error.message);
+                    // Try email/password if anonymous fails
+                    tryEmailPasswordAuth();
+                });
+            } else {
+                tryEmailPasswordAuth();
+            }
+        }
+        
+        function tryEmailPasswordAuth() {
+            // Check if user has stored email/password for auto-login
+            const storedEmail = localStorage.getItem('cloudSyncEmail');
+            const storedPassword = localStorage.getItem('cloudSyncPassword');
+            
+            if (storedEmail && storedPassword && window.signInWithEmailAndPassword) {
+                window.signInWithEmailAndPassword(window.auth, storedEmail, storedPassword).then((userCredential) => {
+                    console.log('Signed in with email for cloud sync:', userCredential.user.email);
+                }).catch((error) => {
+                    console.log('Email sign-in failed, using local storage:', error.message);
+                });
+            } else {
+                console.log('No stored credentials, using local storage only');
+            }
         }
         
         // Hide login and show app after a short delay
