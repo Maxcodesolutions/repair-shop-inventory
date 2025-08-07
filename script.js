@@ -191,34 +191,7 @@ function handleLogin(e) {
         }
         }
         
-        function tryAnonymousAuth() {
-            if (window.signInAnonymously) {
-                window.signInAnonymously(window.auth).then((userCredential) => {
-                    console.log('Signed in anonymously for cloud sync:', userCredential.user.uid);
-                    console.log('Cross-browser user ID:', crossBrowserUserId);
-                    // Store the UID for reference (though it will be different per browser)
-                    localStorage.setItem('anonymousUserId', userCredential.user.uid);
-                    console.log('⚠️ Warning: Anonymous UID will be different per browser session');
-                    console.log('For consistent cross-browser sync, use email/password authentication');
-                }).catch((error) => {
-                    console.log('Anonymous sign-in failed:', error.message);
-                    
-                    // Check for authentication disabled error
-                    if (error.message.includes('400') || error.message.includes('auth/admin-restricted-operation')) {
-                        console.error('❌ Firebase Authentication is disabled in Firebase Console');
-                        console.log('To fix this:');
-                        console.log('1. Go to Firebase Console > Authentication');
-                        console.log('2. Enable "Anonymous" authentication method');
-                        console.log('3. Or enable "Email/Password" authentication method');
-                        console.log('4. Refresh the page and try again');
-                    } else {
-                        console.error('❌ All authentication methods failed:', error.message);
-                    }
-                });
-            } else {
-                console.log('Anonymous authentication not available');
-            }
-        }
+
         
         // Hide login and show app after a short delay
         setTimeout(() => {
@@ -7860,6 +7833,38 @@ function forceConsistentAuth() {
 // Make cross-browser sync functions available globally
 window.checkCrossBrowserSyncStatus = checkCrossBrowserSyncStatus;
 window.forceConsistentAuth = forceConsistentAuth;
+
+// Global function for anonymous authentication
+function tryAnonymousAuth() {
+    if (window.signInAnonymously) {
+        window.signInAnonymously(window.auth).then((userCredential) => {
+            console.log('Signed in anonymously for cloud sync:', userCredential.user.uid);
+            // Store the UID for reference (though it will be different per browser)
+            localStorage.setItem('anonymousUserId', userCredential.user.uid);
+            console.log('⚠️ Warning: Anonymous UID will be different per browser session');
+            console.log('For consistent cross-browser sync, use email/password authentication');
+        }).catch((error) => {
+            console.log('Anonymous sign-in failed:', error.message);
+            
+            // Check for authentication disabled error
+            if (error.message.includes('400') || error.message.includes('auth/admin-restricted-operation')) {
+                console.error('❌ Firebase Authentication is disabled in Firebase Console');
+                console.log('To fix this:');
+                console.log('1. Go to Firebase Console > Authentication');
+                console.log('2. Enable "Anonymous" authentication method');
+                console.log('3. Or enable "Email/Password" authentication method');
+                console.log('4. Refresh the page and try again');
+            } else {
+                console.error('❌ All authentication methods failed:', error.message);
+            }
+        });
+    } else {
+        console.log('Anonymous authentication not available');
+    }
+}
+
+// Make tryAnonymousAuth available globally
+window.tryAnonymousAuth = tryAnonymousAuth;
 
 // Function to check localStorage data
 function checkLocalStorageData() {
