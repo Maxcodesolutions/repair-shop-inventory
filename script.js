@@ -17,7 +17,7 @@ function checkLoginStatus() {
         if (currentUser && currentUser.status === 'active') {
             console.log('User found and active:', currentUser);
             showApp();
-            applyUserPermissions();
+            // Note: applyUserPermissions() is now called in showApp()
         } else {
             console.log('User not found or inactive, clearing login status');
             // User not found, clear login status
@@ -42,6 +42,27 @@ function showLogin() {
 function showApp() {
     document.getElementById('login-overlay').style.display = 'none';
     document.getElementById('app-container').style.display = 'block';
+    
+    // Initialize the application after showing the app
+    console.log('App shown, initializing...');
+    
+    // Load data and render all sections
+    loadData();
+    renderAll();
+    
+    // Update dashboard with current data
+    updateDashboard();
+    
+    // Show dashboard by default
+    showSection('dashboard');
+    
+    // Apply user permissions
+    applyUserPermissions();
+    
+    // Debug the app state
+    debugAppState();
+    
+    console.log('App initialization completed');
 }
 
 // Handle login form submission
@@ -118,6 +139,34 @@ function resetLoginData() {
     console.log('Available users after reset:', users);
 }
 
+// Debug function to check app state
+function debugAppState() {
+    console.log('=== APP STATE DEBUG ===');
+    console.log('Current User:', currentUser);
+    console.log('Current User ID:', currentUserId);
+    console.log('Login Status:', localStorage.getItem('loginStatus'));
+    console.log('App Container Display:', document.getElementById('app-container')?.style.display);
+    console.log('Login Overlay Display:', document.getElementById('login-overlay')?.style.display);
+    console.log('Dashboard Element:', document.getElementById('dashboard'));
+    console.log('Inventory Count:', inventory.length);
+    console.log('Repairs Count:', repairs.length);
+    console.log('Customers Count:', customers.length);
+    console.log('Users Count:', users.length);
+    
+    // Check if dashboard elements exist
+    const dashboardElements = [
+        'total-items', 'low-stock', 'pending-orders', 'active-repairs',
+        'total-inventory-value', 'total-purchases', 'total-spent', 'active-repairs-count'
+    ];
+    
+    dashboardElements.forEach(id => {
+        const element = document.getElementById(id);
+        console.log(`${id}: ${element ? 'EXISTS' : 'MISSING'}`);
+    });
+    
+    console.log('=== END DEBUG ===');
+}
+
 // Ensure admin user exists
 function ensureAdminUserExists() {
     console.log('Ensuring admin user exists...');
@@ -178,9 +227,6 @@ function initializeApp() {
     
     // Setup other event listeners
     setupEventListeners();
-    
-    // Initialize all sections
-    renderAll();
     
     console.log('Application initialized successfully');
 }
@@ -1580,15 +1626,46 @@ function generateQuotationNumber() {
 
 // Dashboard update
 function updateDashboard() {
+    console.log('Updating dashboard...');
+    console.log('Inventory count:', inventory.length);
+    console.log('Repairs count:', repairs.length);
+    console.log('Purchases count:', purchases.length);
+    
     const totalItemsEl = document.getElementById('total-items');
     const lowStockEl = document.getElementById('low-stock');
     const pendingOrdersEl = document.getElementById('pending-orders');
     const activeRepairsEl = document.getElementById('active-repairs');
     
-    if (totalItemsEl) totalItemsEl.textContent = inventory.length;
-    if (lowStockEl) lowStockEl.textContent = inventory.filter(item => item.quantity < 5).length;
-    if (pendingOrdersEl) pendingOrdersEl.textContent = purchases.filter(p => p.status === 'pending').length;
-    if (activeRepairsEl) activeRepairsEl.textContent = repairs.filter(r => r.status === 'in-progress').length;
+    if (totalItemsEl) {
+        totalItemsEl.textContent = inventory.length;
+        console.log('Updated total items:', inventory.length);
+    } else {
+        console.warn('total-items element not found');
+    }
+    
+    if (lowStockEl) {
+        const lowStockCount = inventory.filter(item => item.quantity < 5).length;
+        lowStockEl.textContent = lowStockCount;
+        console.log('Updated low stock:', lowStockCount);
+    } else {
+        console.warn('low-stock element not found');
+    }
+    
+    if (pendingOrdersEl) {
+        const pendingCount = purchases.filter(p => p.status === 'pending').length;
+        pendingOrdersEl.textContent = pendingCount;
+        console.log('Updated pending orders:', pendingCount);
+    } else {
+        console.warn('pending-orders element not found');
+    }
+    
+    if (activeRepairsEl) {
+        const activeCount = repairs.filter(r => r.status === 'in-progress').length;
+        activeRepairsEl.textContent = activeCount;
+        console.log('Updated active repairs:', activeCount);
+    } else {
+        console.warn('active-repairs element not found');
+    }
     
     const totalValue = inventory.reduce((sum, item) => sum + (item.quantity * item.price), 0);
     const totalInventoryValueEl = document.getElementById('total-inventory-value');
