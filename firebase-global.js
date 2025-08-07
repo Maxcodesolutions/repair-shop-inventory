@@ -3,51 +3,14 @@
 
 console.log('Firebase Global: Starting initialization...');
 
-// Load Firebase SDKs using script tags to ensure global availability
-function loadFirebaseScripts() {
-    return new Promise((resolve, reject) => {
-        // Check if Firebase is already loaded
-        if (window.firebase) {
-            console.log('Firebase Global: Firebase already loaded');
-            resolve();
-            return;
-        }
-
-        // Load Firebase App
-        const appScript = document.createElement('script');
-        appScript.src = 'https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js';
-        appScript.onload = () => {
-            console.log('Firebase Global: App SDK loaded');
-            
-            // Load Firestore
-            const firestoreScript = document.createElement('script');
-            firestoreScript.src = 'https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js';
-            firestoreScript.onload = () => {
-                console.log('Firebase Global: Firestore SDK loaded');
-                
-                // Load Auth
-                const authScript = document.createElement('script');
-                authScript.src = 'https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js';
-                authScript.onload = () => {
-                    console.log('Firebase Global: Auth SDK loaded');
-                    resolve();
-                };
-                authScript.onerror = reject;
-                document.head.appendChild(authScript);
-            };
-            firestoreScript.onerror = reject;
-            document.head.appendChild(firestoreScript);
-        };
-        appScript.onerror = reject;
-        document.head.appendChild(appScript);
-    });
-}
-
-// Initialize Firebase with global functions
+// Initialize Firebase using ES6 modules and expose globally
 async function initializeFirebaseGlobal() {
     try {
-        await loadFirebaseScripts();
-        
+        // Import Firebase modules
+        const { initializeApp } = await import("https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js");
+        const { getFirestore, collection, doc, setDoc, getDoc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js");
+        const { getAuth, signInAnonymously, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword } = await import("https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js");
+
         // Firebase configuration
         const firebaseConfig = {
             apiKey: "AIzaSyCvuJuOlhqasNbpCkyJjOH1YKJKnjvxLvk",
@@ -59,23 +22,24 @@ async function initializeFirebaseGlobal() {
             measurementId: "G-K78PVPW0MG"
         };
 
-        // Initialize Firebase using global firebase object
-        const app = firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore(app);
-        const auth = firebase.auth(app);
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
 
         // Expose functions globally
         window.db = db;
         window.auth = auth;
-        window.collection = db.collection.bind(db);
-        window.doc = db.doc.bind(db);
-        window.setDoc = db.setDoc.bind(db);
-        window.getDoc = db.getDoc.bind(db);
-        window.onAuthStateChanged = auth.onAuthStateChanged.bind(auth);
-        window.signInAnonymously = auth.signInAnonymously.bind(auth);
-        window.signInWithEmailAndPassword = auth.signInWithEmailAndPassword.bind(auth);
-        window.createUserWithEmailAndPassword = auth.createUserWithEmailAndPassword.bind(auth);
-        window.signOut = auth.signOut.bind(auth);
+        window.collection = collection;
+        window.doc = doc;
+        window.setDoc = setDoc;
+        window.getDoc = getDoc;
+        window.deleteDoc = deleteDoc;
+        window.onAuthStateChanged = onAuthStateChanged;
+        window.signInAnonymously = signInAnonymously;
+        window.signInWithEmailAndPassword = signInWithEmailAndPassword;
+        window.createUserWithEmailAndPassword = createUserWithEmailAndPassword;
+        window.signOut = signOut;
 
         // Signal that Firebase is ready
         window.firebaseReady = true;
