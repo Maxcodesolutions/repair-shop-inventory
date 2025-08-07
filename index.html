@@ -2785,7 +2785,7 @@
       const db = getFirestore(app);
       const auth = getAuth(app);
 
-      // Make Firebase services globally available
+      // Make Firebase services globally available - ensure they are properly bound
       window.db = db;
       window.auth = auth;
       window.onAuthStateChanged = onAuthStateChanged;
@@ -2816,6 +2816,17 @@
         setDoc: !!window.setDoc,
         getDoc: !!window.getDoc
       });
+      
+      // Double-check that functions are properly exposed
+      setTimeout(() => {
+        console.log('Firebase functions verification:');
+        console.log('window.db:', typeof window.db);
+        console.log('window.auth:', typeof window.auth);
+        console.log('window.collection:', typeof window.collection);
+        console.log('window.doc:', typeof window.doc);
+        console.log('window.setDoc:', typeof window.setDoc);
+        console.log('window.getDoc:', typeof window.getDoc);
+      }, 100);
     </script>
     <script src="firebase-init-check.js"></script>
     <script src="firebase-config.js"></script>

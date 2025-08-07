@@ -101,12 +101,12 @@
         <button class="btn btn-warning" onclick="exportDebugInfo()">📋 Export Debug Info</button>
     </div>
 
-    <script type="module">
-        // Import Firebase modules
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
-        import { getFirestore, collection, doc, setDoc, getDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
-
+    <script src="firebase-global.js"></script>
+    <script>
+        // Wait for Firebase to be initialized
+        let db, auth, collection, doc, setDoc, getDoc, deleteDoc;
+        let signInAnonymously, onAuthStateChanged, signOut;
+        
         // Firebase configuration
         const firebaseConfig = {
             apiKey: "AIzaSyCvuJuOlhqasNbpCkyJjOH1YKJKnjvxLvk",
@@ -118,10 +118,38 @@
             measurementId: "G-K78PVPW0MG"
         };
 
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
+        // Wait for Firebase to be ready
+        function waitForFirebase() {
+            return new Promise((resolve) => {
+                if (window.firebaseReady && window.db && window.auth) {
+                    db = window.db;
+                    auth = window.auth;
+                    collection = window.collection;
+                    doc = window.doc;
+                    setDoc = window.setDoc;
+                    getDoc = window.getDoc;
+                    deleteDoc = window.deleteDoc;
+                    signInAnonymously = window.signInAnonymously;
+                    onAuthStateChanged = window.onAuthStateChanged;
+                    signOut = window.signOut;
+                    resolve();
+                } else {
+                    window.addEventListener('firebaseReady', () => {
+                        db = window.db;
+                        auth = window.auth;
+                        collection = window.collection;
+                        doc = window.doc;
+                        setDoc = window.setDoc;
+                        getDoc = window.getDoc;
+                        deleteDoc = window.deleteDoc;
+                        signInAnonymously = window.signInAnonymously;
+                        onAuthStateChanged = window.onAuthStateChanged;
+                        signOut = window.signOut;
+                        resolve();
+                    });
+                }
+            });
+        }
 
         let currentUser = null;
 
@@ -430,26 +458,40 @@
             log('Debug info exported to cloud-sync-debug-info.json');
         };
 
-        // Monitor auth state
-        onAuthStateChanged(auth, (user) => {
-            currentUser = user;
-            if (user) {
-                log('User authenticated: ' + (user.email || 'Anonymous'));
-                updateStatus('✅ User authenticated: ' + (user.email || 'Anonymous'), 'success');
-            } else {
-                log('User not authenticated');
-                updateStatus('⏳ User not authenticated. Click "Enable Auto-Sync" in setup page.', 'info');
-            }
-        });
+        // Initialize the debug tool
+        async function initializeDebugTool() {
+            try {
+                await waitForFirebase();
+                
+                // Monitor auth state
+                onAuthStateChanged(auth, (user) => {
+                    currentUser = user;
+                    if (user) {
+                        log('User authenticated: ' + (user.email || 'Anonymous'));
+                        updateStatus('✅ User authenticated: ' + (user.email || 'Anonymous'), 'success');
+                    } else {
+                        log('User not authenticated');
+                        updateStatus('⏳ User not authenticated. Click "Enable Auto-Sync" in setup page.', 'info');
+                    }
+                });
 
-        // Initial status check
-        log('Cloud Sync Debug Tool Loaded');
-        log('Firebase Config: ' + JSON.stringify(firebaseConfig, null, 2));
-        
-        // Auto-check status after a short delay
-        setTimeout(() => {
-            checkFirebaseStatus();
-        }, 1000);
+                // Initial status check
+                log('Cloud Sync Debug Tool Loaded');
+                log('Firebase Config: ' + JSON.stringify(firebaseConfig, null, 2));
+                
+                // Auto-check status after a short delay
+                setTimeout(() => {
+                    checkFirebaseStatus();
+                }, 1000);
+                
+            } catch (error) {
+                log('Error initializing debug tool: ' + error.message);
+                updateStatus('❌ Error initializing Firebase: ' + error.message, 'error');
+            }
+        }
+
+        // Start initialization
+        initializeDebugTool();
     </script>
 </body>
 </html>
