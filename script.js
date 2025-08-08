@@ -1096,7 +1096,7 @@ function getDefaultUsers() {
             email: 'admin@repairmaniac.com',
             role: 'admin',
             status: 'active',
-            permissions: ['dashboard', 'inventory', 'purchases', 'vendors', 'customers', 'repairs', 'outsource', 'invoices', 'quotations', 'pickdrop', 'delivery', 'payments', 'reports', 'users'],
+            permissions: ['dashboard', 'inventory', 'purchases', 'vendors', 'customers', 'repairs', 'outsource', 'invoices', 'quotations', 'pickdrop', 'delivery', 'payments', 'warranties', 'reports', 'users'],
             lastLogin: null,
             createdAt: new Date().toISOString()
         }
