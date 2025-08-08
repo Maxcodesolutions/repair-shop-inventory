@@ -1177,6 +1177,19 @@ function applyUserPermissions() {
         }
     });
     
+    // Force show warranties link for debugging
+    const warrantyLink = document.querySelector('[data-section="warranties"]');
+    if (warrantyLink) {
+        warrantyLink.classList.remove('nav-link-hidden');
+        console.log('✅ FORCED SHOW: Warranty navigation link');
+    }
+    
+    const warrantySection = document.getElementById('warranties');
+    if (warrantySection) {
+        warrantySection.classList.remove('section-hidden');
+        console.log('✅ FORCED SHOW: Warranty section');
+    }
+    
     // Update current user name in header
     document.getElementById('current-user-name').textContent = currentUser.fullName;
 }
@@ -1725,6 +1738,41 @@ function debugWarrantyElements() {
     allNavLinks.forEach((link, index) => {
         console.log(`Nav link ${index + 1}:`, link.getAttribute('data-section'), link.textContent.trim());
     });
+}
+
+// Function to force show warranty navigation
+function forceShowWarrantyNav() {
+    console.log('🔧 FORCING WARRANTY NAVIGATION TO SHOW:');
+    
+    // Force show warranty nav link
+    const warrantyLink = document.querySelector('[data-section="warranties"]');
+    if (warrantyLink) {
+        warrantyLink.classList.remove('nav-link-hidden');
+        warrantyLink.style.display = 'block';
+        warrantyLink.style.visibility = 'visible';
+        warrantyLink.style.opacity = '1';
+        console.log('✅ Warranty nav link forced visible');
+    } else {
+        console.log('❌ Warranty nav link not found');
+    }
+    
+    // Force show warranty section
+    const warrantySection = document.getElementById('warranties');
+    if (warrantySection) {
+        warrantySection.classList.remove('section-hidden');
+        warrantySection.style.display = 'block';
+        warrantySection.style.visibility = 'visible';
+        warrantySection.style.opacity = '1';
+        console.log('✅ Warranty section forced visible');
+    } else {
+        console.log('❌ Warranty section not found');
+    }
+    
+    // Check current user permissions
+    if (currentUser) {
+        console.log('Current user permissions:', currentUser.permissions);
+        console.log('Has warranties permission:', currentUser.permissions.includes('warranties'));
+    }
 }
 
 function renderPayments() {
