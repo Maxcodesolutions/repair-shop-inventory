@@ -360,6 +360,9 @@
                     <li><a href="#payments" class="nav-link" data-section="payments">
                         <i class="fas fa-credit-card"></i> Payments
                     </a></li>
+                    <li><a href="#warranties" class="nav-link" data-section="warranties">
+                        <i class="fas fa-shield-alt"></i> Warranties
+                    </a></li>
                     <li><a href="#reports" class="nav-link" data-section="reports">
                         <i class="fas fa-chart-bar"></i> Reports
                     </a></li>
@@ -1952,6 +1955,69 @@
                         <div class="summary-card">
                             <h3>Overdue Amount</h3>
                             <p id="overdue-payments-amount">₹0.00</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Warranties Section -->
+                <section id="warranties" class="content-section">
+                    <div class="section-header">
+                        <h2>Warranty Management</h2>
+                    </div>
+                    
+                    <div class="filters">
+                        <select id="warranty-status-filter">
+                            <option value="">All Status</option>
+                            <option value="active">Active</option>
+                            <option value="expired">Expired</option>
+                            <option value="expiring-soon">Expiring Soon</option>
+                        </select>
+                        <select id="warranty-type-filter">
+                            <option value="">All Types</option>
+                            <option value="repair">Repair Warranty</option>
+                            <option value="parts">Parts Warranty</option>
+                        </select>
+                        <input type="text" id="search-warranties" placeholder="Search warranties...">
+                    </div>
+                    
+                    <div class="table-container" id="warranties-table-container">
+                        <table id="warranties-table">
+                            <thead>
+                                <tr>
+                                    <th>Warranty ID</th>
+                                    <th>Type</th>
+                                    <th>Customer</th>
+                                    <th>Item/Service</th>
+                                    <th>Duration</th>
+                                    <th>Start Date</th>
+                                    <th>Expiry Date</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="warranties-tbody">
+                                <!-- Warranties will be populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Warranty Summary Cards -->
+                    <div class="warranty-summary-cards">
+                        <div class="summary-card">
+                            <h3>Active Warranties</h3>
+                            <p id="active-warranties-count">0</p>
+                        </div>
+                        <div class="summary-card">
+                            <h3>Expiring Soon</h3>
+                            <p id="expiring-warranties-count">0</p>
+                        </div>
+                        <div class="summary-card">
+                            <h3>Expired</h3>
+                            <p id="expired-warranties-count">0</p>
+                        </div>
+                        <div class="summary-card">
+                            <h3>Total Warranties</h3>
+                            <p id="total-warranties-count">0</p>
                         </div>
                     </div>
                 </section>

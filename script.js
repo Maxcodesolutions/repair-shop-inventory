@@ -1502,6 +1502,11 @@ function setupEventListeners() {
     document.getElementById('payment-status-filter').addEventListener('change', filterPayments);
     document.getElementById('payment-method-filter').addEventListener('change', filterPayments);
     document.getElementById('payment-customer-filter').addEventListener('change', filterPayments);
+    
+    // Warranty filters
+    document.getElementById('search-warranties').addEventListener('input', filterWarranties);
+    document.getElementById('warranty-status-filter').addEventListener('change', filterWarranties);
+    document.getElementById('warranty-type-filter').addEventListener('change', filterWarranties);
 }
 
 // Navigation
@@ -1545,6 +1550,7 @@ function showSection(sectionName) {
         pickdrop: 'Pick & Drop Management',
         delivery: 'Delivery Management',
         payments: 'Payment Management',
+        warranties: 'Warranty Management',
         reports: 'Reports & Analytics'
     };
     document.getElementById('page-title').textContent = titles[sectionName] || 'Dashboard';
@@ -1571,9 +1577,121 @@ function showSection(sectionName) {
         renderDeliveries();
     } else if (sectionName === 'payments') {
         renderPayments();
+    } else if (sectionName === 'warranties') {
+        renderWarranties();
     }
     
     console.log('Section display completed for:', sectionName);
+}
+
+function renderWarranties() {
+    const tbody = document.getElementById('warranties-tbody');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '';
+    
+    // Collect all warranties from repairs and invoices
+    const allWarranties = [];
+    
+    // Add repair warranties
+    repairs.forEach(repair => {
+        if (repair.warranty && repair.warranty.enabled && repair.warranty.months > 0) {
+            allWarranties.push({
+                id: `R-${repair.id}`,
+                type: 'repair',
+                customer: repair.customer,
+                item: `Repair #${repair.id}`,
+                duration: `${repair.warranty.months} months`,
+                startDate: repair.startDate,
+                expiryDate: repair.warranty.expiresOn,
+                status: getWarrantyStatus(repair.warranty.expiresOn),
+                source: 'repair',
+                sourceId: repair.id
+            });
+        }
+    });
+    
+    // Add invoice item warranties
+    invoices.forEach(invoice => {
+        invoice.items.forEach((item, index) => {
+            if (item.warrantyMonths && item.warrantyMonths > 0) {
+                const expiryDate = addMonths(new Date(invoice.date), item.warrantyMonths).toISOString().split('T')[0];
+                allWarranties.push({
+                    id: `I-${invoice.id}-${index}`,
+                    type: 'parts',
+                    customer: invoice.customer,
+                    item: item.name,
+                    duration: `${item.warrantyMonths} months`,
+                    startDate: invoice.date,
+                    expiryDate: expiryDate,
+                    status: getWarrantyStatus(expiryDate),
+                    source: 'invoice',
+                    sourceId: invoice.id,
+                    itemIndex: index
+                });
+            }
+        });
+    });
+    
+    // Sort by expiry date (earliest first)
+    allWarranties.sort((a, b) => new Date(a.expiryDate) - new Date(b.expiryDate));
+    
+    allWarranties.forEach(warranty => {
+        const statusClass = warranty.status === 'active' ? 'success' : 
+                           warranty.status === 'expiring-soon' ? 'warning' : 'danger';
+        
+        const row = `
+            <tr>
+                <td>${warranty.id}</td>
+                <td>${warranty.type === 'repair' ? 'Repair Warranty' : 'Parts Warranty'}</td>
+                <td>${warranty.customer}</td>
+                <td>${warranty.item}</td>
+                <td>${warranty.duration}</td>
+                <td>${warranty.startDate}</td>
+                <td>${warranty.expiryDate}</td>
+                <td><span class="status-badge status-${statusClass}">${warranty.status}</span></td>
+                <td>
+                    <button class="btn btn-sm btn-secondary" onclick="viewWarranty('${warranty.id}')">View</button>
+                    ${warranty.source === 'repair' ? 
+                        `<button class="btn btn-sm btn-info" onclick="viewJobCard(${warranty.sourceId})">View Repair</button>` :
+                        `<button class="btn btn-sm btn-info" onclick="viewInvoice(${warranty.sourceId})">View Invoice</button>`
+                    }
+                </td>
+            </tr>
+        `;
+        tbody.innerHTML += row;
+    });
+    
+    updateWarrantySummary(allWarranties);
+}
+
+function getWarrantyStatus(expiryDate) {
+    if (!expiryDate) return 'unknown';
+    
+    const today = new Date();
+    const expiry = new Date(expiryDate);
+    const daysUntilExpiry = Math.ceil((expiry - today) / (1000 * 60 * 60 * 24));
+    
+    if (daysUntilExpiry < 0) return 'expired';
+    if (daysUntilExpiry <= 30) return 'expiring-soon';
+    return 'active';
+}
+
+function updateWarrantySummary(warranties) {
+    const activeCount = warranties.filter(w => w.status === 'active').length;
+    const expiringCount = warranties.filter(w => w.status === 'expiring-soon').length;
+    const expiredCount = warranties.filter(w => w.status === 'expired').length;
+    const totalCount = warranties.length;
+    
+    document.getElementById('active-warranties-count').textContent = activeCount;
+    document.getElementById('expiring-warranties-count').textContent = expiringCount;
+    document.getElementById('expired-warranties-count').textContent = expiredCount;
+    document.getElementById('total-warranties-count').textContent = totalCount;
+}
+
+function viewWarranty(warrantyId) {
+    // This function can be expanded to show detailed warranty information
+    alert(`Warranty ${warrantyId} details will be shown here.`);
 }
 
 function renderPayments() {
@@ -2909,6 +3027,7 @@ function renderAll() {
     renderPickDrops();
     renderDeliveries();
     renderPayments();
+    renderWarranties();
     renderUsers();
 }
 
@@ -7328,6 +7447,104 @@ function renderFilteredPayments(filteredItems) {
         `;
         tbody.innerHTML += row;
     });
+}
+
+function filterWarranties() {
+    const searchTerm = document.getElementById('search-warranties').value.toLowerCase();
+    const statusFilter = document.getElementById('warranty-status-filter').value;
+    const typeFilter = document.getElementById('warranty-type-filter').value;
+    
+    // Collect all warranties from repairs and invoices
+    const allWarranties = [];
+    
+    // Add repair warranties
+    repairs.forEach(repair => {
+        if (repair.warranty && repair.warranty.enabled && repair.warranty.months > 0) {
+            allWarranties.push({
+                id: `R-${repair.id}`,
+                type: 'repair',
+                customer: repair.customer,
+                item: `Repair #${repair.id}`,
+                duration: `${repair.warranty.months} months`,
+                startDate: repair.startDate,
+                expiryDate: repair.warranty.expiresOn,
+                status: getWarrantyStatus(repair.warranty.expiresOn),
+                source: 'repair',
+                sourceId: repair.id
+            });
+        }
+    });
+    
+    // Add invoice item warranties
+    invoices.forEach(invoice => {
+        invoice.items.forEach((item, index) => {
+            if (item.warrantyMonths && item.warrantyMonths > 0) {
+                const expiryDate = addMonths(new Date(invoice.date), item.warrantyMonths).toISOString().split('T')[0];
+                allWarranties.push({
+                    id: `I-${invoice.id}-${index}`,
+                    type: 'parts',
+                    customer: invoice.customer,
+                    item: item.name,
+                    duration: `${item.warrantyMonths} months`,
+                    startDate: invoice.date,
+                    expiryDate: expiryDate,
+                    status: getWarrantyStatus(expiryDate),
+                    source: 'invoice',
+                    sourceId: invoice.id,
+                    itemIndex: index
+                });
+            }
+        });
+    });
+    
+    // Filter warranties
+    const filtered = allWarranties.filter(warranty => {
+        const matchesSearch = warranty.id.toLowerCase().includes(searchTerm) || 
+                           warranty.customer.toLowerCase().includes(searchTerm) ||
+                           warranty.item.toLowerCase().includes(searchTerm) ||
+                           warranty.duration.toLowerCase().includes(searchTerm);
+        const matchesStatus = !statusFilter || warranty.status === statusFilter;
+        const matchesType = !typeFilter || warranty.type === typeFilter;
+        
+        return matchesSearch && matchesStatus && matchesType;
+    });
+    
+    renderFilteredWarranties(filtered);
+}
+
+function renderFilteredWarranties(filteredWarranties) {
+    const tbody = document.getElementById('warranties-tbody');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '';
+    
+    filteredWarranties.forEach(warranty => {
+        const statusClass = warranty.status === 'active' ? 'success' : 
+                           warranty.status === 'expiring-soon' ? 'warning' : 'danger';
+        
+        const row = `
+            <tr>
+                <td>${warranty.id}</td>
+                <td>${warranty.type === 'repair' ? 'Repair Warranty' : 'Parts Warranty'}</td>
+                <td>${warranty.customer}</td>
+                <td>${warranty.item}</td>
+                <td>${warranty.duration}</td>
+                <td>${warranty.startDate}</td>
+                <td>${warranty.expiryDate}</td>
+                <td><span class="status-badge status-${statusClass}">${warranty.status}</span></td>
+                <td>
+                    <button class="btn btn-sm btn-secondary" onclick="viewWarranty('${warranty.id}')">View</button>
+                    ${warranty.source === 'repair' ? 
+                        `<button class="btn btn-sm btn-info" onclick="viewJobCard(${warranty.sourceId})">View Repair</button>` :
+                        `<button class="btn btn-sm btn-info" onclick="viewInvoice(${warranty.sourceId})">View Invoice</button>`
+                    }
+                </td>
+            </tr>
+        `;
+        tbody.innerHTML += row;
+    });
+    
+    updateWarrantySummary(filteredWarranties);
 }
 
 function updatePaymentCustomer() {
