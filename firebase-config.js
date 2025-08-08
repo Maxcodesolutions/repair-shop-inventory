@@ -106,21 +106,38 @@ class DataManager {
             // Wait for main script variables to be available
             await this.waitForMainScript();
 
-            const userData = {
-                inventory: inventory,
-                vendors: vendors,
-                customers: customers,
-                purchases: purchases,
-                repairs: repairs,
-                outsource: outsource,
-                invoices: invoices,
-                quotations: quotations,
-                pickDrops: pickDrops,
-                deliveries: deliveries,
-                payments: payments,
-                users: users,
+            const fallbackArray = (val) => Array.isArray(val) ? val : [];
+            const userDataRaw = {
+                inventory: fallbackArray(inventory),
+                vendors: fallbackArray(vendors),
+                customers: fallbackArray(customers),
+                purchases: fallbackArray(purchases),
+                repairs: fallbackArray(repairs),
+                outsource: Array.isArray(outsource) ? outsource : (Array.isArray(outsourceRepairs) ? outsourceRepairs : []),
+                outsourceRepairs: Array.isArray(outsourceRepairs) ? outsourceRepairs : (Array.isArray(outsource) ? outsource : []),
+                invoices: fallbackArray(invoices),
+                quotations: fallbackArray(quotations),
+                pickDrops: fallbackArray(pickDrops),
+                deliveries: fallbackArray(deliveries),
+                payments: fallbackArray(payments),
+                users: fallbackArray(users),
                 lastUpdated: new Date().toISOString()
             };
+
+            const userData = (function sanitizeForFirestore(value) {
+                if (value === undefined) return null;
+                if (value === null) return null;
+                if (Array.isArray(value)) return value.map(sanitizeForFirestore);
+                if (typeof value === 'object') {
+                    const out = {};
+                    Object.entries(value).forEach(([k, v]) => {
+                        if (v === undefined) return;
+                        out[k] = sanitizeForFirestore(v);
+                    });
+                    return out;
+                }
+                return value;
+            })(userDataRaw);
 
             await window.setDoc(window.doc(window.collection(db, 'users'), this.currentUser.uid), userData);
             console.log('Data saved to server successfully');

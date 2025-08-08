@@ -926,21 +926,30 @@ async function saveDataToCloud() {
     
     try {
         const user = window.auth.currentUser;
-        const data = {
-            inventory: inventory,
-            vendors: vendors,
-            customers: customers,
-            purchases: purchases,
-            repairs: repairs,
-            outsource: outsource,
-            invoices: invoices,
-            quotations: quotations,
-            pickDrops: pickDrops,
-            payments: payments,
-            deliveries: deliveries,
-            users: users,
+        // Ensure arrays are defined and avoid undefined anywhere
+        const outsourceArray = (typeof outsource !== 'undefined' && Array.isArray(outsource)) 
+            ? outsource 
+            : (Array.isArray(outsourceRepairs) ? outsourceRepairs : []);
+
+        const dataRaw = {
+            inventory: Array.isArray(inventory) ? inventory : [],
+            vendors: Array.isArray(vendors) ? vendors : [],
+            customers: Array.isArray(customers) ? customers : [],
+            purchases: Array.isArray(purchases) ? purchases : [],
+            repairs: Array.isArray(repairs) ? repairs : [],
+            outsource: outsourceArray,
+            // Also persist under the alternate key for compatibility
+            outsourceRepairs: outsourceArray,
+            invoices: Array.isArray(invoices) ? invoices : [],
+            quotations: Array.isArray(quotations) ? quotations : [],
+            pickDrops: Array.isArray(pickDrops) ? pickDrops : [],
+            payments: Array.isArray(payments) ? payments : [],
+            deliveries: Array.isArray(deliveries) ? deliveries : [],
+            users: Array.isArray(users) ? users : [],
             lastUpdated: new Date().toISOString()
         };
+
+        const data = sanitizeForFirestore(dataRaw);
         
         console.log('Saving data to cloud for user:', user.uid);
         console.log('Data to save:', {
@@ -1011,6 +1020,26 @@ async function saveDataToCloud() {
         console.log('Falling back to localStorage');
         saveDataToLocal();
     }
+}
+
+// Remove any undefined values recursively; keep nulls
+function sanitizeForFirestore(value) {
+    if (value === undefined) {
+        return null;
+    }
+    if (value === null) return null;
+    if (Array.isArray(value)) {
+        return value.map(sanitizeForFirestore);
+    }
+    if (typeof value === 'object') {
+        const out = {};
+        Object.entries(value).forEach(([k, v]) => {
+            if (v === undefined) return; // drop undefined keys entirely
+            out[k] = sanitizeForFirestore(v);
+        });
+        return out;
+    }
+    return value;
 }
 
 function getDefaultInventory() {
@@ -6319,7 +6348,7 @@ function updateJobCardData() {
             const months = parseInt(monthsInput ? monthsInput.value : '0') || 0;
             let expiresOn = null;
             if (enabled && months > 0) {
-                const baseDate = new Date(repairs[repairIndex].startDate || new Date());
+                const baseDate = new Date((repairs[repairIndex].startDate || new Date()).toString());
                 expiresOn = addMonths(baseDate, months).toISOString().split('T')[0];
             }
             return { enabled, months, expiresOn };
