@@ -1695,7 +1695,7 @@ function populatePaymentModal() {
         invoiceSelect.innerHTML = '<option value="">Select Invoice</option>';
         invoices.forEach(invoice => {
             if (invoice.status !== 'paid') {
-                invoiceSelect.innerHTML += `<option value="${invoice.id}">INV-${invoice.id.toString().padStart(4, '0')} - ${invoice.customer} - ₹${invoice.totalAmount}</option>`;
+                invoiceSelect.innerHTML += `<option value="${invoice.invoiceNumber}">${invoice.invoiceNumber} - ${invoice.customer} - ₹${invoice.total.toFixed(2)}</option>`;
             }
         });
     }
@@ -2507,10 +2507,11 @@ function handleAddPayment(e) {
     
     // Update invoice status if payment is for an invoice
     if (paymentData.invoiceId) {
-        const invoice = invoices.find(inv => inv.id === parseInt(paymentData.invoiceId));
+        const invoice = invoices.find(inv => inv.invoiceNumber === paymentData.invoiceId);
         if (invoice) {
             invoice.status = 'paid';
             invoice.paymentDate = paymentData.date;
+            console.log(`Invoice ${invoice.invoiceNumber} marked as paid`);
         }
     }
     
@@ -3587,28 +3588,62 @@ function printInvoice() {
                     </tr>
                 </thead>
                 <tbody>
-                    ${invoice.items.map(item => `
+                    ${invoice.items.map(item => {
+                        const warrantyText = item.warrantyMonths && item.warrantyMonths > 0 ? 
+                            `<br><small style="color: #666;">Warranty: ${item.warrantyMonths} months</small>` : '';
+                        return `
                         <tr>
-                            <td>${item.name}</td>
+                            <td>${item.name}${warrantyText}</td>
                             <td>${item.quantity}</td>
                             <td>₹${item.price.toFixed(2)}</td>
                             <td>₹${(item.quantity * item.price).toFixed(2)}</td>
                         </tr>
-                    `).join('')}
+                        `;
+                    }).join('')}
                 </tbody>
             </table>
             
             <div class="totals">
                 <p><strong>Subtotal:</strong> ₹${invoice.subtotal.toFixed(2)}</p>
-                <p><strong>Tax:</strong> ₹${invoice.taxAmount.toFixed(2)}</p>
-                <p><strong>Discount:</strong> ₹${invoice.discount.toFixed(2)}</p>
+                ${invoice.taxAmount > 0 ? `<p><strong>Tax (${invoice.taxRate || 18}%):</strong> ₹${invoice.taxAmount.toFixed(2)}</p>` : ''}
+                ${invoice.discount > 0 ? `<p><strong>Discount:</strong> ₹${invoice.discount.toFixed(2)}</p>` : ''}
                 <p class="total"><strong>Total:</strong> ₹${invoice.total.toFixed(2)}</p>
             </div>
+            
+            ${invoice.items.some(item => item.warrantyMonths && item.warrantyMonths > 0) ? `
+            <div style="margin-top: 20px; padding: 10px; background-color: #f8f9fa; border-left: 4px solid #007bff;">
+                <h4 style="margin: 0 0 10px 0; color: #007bff;">Warranty Information</h4>
+                <p style="margin: 0; font-size: 12px;">
+                    This invoice includes items with warranty coverage. Warranty terms and conditions apply as per our standard warranty policy.
+                </p>
+            </div>
+            ` : ''}
         </body>
         </html>
     `);
     printWindow.document.close();
     printWindow.print();
+}
+
+function registerPaymentForInvoice() {
+    const invoiceId = document.getElementById('invoice-detail-view').getAttribute('data-invoice-id');
+    const invoice = invoices.find(i => i.id === parseInt(invoiceId));
+    
+    if (!invoice) {
+        alert('Invoice not found!');
+        return;
+    }
+    
+    // Pre-populate the payment modal with invoice data
+    document.getElementById('payment-invoice').value = invoice.invoiceNumber;
+    document.getElementById('payment-customer').value = invoice.customer;
+    document.getElementById('payment-amount').value = invoice.total.toFixed(2);
+    document.getElementById('payment-date').value = new Date().toISOString().split('T')[0];
+    document.getElementById('payment-reference').value = `INV-${invoice.invoiceNumber}`;
+    document.getElementById('payment-notes').value = `Payment for invoice ${invoice.invoiceNumber}`;
+    
+    // Show the payment modal
+    showModal('add-payment-modal');
 }
 
 function markInvoiceAsPaid() {
@@ -7262,13 +7297,13 @@ function updatePaymentCustomer() {
     
     if (!invoiceSelect || !customerInput || !amountInput) return;
     
-    const selectedInvoiceId = invoiceSelect.value;
+    const selectedInvoiceNumber = invoiceSelect.value;
     
-    if (selectedInvoiceId) {
-        const selectedInvoice = invoices.find(inv => inv.id === parseInt(selectedInvoiceId));
+    if (selectedInvoiceNumber) {
+        const selectedInvoice = invoices.find(inv => inv.invoiceNumber === selectedInvoiceNumber);
         if (selectedInvoice) {
             customerInput.value = selectedInvoice.customer;
-            amountInput.value = selectedInvoice.totalAmount.toFixed(2);
+            amountInput.value = selectedInvoice.total.toFixed(2);
         }
     } else {
         customerInput.value = '';
