@@ -5537,11 +5537,11 @@ function viewJobCard(id) {
         document.getElementById('job-card-status-select').value = repair.status;
         document.getElementById('job-card-technician').textContent = currentUser?.fullName || 'Technician';
         
-        // Populate customer details
+        // Populate customer details with actual data
         document.getElementById('job-card-customer-name').textContent = repair.customer;
-        document.getElementById('job-card-customer-phone').textContent = 'Customer Phone'; // You can extend this
-        document.getElementById('job-card-customer-email').textContent = 'customer@email.com'; // You can extend this
-        document.getElementById('job-card-customer-address').textContent = 'Customer Address'; // You can extend this
+        document.getElementById('job-card-customer-phone').textContent = repair.customerPhone || 'Phone not provided';
+        document.getElementById('job-card-customer-email').textContent = repair.customerEmail || 'Email not provided';
+        document.getElementById('job-card-customer-address').textContent = repair.customerAddress || 'Address not provided';
         
         // Populate device details
         document.getElementById('job-card-device-type').textContent = repair.deviceType;
@@ -5973,12 +5973,7 @@ function addJobCardNote() {
     }
 }
 
-function editJobCard() {
-    if (window.currentJobCardId) {
-        // For now, just show an alert. You can implement a full edit modal later
-        alert('Edit functionality will be implemented in the next update.');
-    }
-}
+
 
 // Image capture and upload functionality
 let currentImageContext = null;
@@ -6265,10 +6260,15 @@ function populatePickDropForm(customer) {
 let currentEditingJobCardId = null;
 
 function editJobCard() {
-    if (!currentEditingJobCardId) {
+    // Use window.currentJobCardId if currentEditingJobCardId is not set
+    const jobCardId = currentEditingJobCardId || window.currentJobCardId;
+    if (!jobCardId) {
         alert('No job card selected for editing');
         return;
     }
+    
+    // Set the current editing job card ID
+    currentEditingJobCardId = jobCardId;
     
     const repair = repairs.find(r => r.id === currentEditingJobCardId);
     if (!repair) {
@@ -6280,6 +6280,9 @@ function editJobCard() {
     document.getElementById('edit-job-card-customer').value = repair.customer || '';
     document.getElementById('edit-job-card-phone').value = repair.customerPhone || '';
     document.getElementById('edit-job-card-address').value = repair.customerAddress || '';
+    if (document.getElementById('edit-job-card-email')) {
+        document.getElementById('edit-job-card-email').value = repair.customerEmail || '';
+    }
     document.getElementById('edit-job-card-device').value = repair.deviceType || '';
     document.getElementById('edit-job-card-brand').value = repair.brand || '';
     document.getElementById('edit-job-card-model').value = repair.model || '';
@@ -6331,6 +6334,7 @@ function updateJobCardData() {
         customer: document.getElementById('edit-job-card-customer').value || repairs[repairIndex].customer,
         customerPhone: document.getElementById('edit-job-card-phone').value || repairs[repairIndex].customerPhone,
         customerAddress: document.getElementById('edit-job-card-address').value || repairs[repairIndex].customerAddress,
+        customerEmail: document.getElementById('edit-job-card-email')?.value || repairs[repairIndex].customerEmail,
         deviceType: document.getElementById('edit-job-card-device').value || repairs[repairIndex].deviceType,
         brand: document.getElementById('edit-job-card-brand').value || repairs[repairIndex].brand,
         model: document.getElementById('edit-job-card-model').value || repairs[repairIndex].model,
