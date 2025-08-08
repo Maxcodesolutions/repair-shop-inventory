@@ -3535,6 +3535,9 @@ function printInvoice() {
     const customerAddress = customer ? customer.address : 'Address not available';
     const customerPhone = customer ? customer.phone : 'Phone not available';
     
+    // Check if any items have warranty
+    const hasWarrantyItems = invoice.items.some(item => item.warrantyMonths && item.warrantyMonths > 0);
+    
     // Create a new window for printing
     const printWindow = window.open('', '_blank');
     printWindow.document.write(`
@@ -3542,40 +3545,47 @@ function printInvoice() {
         <head>
             <title>Invoice ${invoice.invoiceNumber}</title>
             <style>
-                body { font-family: Arial, sans-serif; margin: 20px; }
-                .header { text-align: center; margin-bottom: 30px; }
+                body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.4; }
+                .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 15px; }
                 .invoice-info { margin-bottom: 20px; }
                 .customer-info { margin-bottom: 20px; }
                 table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
                 th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-                th { background-color: #f2f2f2; }
+                th { background-color: #f2f2f2; font-weight: bold; }
                 .totals { text-align: right; margin-top: 20px; }
                 .total { font-weight: bold; font-size: 1.2em; }
-                .company-details { margin-bottom: 20px; }
-                .customer-details { margin-bottom: 20px; }
+                .warranty-section { margin-top: 20px; padding: 15px; background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 5px; }
+                .warranty-title { color: #007bff; font-weight: bold; margin-bottom: 10px; }
+                .warranty-item { margin-bottom: 5px; font-size: 12px; }
+                .footer { margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 10px; color: #666; }
+                .disclaimer { margin-top: 15px; padding: 10px; background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 3px; }
+                .terms { margin-top: 15px; }
+                .terms h4 { color: #495057; margin-bottom: 8px; }
+                .terms ul { margin: 0; padding-left: 20px; }
+                .terms li { margin-bottom: 3px; }
             </style>
         </head>
         <body>
             <div class="header">
-                <h1>REPAIR MANIAC</h1>
-                <p>O-109, First Floor, The Shopping Mall</p>
-                <p>Arjun Marg, DLF City Phase-1</p>
-                <p>Gurugram, Haryana-122002</p>
-                <p>Phone: 9560455637</p>
+                <h1 style="margin: 0; color: #333;">REPAIR MANIAC</h1>
+                <p style="margin: 5px 0;">O-109, First Floor, The Shopping Mall</p>
+                <p style="margin: 5px 0;">Arjun Marg, DLF City Phase-1</p>
+                <p style="margin: 5px 0;">Gurugram, Haryana-122002</p>
+                <p style="margin: 5px 0;"><strong>Phone:</strong> 9560455637</p>
             </div>
             
             <div class="invoice-info">
-                <h2>Invoice: ${invoice.invoiceNumber}</h2>
-                <p><strong>Date:</strong> ${invoice.date}</p>
-                <p><strong>Due Date:</strong> ${invoice.dueDate}</p>
-                <p><strong>Status:</strong> ${invoice.status}</p>
+                <h2 style="margin: 0 0 10px 0; color: #333;">Invoice: ${invoice.invoiceNumber}</h2>
+                <p style="margin: 3px 0;"><strong>Date:</strong> ${invoice.date}</p>
+                <p style="margin: 3px 0;"><strong>Due Date:</strong> ${invoice.dueDate}</p>
+                <p style="margin: 3px 0;"><strong>Status:</strong> ${invoice.status.toUpperCase()}</p>
             </div>
             
             <div class="customer-info">
-                <h3>Bill To:</h3>
-                <p><strong>${invoice.customer}</strong></p>
-                <p>${customerAddress}</p>
-                <p>Phone: ${customerPhone}</p>
+                <h3 style="margin: 0 0 10px 0; color: #333;">Bill To:</h3>
+                <p style="margin: 3px 0;"><strong>${invoice.customer}</strong></p>
+                <p style="margin: 3px 0;">${customerAddress}</p>
+                <p style="margin: 3px 0;">Phone: ${customerPhone}</p>
             </div>
             
             <table>
@@ -3590,7 +3600,7 @@ function printInvoice() {
                 <tbody>
                     ${invoice.items.map(item => {
                         const warrantyText = item.warrantyMonths && item.warrantyMonths > 0 ? 
-                            `<br><small style="color: #666;">Warranty: ${item.warrantyMonths} months</small>` : '';
+                            `<br><span style="color: #007bff; font-size: 11px; font-weight: bold;">✓ Warranty: ${item.warrantyMonths} months</span>` : '';
                         return `
                         <tr>
                             <td>${item.name}${warrantyText}</td>
@@ -3604,25 +3614,55 @@ function printInvoice() {
             </table>
             
             <div class="totals">
-                <p><strong>Subtotal:</strong> ₹${invoice.subtotal.toFixed(2)}</p>
-                ${invoice.taxAmount > 0 ? `<p><strong>Tax (${invoice.taxRate || 18}%):</strong> ₹${invoice.taxAmount.toFixed(2)}</p>` : ''}
-                ${invoice.discount > 0 ? `<p><strong>Discount:</strong> ₹${invoice.discount.toFixed(2)}</p>` : ''}
-                <p class="total"><strong>Total:</strong> ₹${invoice.total.toFixed(2)}</p>
+                <p style="margin: 5px 0;"><strong>Subtotal:</strong> ₹${invoice.subtotal.toFixed(2)}</p>
+                ${invoice.taxAmount > 0 ? `<p style="margin: 5px 0;"><strong>Tax (${invoice.taxRate || 18}%):</strong> ₹${invoice.taxAmount.toFixed(2)}</p>` : ''}
+                ${invoice.discount > 0 ? `<p style="margin: 5px 0;"><strong>Discount:</strong> ₹${invoice.discount.toFixed(2)}</p>` : ''}
+                <p class="total" style="margin: 10px 0;"><strong>Total:</strong> ₹${invoice.total.toFixed(2)}</p>
             </div>
             
-            ${invoice.items.some(item => item.warrantyMonths && item.warrantyMonths > 0) ? `
-            <div style="margin-top: 20px; padding: 10px; background-color: #f8f9fa; border-left: 4px solid #007bff;">
-                <h4 style="margin: 0 0 10px 0; color: #007bff;">Warranty Information</h4>
-                <p style="margin: 0; font-size: 12px;">
-                    This invoice includes items with warranty coverage. Warranty terms and conditions apply as per our standard warranty policy.
-                </p>
+            ${hasWarrantyItems ? `
+            <div class="warranty-section">
+                <div class="warranty-title">WARRANTY INFORMATION</div>
+                <div class="warranty-item">✓ This invoice includes items with warranty coverage</div>
+                <div class="warranty-item">✓ Warranty period varies by item as indicated above</div>
+                <div class="warranty-item">✓ Warranty covers manufacturing defects only</div>
+                <div class="warranty-item">✓ Physical damage is not covered under warranty</div>
+            </div>
+            
+            <div class="terms">
+                <h4>WARRANTY TERMS & CONDITIONS:</h4>
+                <ul>
+                    <li>Warranty is valid only with this original invoice</li>
+                    <li>Warranty period starts from the date of purchase</li>
+                    <li>Warranty covers only manufacturing defects</li>
+                    <li>Physical damage, water damage, or unauthorized repairs void warranty</li>
+                    <li>Warranty does not cover consumables or normal wear and tear</li>
+                    <li>Customer must present this invoice for warranty claims</li>
+                    <li>RepairManiac reserves the right to inspect items before warranty service</li>
+                    <li>Warranty is non-transferable and valid only for the original purchaser</li>
+                </ul>
             </div>
             ` : ''}
+            
+            <div class="footer">
+                <div class="disclaimer">
+                    <strong>DISCLAIMER:</strong> All repairs and services are performed to the best of our ability. RepairManiac is not responsible for any data loss during repair processes. Customers are advised to backup their data before any repair work. Prices are subject to change without prior notice. Payment is due upon completion of work unless otherwise agreed in writing.
+                </div>
+                <div style="margin-top: 10px; text-align: center;">
+                    <p style="margin: 5px 0;"><strong>Thank you for choosing RepairManiac!</strong></p>
+                    <p style="margin: 5px 0;">For any queries, please contact us at 9560455637</p>
+                    <p style="margin: 5px 0;">Email: info@repairmaniac.com</p>
+                </div>
+            </div>
         </body>
         </html>
     `);
     printWindow.document.close();
-    printWindow.print();
+    printWindow.focus();
+    setTimeout(() => {
+        printWindow.print();
+        printWindow.close();
+    }, 500);
 }
 
 function registerPaymentForInvoice() {
