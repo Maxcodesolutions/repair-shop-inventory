@@ -1151,6 +1151,11 @@ function applyUserPermissions() {
     console.log('Applying permissions for user:', currentUser.username);
     console.log('User permissions:', currentUser.permissions);
     
+    // Debug: Check if warranties permission exists
+    const hasWarrantiesPermission = currentUser.permissions.includes('warranties');
+    console.log('🔍 DEBUG: Has warranties permission:', hasWarrantiesPermission);
+    console.log('🔍 DEBUG: All permissions:', currentUser.permissions);
+    
     // Hide/show navigation links based on permissions
     const navLinks = document.querySelectorAll('.nav-link');
     navLinks.forEach(link => {
@@ -1177,7 +1182,18 @@ function applyUserPermissions() {
         }
     });
     
-
+    // Force show warranties for debugging
+    const warrantyLink = document.querySelector('[data-section="warranties"]');
+    if (warrantyLink) {
+        warrantyLink.classList.remove('nav-link-hidden');
+        console.log('🔧 FORCED SHOW: Warranty navigation link');
+    }
+    
+    const warrantySection = document.getElementById('warranties');
+    if (warrantySection) {
+        warrantySection.classList.remove('section-hidden');
+        console.log('🔧 FORCED SHOW: Warranty section');
+    }
     
     // Update current user name in header
     document.getElementById('current-user-name').textContent = currentUser.fullName;
@@ -1699,6 +1715,42 @@ function updateWarrantySummary(warranties) {
 function viewWarranty(warrantyId) {
     // This function can be expanded to show detailed warranty information
     alert(`Warranty ${warrantyId} details will be shown here.`);
+}
+
+// Function to force update admin user permissions
+function forceUpdateAdminPermissions() {
+    console.log('🔧 FORCING ADMIN PERMISSIONS UPDATE:');
+    
+    const adminUser = users.find(u => u.username === 'admin');
+    if (adminUser) {
+        console.log('Found admin user:', adminUser);
+        console.log('Current permissions:', adminUser.permissions);
+        
+        // Ensure warranties permission is included
+        if (!adminUser.permissions.includes('warranties')) {
+            adminUser.permissions.push('warranties');
+            console.log('✅ Added warranties permission to admin user');
+        }
+        
+        // Update current user if it's the admin
+        if (currentUser && currentUser.username === 'admin') {
+            currentUser.permissions = adminUser.permissions;
+            console.log('✅ Updated current user permissions');
+        }
+        
+        // Save the updated data
+        saveData();
+        console.log('✅ Saved updated user data');
+        
+        // Re-apply permissions
+        applyUserPermissions();
+        console.log('✅ Re-applied user permissions');
+        
+        return true;
+    } else {
+        console.log('❌ Admin user not found');
+        return false;
+    }
 }
 
 
