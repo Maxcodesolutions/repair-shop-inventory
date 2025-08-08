@@ -1342,6 +1342,11 @@ function setupEventListeners() {
         const section = link.getAttribute('data-section');
         console.log(`Setting up nav link ${index + 1}: ${link.textContent.trim()} -> ${section}`);
         
+        // Debug: Check if warranties link exists
+        if (section === 'warranties') {
+            console.log('✅ WARRANTIES NAV LINK FOUND:', link.outerHTML);
+        }
+        
         // Add click event listener
         link.addEventListener('click', function(e) {
             e.preventDefault();
@@ -1692,6 +1697,34 @@ function updateWarrantySummary(warranties) {
 function viewWarranty(warrantyId) {
     // This function can be expanded to show detailed warranty information
     alert(`Warranty ${warrantyId} details will be shown here.`);
+}
+
+// Debug function to check warranty elements
+function debugWarrantyElements() {
+    console.log('🔍 DEBUGGING WARRANTY ELEMENTS:');
+    
+    // Check navigation link
+    const warrantyNavLink = document.querySelector('[data-section="warranties"]');
+    console.log('Warranty nav link:', warrantyNavLink);
+    
+    // Check warranties section
+    const warrantiesSection = document.getElementById('warranties');
+    console.log('Warranties section:', warrantiesSection);
+    
+    // Check warranties table
+    const warrantiesTable = document.getElementById('warranties-table');
+    console.log('Warranties table:', warrantiesTable);
+    
+    // Check warranties tbody
+    const warrantiesTbody = document.getElementById('warranties-tbody');
+    console.log('Warranties tbody:', warrantiesTbody);
+    
+    // List all nav links
+    const allNavLinks = document.querySelectorAll('.nav-link');
+    console.log('All nav links found:', allNavLinks.length);
+    allNavLinks.forEach((link, index) => {
+        console.log(`Nav link ${index + 1}:`, link.getAttribute('data-section'), link.textContent.trim());
+    });
 }
 
 function renderPayments() {
