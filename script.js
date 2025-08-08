@@ -2069,7 +2069,8 @@ function handleAddRepair(e) {
     const newRepair = {
         id: repairs.length > 0 ? Math.max(...repairs.map(r => r.id)) + 1 : 1,
         ...repairData,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        warranty: { enabled: false, months: 0, expiresOn: null }
     };
     
     repairs.push(newRepair);
@@ -2119,6 +2120,7 @@ function handleAddInvoice(e) {
         const name = itemDiv.querySelector('.invoice-item-name').value;
         const quantity = parseInt(itemDiv.querySelector('.invoice-quantity').value);
         const price = parseFloat(itemDiv.querySelector('.invoice-price').value);
+        const warrantyMonths = parseInt((itemDiv.querySelector('.invoice-warranty-months')?.value) || '0');
         
         if (name && quantity && price) {
             const total = quantity * price;
@@ -2126,7 +2128,8 @@ function handleAddInvoice(e) {
                 name,
                 quantity,
                 price,
-                total
+                total,
+                warrantyMonths
             });
             subtotal += total;
         }
@@ -2550,10 +2553,58 @@ function updateDashboard() {
     if (totalSpentEl) totalSpentEl.textContent = `₹${purchases.reduce((sum, p) => sum + p.totalAmount, 0).toFixed(2)}`;
     if (activeRepairsCountEl) activeRepairsCountEl.textContent = repairs.filter(r => r.status === 'in-progress').length;
     
+    // Warranty expiry alert count (next 30 days)
+    try {
+        const expiringCount = getWarrantiesExpiringSoonCount(30);
+        const warrantyEl = document.getElementById('warranty-expiring');
+        if (warrantyEl) warrantyEl.textContent = expiringCount;
+    } catch (e) {
+        console.warn('Warranty summary error:', e.message);
+    }
+
     // Update charts
     updateRepairStatusChart();
     updateRevenueChart();
     updateQuotationValueChart();
+}
+
+// Warranty helpers
+function getWarrantiesExpiringSoonCount(daysAhead) {
+    const today = new Date();
+    const threshold = new Date();
+    threshold.setDate(today.getDate() + daysAhead);
+    let count = 0;
+
+    // From completed repairs with warranty
+    repairs.forEach(r => {
+        if (r.warranty && r.warranty.enabled && r.warranty.expiresOn) {
+            const exp = new Date(r.warranty.expiresOn);
+            if (exp >= today && exp <= threshold) count += 1;
+        }
+    });
+
+    // From invoices items with warranty
+    invoices.forEach(inv => {
+        if (!inv.date) return;
+        const baseDate = new Date(inv.date);
+        inv.items?.forEach(item => {
+            const months = parseInt(item.warrantyMonths || 0);
+            if (months > 0) {
+                const exp = addMonths(baseDate, months);
+                if (exp >= today && exp <= threshold) count += 1;
+            }
+        });
+    });
+
+    return count;
+}
+
+function addMonths(date, months) {
+    const d = new Date(date);
+    const day = d.getDate();
+    d.setMonth(d.getMonth() + months);
+    if (d.getDate() < day) d.setDate(0);
+    return d;
 }
 
 // Chart variables
@@ -2930,6 +2981,14 @@ function renderRepairs() {
         const estimatedDate = new Date(startDate);
         estimatedDate.setDate(estimatedDate.getDate() + estimate);
         
+        // Warranty indicator cell
+        let warrantyBadge = '';
+        if (repair.warranty && repair.warranty.enabled && repair.warranty.months > 0) {
+            const exp = repair.warranty.expiresOn ? new Date(repair.warranty.expiresOn) : null;
+            const expText = exp ? exp.toISOString().split('T')[0] : '';
+            warrantyBadge = `<span class="status-badge" title="Warranty expires ${expText}">W-${repair.warranty.months}m</span>`;
+        }
+
         const row = `
             <tr>
                 <td>R-${repair.id}</td>
@@ -2943,6 +3002,7 @@ function renderRepairs() {
                 <td>${startDate}</td>
                 <td>${estimatedDate.toISOString().split('T')[0]}</td>
                 <td>
+                    ${warrantyBadge}
                     <button class="btn btn-sm btn-info" onclick="viewJobCard(${repair.id})" title="View Job Card">
                         <i class="fas fa-clipboard-list"></i> Job Card
                     </button>
@@ -2996,6 +3056,8 @@ function renderInvoices() {
     tbody.innerHTML = '';
     
     invoices.forEach(invoice => {
+        const hasWarranty = (invoice.items || []).some(it => (it.warrantyMonths || 0) > 0);
+        const warrantyBadge = hasWarranty ? '<span class="status-badge" title="Contains warranty items">Warranty</span>' : '';
         const row = `
             <tr>
                 <td>${invoice.invoiceNumber}</td>
@@ -3016,6 +3078,7 @@ function renderInvoices() {
                     </select>
                 </td>
                 <td>
+                    ${warrantyBadge}
                     <button class="btn btn-sm btn-secondary" onclick="viewInvoice(${invoice.id})">View</button>
                     <button class="btn btn-sm btn-danger" onclick="deleteInvoice(${invoice.id})">Delete</button>
                 </td>
@@ -3175,6 +3238,11 @@ function updateRepairStatus(id) {
     const repair = repairs.find(r => r.id === id);
     if (repair) {
         repair.status = repair.status === 'in-progress' ? 'completed' : 'in-progress';
+        // If marked completed and has warranty months but no expiry, set expiry from today
+        if (repair.status === 'completed' && repair.warranty && repair.warranty.enabled && repair.warranty.months > 0 && !repair.warranty.expiresOn) {
+            const expires = addMonths(new Date(), repair.warranty.months);
+            repair.warranty.expiresOn = expires.toISOString().split('T')[0];
+        }
         saveData();
         renderRepairs();
         updateDashboard();
@@ -3275,9 +3343,10 @@ function viewInvoice(id) {
     tbody.innerHTML = '';
     
     invoice.items.forEach(item => {
+        const warrantyText = item.warrantyMonths && item.warrantyMonths > 0 ? `${item.warrantyMonths} mo warranty` : 'No warranty';
         const row = `
             <tr>
-                <td>${item.name}</td>
+                <td>${item.name}<br><span style="color:#64748b; font-size: 0.85rem;">${warrantyText}</span></td>
                 <td>${item.quantity}</td>
                 <td>₹${item.price.toFixed(2)}</td>
                 <td>₹${(item.quantity * item.price).toFixed(2)}</td>
@@ -3291,6 +3360,24 @@ function viewInvoice(id) {
     document.getElementById('invoice-tax').textContent = `₹${invoice.taxAmount.toFixed(2)}`;
     document.getElementById('invoice-discount').textContent = `₹${invoice.discount.toFixed(2)}`;
     document.getElementById('invoice-total-amount').textContent = `₹${invoice.total.toFixed(2)}`;
+
+    // Compute first warranty expiry in invoice and show as a note
+    try {
+        const baseDate = new Date(invoice.date);
+        const expiries = [];
+        invoice.items.forEach(it => {
+            const m = parseInt(it.warrantyMonths || 0);
+            if (m > 0) expiries.push(addMonths(baseDate, m));
+        });
+        if (expiries.length > 0) {
+            const soonest = new Date(Math.min(...expiries.map(d => d.getTime())));
+            const note = document.createElement('div');
+            note.style.marginTop = '8px';
+            note.style.color = '#374151';
+            note.innerHTML = `<strong>Warranty:</strong> Items in this invoice include warranties. Earliest expiry: ${soonest.toISOString().split('T')[0]}`;
+            document.querySelector('.invoice-detail-content .invoice-detail-info')?.appendChild(note);
+        }
+    } catch (e) { /* ignore */ }
     
     // Store current invoice ID for actions
     document.getElementById('invoice-detail-view').setAttribute('data-invoice-id', id);
@@ -3830,6 +3917,13 @@ function addInvoiceItem() {
         </div>
         <input type="number" class="invoice-quantity" placeholder="Qty" min="1" value="1" required>
         <input type="number" class="invoice-price" placeholder="Price" min="0" step="0.01" required>
+        <select class=\"invoice-warranty-months\" title=\"Warranty (months)\">
+            <option value=\"0\">No Warranty</option>
+            <option value=\"1\">1 month</option>
+            <option value=\"3\">3 months</option>
+            <option value=\"6\">6 months</option>
+            <option value=\"12\">12 months</option>
+        </select>
         <button type="button" class="btn btn-danger btn-sm" onclick="removeInvoiceItem(this)">Remove</button>
     `;
     container.appendChild(newItem);
@@ -3846,6 +3940,13 @@ function addInvoiceItemWithData(itemData) {
         </div>
         <input type="number" class="invoice-quantity" placeholder="Qty" min="1" value="${itemData.quantity}" required>
         <input type="number" class="invoice-price" placeholder="Price" min="0" step="0.01" value="${itemData.price}" required>
+        <select class=\"invoice-warranty-months\" title=\"Warranty (months)\">
+            <option value=\"0\" ${itemData.warrantyMonths === 0 || !itemData.warrantyMonths ? 'selected' : ''}>No Warranty</option>
+            <option value=\"1\" ${itemData.warrantyMonths === 1 ? 'selected' : ''}>1 month</option>
+            <option value=\"3\" ${itemData.warrantyMonths === 3 ? 'selected' : ''}>3 months</option>
+            <option value=\"6\" ${itemData.warrantyMonths === 6 ? 'selected' : ''}>6 months</option>
+            <option value=\"12\" ${itemData.warrantyMonths === 12 ? 'selected' : ''}>12 months</option>
+        </select>
         <button type="button" class="btn btn-danger btn-sm" onclick="removeInvoiceItem(this)">Remove</button>
     `;
     container.appendChild(newItem);
@@ -6159,6 +6260,14 @@ function editJobCard() {
     document.getElementById('edit-job-card-estimated-cost').value = repair.estimatedCost || '';
     document.getElementById('edit-job-card-estimated-time').value = repair.estimatedTime || '';
     document.getElementById('edit-job-card-status').value = repair.status || 'pending';
+
+    // Warranty fields
+    const warrantyEnabled = !!(repair.warranty && repair.warranty.enabled);
+    const warrantyMonths = (repair.warranty && repair.warranty.months) ? String(repair.warranty.months) : '0';
+    const enabledEl = document.getElementById('edit-job-card-warranty-enabled');
+    const monthsEl = document.getElementById('edit-job-card-warranty-months');
+    if (enabledEl) enabledEl.checked = warrantyEnabled;
+    if (monthsEl) monthsEl.value = warrantyMonths;
     
     // Initialize image container with existing images
     initializeEditJobCardImages(repair.images || []);
@@ -6202,7 +6311,19 @@ function updateJobCardData() {
         estimatedCost: document.getElementById('edit-job-card-estimated-cost').value || repairs[repairIndex].estimatedCost,
         estimatedTime: document.getElementById('edit-job-card-estimated-time').value || repairs[repairIndex].estimatedTime,
         status: document.getElementById('edit-job-card-status').value || repairs[repairIndex].status,
-        images: currentImages
+        images: currentImages,
+        warranty: (function(){
+            const enabledInput = document.getElementById('edit-job-card-warranty-enabled');
+            const monthsInput = document.getElementById('edit-job-card-warranty-months');
+            const enabled = !!(enabledInput && enabledInput.checked);
+            const months = parseInt(monthsInput ? monthsInput.value : '0') || 0;
+            let expiresOn = null;
+            if (enabled && months > 0) {
+                const baseDate = new Date(repairs[repairIndex].startDate || new Date());
+                expiresOn = addMonths(baseDate, months).toISOString().split('T')[0];
+            }
+            return { enabled, months, expiresOn };
+        })()
     };
     
     // Save data

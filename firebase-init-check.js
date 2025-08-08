@@ -82,3 +82,4 @@ setTimeout(() => {
 }, 1000);
 
 console.log('Firebase Init Check: Script loaded');
+

@@ -159,3 +159,4 @@ if (document.readyState === 'loading') {
 }
 
 console.log('Quick navigation fix loaded successfully');
+

@@ -100,3 +100,4 @@ echo "5. Set up monitoring and analytics"
 echo ""
 echo "📖 For detailed instructions, see DEPLOYMENT.md"
 echo "🆘 Need help? Check the troubleshooting section in DEPLOYMENT.md"
+
