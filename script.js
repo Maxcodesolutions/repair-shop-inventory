@@ -2089,6 +2089,7 @@ function handleAddRepair(e) {
         model: document.getElementById('repair-model').value,
         serial: document.getElementById('repair-serial').value,
         issue: document.getElementById('repair-issue').value,
+        diagnosis: document.getElementById('repair-diagnosis').value,
         estimate: parseInt(document.getElementById('repair-estimate').value),
         status: 'pending',
         startDate: new Date().toISOString().split('T')[0],
@@ -5549,10 +5550,10 @@ function viewJobCard(id) {
         document.getElementById('job-card-serial').textContent = repair.serial || `SN${repair.id.toString().padStart(9, '0')}`;
         document.getElementById('job-card-issue').textContent = repair.issue;
         
-        // Populate diagnosis (you can extend this with actual diagnosis data)
-        document.getElementById('job-card-diagnosis-text').textContent = 'Initial assessment completed. Device requires repair work.';
-        document.getElementById('job-card-estimated-cost').textContent = '₹' + (Math.random() * 10000 + 5000).toFixed(0);
-        document.getElementById('job-card-estimated-time').textContent = `${repair.estimate || 7} days`;
+        // Populate diagnosis with actual data
+        document.getElementById('job-card-diagnosis-text').textContent = repair.diagnosis || 'Initial assessment completed. Device requires repair work.';
+        document.getElementById('job-card-estimated-cost').textContent = '₹' + (repair.estimatedCost || (Math.random() * 10000 + 5000).toFixed(0));
+        document.getElementById('job-card-estimated-time').textContent = `${repair.estimatedTime || repair.estimate || 7} days`;
         
         // Display device images
         displayJobCardImages(repair.images || []);
