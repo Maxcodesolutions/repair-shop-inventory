@@ -1912,6 +1912,8 @@ function closeModal(modalId) {
     if (modalId === 'add-customer-modal') {
         document.querySelector('#add-customer-modal .modal-header h3').textContent = 'Add New Customer';
         document.getElementById('add-customer-form').removeAttribute('data-editing-id');
+        const submitBtn = document.getElementById('add-customer-submit');
+        if (submitBtn) submitBtn.textContent = 'Add Customer';
     }
     
     // Clear repair ID for add-invoice-modal
@@ -2191,6 +2193,8 @@ function handleAddCustomer(e) {
         }
         // Clear the editing flag
         document.getElementById('add-customer-form').removeAttribute('data-editing-id');
+        const submitBtn = document.getElementById('add-customer-submit');
+        if (submitBtn) submitBtn.textContent = 'Add Customer';
     } else {
         // Create new customer
         const newCustomer = {
@@ -3378,6 +3382,9 @@ function editCustomer(id) {
         
         // Update modal title to indicate editing
         document.querySelector('#add-customer-modal .modal-header h3').textContent = 'Edit Customer';
+        // Update submit button text to save
+        const submitBtn = document.getElementById('add-customer-submit');
+        if (submitBtn) submitBtn.textContent = 'Save Changes';
         
         showModal('add-customer-modal');
     }
