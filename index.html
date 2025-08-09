@@ -629,7 +629,7 @@
                         <input type="text" id="search-customers" placeholder="Search customers...">
                     </div>
                     
-                    <div class="table-container">
+                    <div class="table-container" id="customers-table-container">
                         <table id="customers-table">
                             <thead>
                                 <tr>
@@ -648,6 +648,61 @@
                                 <!-- Customer data will be populated by JavaScript -->
                             </tbody>
                         </table>
+                    </div>
+
+                    <!-- Customer Detail View -->
+                    <div class="customer-detail-view" id="customer-detail-view" style="display: none;">
+                        <div class="customer-detail-header">
+                            <button class="btn btn-secondary back-to-customers-btn" onclick="backToCustomerList()">
+                                <i class="fas fa-arrow-left"></i> Back to Customers
+                            </button>
+                            <h2 id="customer-detail-title">Customer Details</h2>
+                        </div>
+
+                        <div class="customer-detail-content">
+                            <div class="customer-detail-info">
+                                <div class="customer-summary">
+                                    <h3 id="customer-name">Customer Name</h3>
+                                    <p><strong>Customer ID:</strong> <span id="customer-id"></span></p>
+                                    <p><strong>Status:</strong> <span id="customer-status"></span></p>
+                                    <p><strong>Preferred Device:</strong> <span id="customer-preferred-device"></span></p>
+                                    <p><strong>Total Repairs:</strong> <span id="customer-total-repairs"></span></p>
+                                    <p><strong>Last Visit:</strong> <span id="customer-last-visit"></span></p>
+                                </div>
+                                <div class="customer-contact">
+                                    <h4>Contact</h4>
+                                    <p><strong>Phone:</strong> <span id="customer-phone"></span></p>
+                                    <p><strong>Email:</strong> <span id="customer-email"></span></p>
+                                    <p><strong>Address:</strong> <span id="customer-address"></span></p>
+                                </div>
+                            </div>
+
+                            <div class="customer-repairs">
+                                <h4>Recent Repairs</h4>
+                                <div class="table-container">
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th>Repair ID</th>
+                                                <th>Device</th>
+                                                <th>Brand</th>
+                                                <th>Model</th>
+                                                <th>Issue</th>
+                                                <th>Status</th>
+                                                <th>Start Date</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="customer-repairs-tbody"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <div class="customer-actions">
+                                <button class="btn btn-secondary" onclick="editCustomerFromDetail()">
+                                    <i class="fas fa-edit"></i> Edit Customer
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </section>
 

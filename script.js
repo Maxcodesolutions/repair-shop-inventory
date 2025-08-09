@@ -3142,6 +3142,7 @@ function renderCustomers() {
                 <td>${customer.lastVisit}</td>
                 <td><span class="status-badge ${statusClass}">${customer.status}</span></td>
                 <td>
+                    <button class="btn btn-sm btn-info" onclick="viewCustomer(${customer.id})">View</button>
                     <button class="btn btn-sm btn-secondary" onclick="editCustomer(${customer.id})">Edit</button>
                     <button class="btn btn-sm btn-danger" onclick="deleteCustomer(${customer.id})">Delete</button>
                     <button class="btn btn-sm btn-primary" onclick="viewCustomerHistory(${customer.id})">History</button>
@@ -3424,6 +3425,75 @@ function viewCustomerHistory(id) {
         }
         
         alert(historyText);
+    }
+}
+
+function viewCustomer(id) {
+    const customer = customers.find(c => c.id === id);
+    if (!customer) {
+        alert('Customer not found!');
+        return;
+    }
+    // Toggle views
+    const tableContainer = document.getElementById('customers-table-container');
+    const detailView = document.getElementById('customer-detail-view');
+    if (tableContainer && detailView) {
+        tableContainer.style.display = 'none';
+        detailView.style.display = 'block';
+    }
+    // Populate header/title
+    const titleEl = document.getElementById('customer-detail-title');
+    if (titleEl) titleEl.textContent = `Customer: ${customer.name}`;
+    // Populate summary
+    document.getElementById('customer-name').textContent = customer.name || 'N/A';
+    document.getElementById('customer-id').textContent = `C-${customer.id}`;
+    document.getElementById('customer-status').textContent = customer.status || 'N/A';
+    document.getElementById('customer-preferred-device').textContent = customer.preferredDevice || 'N/A';
+    document.getElementById('customer-total-repairs').textContent = (customer.totalRepairs ?? 0);
+    document.getElementById('customer-last-visit').textContent = customer.lastVisit || 'N/A';
+    // Contact
+    document.getElementById('customer-phone').textContent = customer.phone || 'N/A';
+    document.getElementById('customer-email').textContent = customer.email || 'N/A';
+    document.getElementById('customer-address').textContent = customer.address || 'N/A';
+    // Repairs list
+    const tbody = document.getElementById('customer-repairs-tbody');
+    if (tbody) {
+        tbody.innerHTML = '';
+        const customerRepairs = repairs.filter(r => r.customer === customer.name);
+        customerRepairs.forEach(r => {
+            const row = `
+                <tr>
+                    <td>R-${r.id}</td>
+                    <td>${r.deviceType || ''}</td>
+                    <td>${r.brand || ''}</td>
+                    <td>${r.model || ''}</td>
+                    <td>${(r.issue || '').toString().slice(0, 60)}</td>
+                    <td><span class="status-badge status-${r.status}">${r.status}</span></td>
+                    <td>${r.startDate || ''}</td>
+                </tr>
+            `;
+            tbody.innerHTML += row;
+        });
+    }
+    // Store current id on detail view
+    detailView?.setAttribute('data-customer-id', String(id));
+}
+
+function backToCustomerList() {
+    const tableContainer = document.getElementById('customers-table-container');
+    const detailView = document.getElementById('customer-detail-view');
+    if (tableContainer && detailView) {
+        detailView.style.display = 'none';
+        tableContainer.style.display = 'block';
+    }
+}
+
+function editCustomerFromDetail() {
+    const detailView = document.getElementById('customer-detail-view');
+    const idAttr = detailView?.getAttribute('data-customer-id');
+    const id = idAttr ? parseInt(idAttr, 10) : null;
+    if (id) {
+        editCustomer(id);
     }
 }
 
@@ -5313,6 +5383,7 @@ function renderFilteredCustomers(filteredItems) {
                 <td>${customer.lastVisit}</td>
                 <td><span class="status-badge ${statusClass}">${customer.status}</span></td>
                 <td>
+                    <button class="btn btn-sm btn-info" onclick="viewCustomer(${customer.id})">View</button>
                     <button class="btn btn-sm btn-secondary" onclick="editCustomer(${customer.id})">Edit</button>
                     <button class="btn btn-sm btn-danger" onclick="deleteCustomer(${customer.id})">Delete</button>
                     <button class="btn btn-sm btn-primary" onclick="viewCustomerHistory(${customer.id})">History</button>
@@ -5389,6 +5460,9 @@ window.deleteVendor = deleteVendor;
 window.editCustomer = editCustomer;
 window.deleteCustomer = deleteCustomer;
 window.viewCustomerHistory = viewCustomerHistory;
+window.viewCustomer = viewCustomer;
+window.backToCustomerList = backToCustomerList;
+window.editCustomerFromDetail = editCustomerFromDetail;
 window.searchCustomersForOutsource = searchCustomersForOutsource;
 window.showCustomerSuggestions = showCustomerSuggestions;
 window.hideCustomerSuggestions = hideCustomerSuggestions;
