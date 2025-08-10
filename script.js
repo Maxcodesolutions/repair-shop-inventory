@@ -1894,18 +1894,19 @@ function populatePaymentModal() {
 
 function closeModal(modalId) {
     document.getElementById(modalId).style.display = 'none';
-    document.getElementById(modalId).querySelector('form').reset();
     
     // Reset modal title and clear editing flag for add-item-modal
     if (modalId === 'add-item-modal') {
         document.querySelector('#add-item-modal .modal-header h3').textContent = 'Add New Item';
         document.getElementById('add-item-form').removeAttribute('data-editing-id');
+        document.getElementById(modalId).querySelector('form').reset();
     }
     
     // Reset modal title and clear editing flag for add-vendor-modal
     if (modalId === 'add-vendor-modal') {
         document.querySelector('#add-vendor-modal .modal-header h3').textContent = 'Add New Vendor';
         document.getElementById('add-vendor-form').removeAttribute('data-editing-id');
+        document.getElementById(modalId).querySelector('form').reset();
     }
     
     // Reset modal title and clear editing flag for add-customer-modal
@@ -1914,11 +1915,18 @@ function closeModal(modalId) {
         document.getElementById('add-customer-form').removeAttribute('data-editing-id');
         const submitBtn = document.getElementById('add-customer-submit');
         if (submitBtn) submitBtn.textContent = 'Add Customer';
+        document.getElementById(modalId).querySelector('form').reset();
     }
     
     // Clear repair ID for add-invoice-modal
     if (modalId === 'add-invoice-modal') {
         document.getElementById('add-invoice-form').removeAttribute('data-repair-id');
+        document.getElementById(modalId).querySelector('form').reset();
+    }
+    
+    // Reset other forms that don't have special handling
+    if (!['add-item-modal', 'add-vendor-modal', 'add-customer-modal', 'add-invoice-modal'].includes(modalId)) {
+        document.getElementById(modalId).querySelector('form').reset();
     }
 }
 
@@ -2175,8 +2183,10 @@ function handleAddCustomer(e) {
     
     // Check if we're editing an existing customer
     const editingCustomerId = document.getElementById('add-customer-form').getAttribute('data-editing-id');
+    console.log('Form submitted. Editing customer ID:', editingCustomerId);
     
     if (editingCustomerId) {
+        console.log('Updating existing customer with ID:', editingCustomerId);
         // Update existing customer
         const existingCustomerIndex = customers.findIndex(customer => customer.id === parseInt(editingCustomerId));
         if (existingCustomerIndex !== -1) {
@@ -2190,12 +2200,16 @@ function handleAddCustomer(e) {
                 status: customerStatus,
                 notes: customerNotes
             };
+            console.log('Customer updated successfully:', customers[existingCustomerIndex]);
+        } else {
+            console.error('Customer not found for update with ID:', editingCustomerId);
         }
         // Clear the editing flag
         document.getElementById('add-customer-form').removeAttribute('data-editing-id');
         const submitBtn = document.getElementById('add-customer-submit');
         if (submitBtn) submitBtn.textContent = 'Add Customer';
     } else {
+        console.log('Creating new customer');
         // Create new customer
         const newCustomer = {
             id: Date.now(),
@@ -2210,6 +2224,7 @@ function handleAddCustomer(e) {
             lastVisit: new Date().toISOString().split('T')[0]
         };
         customers.push(newCustomer);
+        console.log('New customer created:', newCustomer);
     }
 
     saveData();
@@ -3366,10 +3381,14 @@ function deleteVendor(id) {
 }
 
 function editCustomer(id) {
+    console.log('editCustomer called with id:', id);
     const customer = customers.find(c => c.id === id);
+    console.log('Found customer:', customer);
+    
     if (customer) {
         // Set the editing flag on the form
         document.getElementById('add-customer-form').setAttribute('data-editing-id', customer.id);
+        console.log('Set editing flag to:', customer.id);
         
         // Populate the form fields
         document.getElementById('customer-name').value = customer.name;
@@ -3380,6 +3399,8 @@ function editCustomer(id) {
         document.getElementById('customer-status').value = customer.status;
         document.getElementById('customer-notes').value = customer.notes || '';
         
+        console.log('Populated form fields with customer data');
+        
         // Update modal title to indicate editing
         document.querySelector('#add-customer-modal .modal-header h3').textContent = 'Edit Customer';
         // Update submit button text to save
@@ -3387,6 +3408,9 @@ function editCustomer(id) {
         if (submitBtn) submitBtn.textContent = 'Save Changes';
         
         showModal('add-customer-modal');
+        console.log('Modal opened in edit mode');
+    } else {
+        console.error('Customer not found with id:', id);
     }
 }
 
