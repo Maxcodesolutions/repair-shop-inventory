@@ -679,17 +679,72 @@ function loadDataFromLocal() {
     
     // Load data with proper error handling
     try {
-        inventory = existingInventory ? JSON.parse(existingInventory) : getDefaultInventory();
-        vendors = existingVendors ? JSON.parse(existingVendors) : getDefaultVendors();
-        customers = existingCustomers ? JSON.parse(existingCustomers) : getDefaultCustomers();
-        purchases = existingPurchases ? JSON.parse(existingPurchases) : [];
-        repairs = existingRepairs ? JSON.parse(existingRepairs) : [];
-        outsource = existingOutsource ? JSON.parse(existingOutsource) : [];
-        invoices = existingInvoices ? JSON.parse(existingInvoices) : [];
-        quotations = existingQuotations ? JSON.parse(existingQuotations) : [];
-        pickDrops = existingPickDrops ? JSON.parse(existingPickDrops) : [];
-        payments = existingPayments ? JSON.parse(existingPayments) : [];
-        deliveries = existingDeliveries ? JSON.parse(existingDeliveries) : getDefaultDeliveries();
+        // Only load default data if no existing data exists
+        if (existingInventory) {
+            inventory = JSON.parse(existingInventory);
+        } else {
+            inventory = getDefaultInventory();
+        }
+        
+        if (existingVendors) {
+            vendors = JSON.parse(existingVendors);
+        } else {
+            vendors = getDefaultVendors();
+        }
+        
+        if (existingCustomers) {
+            customers = JSON.parse(existingCustomers);
+        } else {
+            customers = getDefaultCustomers();
+        }
+        
+        if (existingPurchases) {
+            purchases = JSON.parse(existingPurchases);
+        } else {
+            purchases = [];
+        }
+        
+        if (existingRepairs) {
+            repairs = JSON.parse(existingRepairs);
+        } else {
+            repairs = [];
+        }
+        
+        if (existingOutsource) {
+            outsource = JSON.parse(existingOutsource);
+        } else {
+            outsource = [];
+        }
+        
+        if (existingInvoices) {
+            invoices = JSON.parse(existingInvoices);
+        } else {
+            invoices = [];
+        }
+        
+        if (existingQuotations) {
+            quotations = JSON.parse(existingQuotations);
+        } else {
+            quotations = [];
+        }
+        
+        if (existingPickDrops) {
+            pickDrops = JSON.parse(existingPickDrops);
+        } else {
+            pickDrops = [];
+        }
+        
+        if (existingPayments) {
+            payments = JSON.parse(existingPayments);
+        } else {
+            payments = [];
+        }
+        
+        if (existingDeliveries) {
+            deliveries = JSON.parse(existingDeliveries);
+        } else {
+            deliveries = getDefaultDeliveries();
+        }
         
         // Load users with error handling
         if (existingUsers) {
@@ -883,7 +938,7 @@ function saveDataToLocal() {
         localStorage.setItem('customers', JSON.stringify(customers));
         localStorage.setItem('purchases', JSON.stringify(purchases));
         localStorage.setItem('repairs', JSON.stringify(repairs));
-        localStorage.setItem('outsourceRepairs', JSON.stringify(outsourceRepairs));
+        localStorage.setItem('outsource', JSON.stringify(outsource));
         localStorage.setItem('invoices', JSON.stringify(invoices));
         localStorage.setItem('quotations', JSON.stringify(quotations));
         localStorage.setItem('pickDrops', JSON.stringify(pickDrops));
@@ -929,7 +984,7 @@ async function saveDataToCloud() {
         // Ensure arrays are defined and avoid undefined anywhere
         const outsourceArray = (typeof outsource !== 'undefined' && Array.isArray(outsource)) 
             ? outsource 
-            : (Array.isArray(outsourceRepairs) ? outsourceRepairs : []);
+            : [];
 
         const dataRaw = {
             inventory: Array.isArray(inventory) ? inventory : [],
@@ -938,8 +993,6 @@ async function saveDataToCloud() {
             purchases: Array.isArray(purchases) ? purchases : [],
             repairs: Array.isArray(repairs) ? repairs : [],
             outsource: outsourceArray,
-            // Also persist under the alternate key for compatibility
-            outsourceRepairs: outsourceArray,
             invoices: Array.isArray(invoices) ? invoices : [],
             quotations: Array.isArray(quotations) ? quotations : [],
             pickDrops: Array.isArray(pickDrops) ? pickDrops : [],
@@ -2178,7 +2231,7 @@ function handleAddCustomer(e) {
     const customerEmail = document.getElementById('customer-email').value;
     const customerAddress = document.getElementById('customer-address').value;
     const customerPreferredDevice = document.getElementById('customer-preferred-device').value;
-    const customerStatus = document.getElementById('customer-status').value;
+    const customerStatus = document.getElementById('customer-status')?.value || 'active';
     const customerNotes = document.getElementById('customer-notes').value;
     
     console.log('Form values:', {
@@ -2190,6 +2243,15 @@ function handleAddCustomer(e) {
         status: customerStatus,
         notes: customerNotes
     });
+    
+    // Validate that we have actual form data
+    if (!customerName || customerName.trim() === '') {
+        console.error('Customer name is empty!');
+        alert('Please enter a customer name');
+        return;
+    }
+    
+    console.log('Customer name validation passed:', customerName);
     
     // Check if we're editing an existing customer
     const editingCustomerId = document.getElementById('add-customer-form').getAttribute('data-editing-id');
@@ -2239,19 +2301,21 @@ function handleAddCustomer(e) {
         // Create new customer
         const newCustomer = {
             id: Date.now(),
-            name: customerName,
-            phone: customerPhone,
-            email: customerEmail,
-            address: customerAddress,
-            preferredDevice: customerPreferredDevice,
-            status: customerStatus,
-            notes: customerNotes,
+            name: customerName || 'N/A',
+            phone: customerPhone || 'N/A',
+            email: customerEmail || 'N/A',
+            address: customerAddress || 'N/A',
+            preferredDevice: customerPreferredDevice || 'N/A',
+            status: customerStatus || 'active',
+            notes: customerNotes || '',
             totalRepairs: 0,
             lastVisit: new Date().toISOString().split('T')[0]
         };
+        console.log('About to add new customer to array. Current customers count:', customers.length);
         customers.push(newCustomer);
         console.log('New customer created:', newCustomer);
         console.log('Updated customers array:', customers);
+        console.log('Customers array length after adding:', customers.length);
         
         // Reset the form after successful creation
         document.getElementById('add-customer-form').reset();
@@ -2261,6 +2325,14 @@ function handleAddCustomer(e) {
     saveData();
     closeModal('add-customer-modal');
     console.log('About to render customers. Customers array length:', customers.length);
+    
+    // Debug: Log all customers to see what's actually in the array
+    console.log('=== DEBUG: All customers in array ===');
+    customers.forEach((customer, index) => {
+        console.log(`Customer ${index + 1}:`, customer);
+    });
+    console.log('=== END DEBUG ===');
+    
     renderCustomers();
 }
 
@@ -3180,7 +3252,7 @@ function renderCustomers() {
     tbody.innerHTML = '';
     
     customers.forEach(customer => {
-        const statusClass = customer.status === 'active' ? 'status-in-stock' : 'status-out-of-stock';
+        const statusClass = (customer.status === 'active' ? 'status-in-stock' : 'status-out-of-stock') || 'status-out-of-stock';
         
         const row = `
             <tr>
@@ -3191,7 +3263,7 @@ function renderCustomers() {
                 <td>${customer.address || 'N/A'}</td>
                 <td>${customer.totalRepairs}</td>
                 <td>${customer.lastVisit}</td>
-                <td><span class="status-badge ${statusClass}">${customer.status}</span></td>
+                <td><span class="status-badge ${statusClass}">${customer.status || 'active'}</span></td>
                 <td>
                     <button class="btn btn-sm btn-info" onclick="viewCustomer(${customer.id})">View</button>
                     <button class="btn btn-sm btn-secondary" onclick="editCustomer(${customer.id})">Edit</button>
