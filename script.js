@@ -1915,7 +1915,7 @@ function closeModal(modalId) {
         document.getElementById('add-customer-form').removeAttribute('data-editing-id');
         const submitBtn = document.getElementById('add-customer-submit');
         if (submitBtn) submitBtn.textContent = 'Add Customer';
-        document.getElementById(modalId).querySelector('form').reset();
+        // Don't reset the form here - let the form submission handle it
     }
     
     // Clear repair ID for add-invoice-modal
@@ -2187,8 +2187,13 @@ function handleAddCustomer(e) {
     
     if (editingCustomerId) {
         console.log('Updating existing customer with ID:', editingCustomerId);
-        // Update existing customer
-        const existingCustomerIndex = customers.findIndex(customer => customer.id === parseInt(editingCustomerId));
+        // Update existing customer - try both string and number comparison
+        let existingCustomerIndex = customers.findIndex(customer => customer.id == editingCustomerId);
+        if (existingCustomerIndex === -1) {
+            // Try parsing as integer if string comparison failed
+            existingCustomerIndex = customers.findIndex(customer => customer.id === parseInt(editingCustomerId));
+        }
+        
         if (existingCustomerIndex !== -1) {
             customers[existingCustomerIndex] = {
                 ...customers[existingCustomerIndex],
@@ -2203,11 +2208,15 @@ function handleAddCustomer(e) {
             console.log('Customer updated successfully:', customers[existingCustomerIndex]);
         } else {
             console.error('Customer not found for update with ID:', editingCustomerId);
+            console.log('Available customer IDs:', customers.map(c => c.id));
         }
         // Clear the editing flag
         document.getElementById('add-customer-form').removeAttribute('data-editing-id');
         const submitBtn = document.getElementById('add-customer-submit');
         if (submitBtn) submitBtn.textContent = 'Add Customer';
+        
+        // Reset the form after successful update
+        document.getElementById('add-customer-form').reset();
     } else {
         console.log('Creating new customer');
         // Create new customer
@@ -2225,6 +2234,9 @@ function handleAddCustomer(e) {
         };
         customers.push(newCustomer);
         console.log('New customer created:', newCustomer);
+        
+        // Reset the form after successful creation
+        document.getElementById('add-customer-form').reset();
     }
 
     saveData();
@@ -3378,6 +3390,22 @@ function deleteVendor(id) {
         saveData();
         renderVendors();
     }
+}
+
+function clearCustomerFormAndShowModal() {
+    // Reset the form
+    document.getElementById('add-customer-form').reset();
+    
+    // Clear the editing flag
+    document.getElementById('add-customer-form').removeAttribute('data-editing-id');
+    
+    // Reset modal title and button text
+    document.querySelector('#add-customer-modal .modal-header h3').textContent = 'Add New Customer';
+    const submitBtn = document.getElementById('add-customer-submit');
+    if (submitBtn) submitBtn.textContent = 'Add Customer';
+    
+    // Show the modal
+    showModal('add-customer-modal');
 }
 
 function editCustomer(id) {
@@ -5494,6 +5522,7 @@ window.viewCustomerHistory = viewCustomerHistory;
 window.viewCustomer = viewCustomer;
 window.backToCustomerList = backToCustomerList;
 window.editCustomerFromDetail = editCustomerFromDetail;
+window.clearCustomerFormAndShowModal = clearCustomerFormAndShowModal;
 window.searchCustomersForOutsource = searchCustomersForOutsource;
 window.showCustomerSuggestions = showCustomerSuggestions;
 window.hideCustomerSuggestions = hideCustomerSuggestions;
