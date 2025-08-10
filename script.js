@@ -3252,18 +3252,20 @@ function renderCustomers() {
     tbody.innerHTML = '';
     
     customers.forEach(customer => {
-        const statusClass = (customer.status === 'active' ? 'status-in-stock' : 'status-out-of-stock') || 'status-out-of-stock';
+        // Ensure customer.status has a default value and handle undefined cases
+        const customerStatus = customer.status || 'active';
+        const statusClass = customerStatus === 'active' ? 'status-in-stock' : 'status-out-of-stock';
         
         const row = `
             <tr>
                 <td>C-${customer.id}</td>
-                <td>${customer.name}</td>
-                <td>${customer.phone}</td>
+                <td>${customer.name || 'N/A'}</td>
+                <td>${customer.phone || 'N/A'}</td>
                 <td>${customer.email || 'N/A'}</td>
                 <td>${customer.address || 'N/A'}</td>
-                <td>${customer.totalRepairs}</td>
-                <td>${customer.lastVisit}</td>
-                <td><span class="status-badge ${statusClass}">${customer.status || 'active'}</span></td>
+                <td>${customer.totalRepairs || 0}</td>
+                <td>${customer.lastVisit || 'N/A'}</td>
+                <td><span class="status-badge ${statusClass}">${customerStatus}</span></td>
                 <td>
                     <button class="btn btn-sm btn-info" onclick="viewCustomer(${customer.id})">View</button>
                     <button class="btn btn-sm btn-secondary" onclick="editCustomer(${customer.id})">Edit</button>
@@ -5547,18 +5549,20 @@ function renderFilteredCustomers(filteredItems) {
     tbody.innerHTML = '';
     
     filteredItems.forEach(customer => {
-        const statusClass = customer.status === 'active' ? 'status-in-stock' : 'status-out-of-stock';
+        // Ensure customer.status has a default value and handle undefined cases
+        const customerStatus = customer.status || 'active';
+        const statusClass = customerStatus === 'active' ? 'status-in-stock' : 'status-out-of-stock';
         
         const row = `
             <tr>
                 <td>C-${customer.id}</td>
-                <td>${customer.name}</td>
-                <td>${customer.phone}</td>
+                <td>${customer.name || 'N/A'}</td>
+                <td>${customer.phone || 'N/A'}</td>
                 <td>${customer.email || 'N/A'}</td>
                 <td>${customer.address || 'N/A'}</td>
-                <td>${customer.totalRepairs}</td>
-                <td>${customer.lastVisit}</td>
-                <td><span class="status-badge ${statusClass}">${customer.status}</span></td>
+                <td>${customer.totalRepairs || 0}</td>
+                <td>${customer.lastVisit || 'N/A'}</td>
+                <td><span class="status-badge ${statusClass}">${customerStatus}</span></td>
                 <td>
                     <button class="btn btn-sm btn-info" onclick="viewCustomer(${customer.id})">View</button>
                     <button class="btn btn-sm btn-secondary" onclick="editCustomer(${customer.id})">Edit</button>
