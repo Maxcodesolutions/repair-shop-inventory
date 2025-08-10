@@ -2226,6 +2226,30 @@ function handleAddVendor(e) {
 function handleAddCustomer(e) {
     e.preventDefault();
     
+    // Prevent double submission
+    if (e.target.submitting) {
+        console.log('Form already submitting, ignoring duplicate submission');
+        return;
+    }
+    e.target.submitting = true;
+    
+    // Check if form is properly loaded and visible
+    const form = document.getElementById('add-customer-form');
+    const modal = document.getElementById('add-customer-modal');
+    if (!form) {
+        console.error('Customer form not found!');
+        alert('Form error: Customer form not found. Please refresh the page.');
+        e.target.submitting = false;
+        return;
+    }
+    
+    if (!modal || modal.style.display !== 'block') {
+        console.error('Customer modal is not visible!');
+        alert('Form error: Customer modal is not visible. Please open the customer form first.');
+        e.target.submitting = false;
+        return;
+    }
+    
     const customerName = document.getElementById('customer-name').value;
     const customerPhone = document.getElementById('customer-phone').value;
     const customerEmail = document.getElementById('customer-email').value;
@@ -2247,6 +2271,9 @@ function handleAddCustomer(e) {
     // Validate that we have actual form data
     if (!customerName || customerName.trim() === '') {
         console.error('Customer name is empty!');
+        console.log('Form field value:', customerName);
+        console.log('Form field element:', document.getElementById('customer-name'));
+        console.log('Form field element value:', document.getElementById('customer-name')?.value);
         alert('Please enter a customer name');
         return;
     }
@@ -2334,6 +2361,9 @@ function handleAddCustomer(e) {
     console.log('=== END DEBUG ===');
     
     renderCustomers();
+    
+    // Reset submission flag
+    e.target.submitting = false;
 }
 
 function handleAddPurchase(e) {
