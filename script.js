@@ -2181,9 +2181,20 @@ function handleAddCustomer(e) {
     const customerStatus = document.getElementById('customer-status').value;
     const customerNotes = document.getElementById('customer-notes').value;
     
+    console.log('Form values:', {
+        name: customerName,
+        phone: customerPhone,
+        email: customerEmail,
+        address: customerAddress,
+        preferredDevice: customerPreferredDevice,
+        status: customerStatus,
+        notes: customerNotes
+    });
+    
     // Check if we're editing an existing customer
     const editingCustomerId = document.getElementById('add-customer-form').getAttribute('data-editing-id');
     console.log('Form submitted. Editing customer ID:', editingCustomerId);
+    console.log('Current customers array:', customers);
     
     if (editingCustomerId) {
         console.log('Updating existing customer with ID:', editingCustomerId);
@@ -2194,9 +2205,14 @@ function handleAddCustomer(e) {
             existingCustomerIndex = customers.findIndex(customer => customer.id === parseInt(editingCustomerId));
         }
         
+        console.log('Found customer at index:', existingCustomerIndex);
+        
         if (existingCustomerIndex !== -1) {
+            const oldCustomer = customers[existingCustomerIndex];
+            console.log('Old customer data:', oldCustomer);
+            
             customers[existingCustomerIndex] = {
-                ...customers[existingCustomerIndex],
+                ...oldCustomer,
                 name: customerName,
                 phone: customerPhone,
                 email: customerEmail,
@@ -2206,6 +2222,7 @@ function handleAddCustomer(e) {
                 notes: customerNotes
             };
             console.log('Customer updated successfully:', customers[existingCustomerIndex]);
+            console.log('Updated customers array:', customers);
         } else {
             console.error('Customer not found for update with ID:', editingCustomerId);
             console.log('Available customer IDs:', customers.map(c => c.id));
@@ -2234,13 +2251,16 @@ function handleAddCustomer(e) {
         };
         customers.push(newCustomer);
         console.log('New customer created:', newCustomer);
+        console.log('Updated customers array:', customers);
         
         // Reset the form after successful creation
         document.getElementById('add-customer-form').reset();
     }
 
+    console.log('About to save data. Customers array length:', customers.length);
     saveData();
     closeModal('add-customer-modal');
+    console.log('About to render customers. Customers array length:', customers.length);
     renderCustomers();
 }
 
@@ -3419,15 +3439,41 @@ function editCustomer(id) {
         console.log('Set editing flag to:', customer.id);
         
         // Populate the form fields
-        document.getElementById('customer-name').value = customer.name;
-        document.getElementById('customer-phone').value = customer.phone;
-        document.getElementById('customer-email').value = customer.email || '';
-        document.getElementById('customer-address').value = customer.address || '';
-        document.getElementById('customer-preferred-device').value = customer.preferredDevice || '';
-        document.getElementById('customer-status').value = customer.status;
-        document.getElementById('customer-notes').value = customer.notes || '';
+        const nameField = document.getElementById('customer-name');
+        const phoneField = document.getElementById('customer-phone');
+        const emailField = document.getElementById('customer-email');
+        const addressField = document.getElementById('customer-address');
+        const preferredDeviceField = document.getElementById('customer-preferred-device');
+        const statusField = document.getElementById('customer-status');
+        const notesField = document.getElementById('customer-notes');
         
-        console.log('Populated form fields with customer data');
+        console.log('Form fields found:', {
+            name: !!nameField,
+            phone: !!phoneField,
+            email: !!emailField,
+            address: !!addressField,
+            preferredDevice: !!preferredDeviceField,
+            status: !!statusField,
+            notes: !!notesField
+        });
+        
+        nameField.value = customer.name;
+        phoneField.value = customer.phone;
+        emailField.value = customer.email || '';
+        addressField.value = customer.address || '';
+        preferredDeviceField.value = customer.preferredDevice || '';
+        statusField.value = customer.status;
+        notesField.value = customer.notes || '';
+        
+        console.log('Form fields populated with values:', {
+            name: nameField.value,
+            phone: phoneField.value,
+            email: emailField.value,
+            address: addressField.value,
+            preferredDevice: preferredDeviceField.value,
+            status: statusField.value,
+            notes: notesField.value
+        });
         
         // Update modal title to indicate editing
         document.querySelector('#add-customer-modal .modal-header h3').textContent = 'Edit Customer';
