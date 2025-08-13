@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Basic Debug - Repair Shop</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .debug-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background: #f9f9f9;
+        }
+        .debug-section h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        .data-display {
+            background: white;
+            padding: 10px;
+            border-radius: 3px;
+            border: 1px solid #ccc;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .btn:hover {
+            background: #0056b3;
+        }
+        .btn-danger {
+            background: #dc3545;
+        }
+        .btn-success {
+            background: #28a745;
+        }
+        .status {
+            padding: 5px 10px;
+            border-radius: 3px;
+            font-weight: bold;
+            margin: 5px 0;
+        }
+        .status-success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .status-warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Basic Debug Console</h1>
+        
+        <div class="debug-section">
+            <h3>📊 Data Status</h3>
+            <div id="data-status" class="data-display">
+                <p>Click the button below to check data status...</p>
+            </div>
+            <button class="btn" onclick="checkData()">Check Data Status</button>
+            <button class="btn btn-danger" onclick="clearData()">Clear All Data</button>
+        </div>
+
+        <div class="debug-section">
+            <h3>🔐 Login Status</h3>
+            <div id="login-status" class="data-display">
+                <p>Click the button below to check login status...</p>
+            </div>
+            <button class="btn" onclick="checkLogin()">Check Login Status</button>
+        </div>
+
+        <div class="debug-section">
+            <h3>📝 Customer Data</h3>
+            <div id="customers-status" class="data-display">
+                <p>Click the button below to check customers...</p>
+            </div>
+            <button class="btn" onclick="checkCustomers()">Check Customers</button>
+            <button class="btn btn-success" onclick="addCustomer()">Add Test Customer</button>
+        </div>
+
+        <div class="debug-section">
+            <h3>🛠️ Manual Data Check</h3>
+            <p>You can also check data manually in the browser console:</p>
+            <div class="data-display">
+                <code>
+                    // Check localStorage data<br>
+                    console.log('Inventory:', localStorage.getItem('inventory'));<br>
+                    console.log('Customers:', localStorage.getItem('customers'));<br>
+                    console.log('Users:', localStorage.getItem('users'));<br>
+                    <br>
+                    // Check if data is valid JSON<br>
+                    try {<br>
+                    &nbsp;&nbsp;const customers = JSON.parse(localStorage.getItem('customers'));<br>
+                    &nbsp;&nbsp;console.log('Valid customers:', customers);<br>
+                    } catch(e) {<br>
+                    &nbsp;&nbsp;console.error('Invalid customers data:', e);<br>
+                    }
+                </code>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Simple functions with minimal complexity
+        function checkData() {
+            const statusDiv = document.getElementById('data-status');
+            statusDiv.innerHTML = '<p>Checking data...</p>';
+            
+            try {
+                let html = '<h4>LocalStorage Data:</h4>';
+                
+                const keys = ['inventory', 'customers', 'users', 'repairs', 'invoices'];
+                keys.forEach(key => {
+                    const value = localStorage.getItem(key);
+                    if (value) {
+                        try {
+                            const parsed = JSON.parse(value);
+                            html += `<div>✅ ${key}: ${parsed.length} items</div>`;
+                        } catch (e) {
+                            html += `<div>❌ ${key}: Invalid JSON</div>`;
+                        }
+                    } else {
+                        html += `<div>❌ ${key}: Not found</div>`;
+                    }
+                });
+                
+                statusDiv.innerHTML = html;
+            } catch (error) {
+                statusDiv.innerHTML = `<p>Error: ${error.message}</p>`;
+            }
+        }
+
+        function clearData() {
+            if (confirm('Are you sure you want to clear ALL data?')) {
+                try {
+                    localStorage.clear();
+                    document.getElementById('data-status').innerHTML = '<p>✅ All data cleared successfully</p>';
+                } catch (error) {
+                    document.getElementById('data-status').innerHTML = `<p>❌ Error clearing data: ${error.message}</p>`;
+                }
+            }
+        }
+
+        function checkLogin() {
+            const loginDiv = document.getElementById('login-status');
+            loginDiv.innerHTML = '<p>Checking login status...</p>';
+            
+            try {
+                const loginStatus = localStorage.getItem('loginStatus');
+                const currentUserId = localStorage.getItem('currentUserId');
+                
+                let html = '<h4>Login Status:</h4>';
+                html += `<div>Login Status: ${loginStatus || 'Not set'}</div>`;
+                html += `<div>Current User ID: ${currentUserId || 'Not set'}</div>`;
+                
+                if (loginStatus === 'true' && currentUserId) {
+                    html += '<div>✅ User is logged in</div>';
+                } else {
+                    html += '<div>❌ User is not logged in</div>';
+                }
+                
+                loginDiv.innerHTML = html;
+            } catch (error) {
+                loginDiv.innerHTML = `<p>Error: ${error.message}</p>`;
+            }
+        }
+
+        function checkCustomers() {
+            const customersDiv = document.getElementById('customers-status');
+            customersDiv.innerHTML = '<p>Checking customers...</p>';
+            
+            try {
+                const customersData = localStorage.getItem('customers');
+                if (customersData) {
+                    const customers = JSON.parse(customersData);
+                    let html = `<h4>Customers (${customers.length}):</h4>`;
+                    
+                    customers.forEach((customer, index) => {
+                        html += `<div><strong>${index + 1}.</strong> ${customer.name} - ${customer.phone || 'No phone'}</div>`;
+                    });
+                    
+                    customersDiv.innerHTML = html;
+                } else {
+                    customersDiv.innerHTML = '<p>❌ No customers data found</p>';
+                }
+            } catch (error) {
+                customersDiv.innerHTML = `<p>Error: ${error.message}</p>`;
+            }
+        }
+
+        function addCustomer() {
+            try {
+                const customersData = localStorage.getItem('customers');
+                let customers = customersData ? JSON.parse(customersData) : [];
+                
+                const testCustomer = {
+                    id: Date.now(),
+                    name: `Test Customer ${Date.now()}`,
+                    phone: '+91-99999-99999',
+                    email: `test${Date.now()}@example.com`,
+                    address: 'Test Address',
+                    status: 'active'
+                };
+                
+                customers.push(testCustomer);
+                localStorage.setItem('customers', JSON.stringify(customers));
+                
+                document.getElementById('customers-status').innerHTML = '<p>✅ Test customer added successfully</p>';
+                setTimeout(checkCustomers, 1000);
+            } catch (error) {
+                document.getElementById('customers-status').innerHTML = `<p>❌ Error: ${error.message}</p>`;
+            }
+        }
+
+        // Initialize page
+        window.addEventListener('load', function() {
+            console.log('Basic debug console loaded');
+        });
+    </script>
+</body>
+</html>

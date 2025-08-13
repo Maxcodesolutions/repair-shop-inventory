@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auto Cloud Sync Setup</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .setup-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .btn {
+            padding: 12px 24px;
+            margin: 10px 5px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+        .btn-warning {
+            background: #ffc107;
+            color: black;
+        }
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+        .status {
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .status.warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        .feature-list {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 15px 0;
+        }
+        .feature-list ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        .feature-list li {
+            margin: 5px 0;
+        }
+        .output {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 15px 0;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .step {
+            background: #e9ecef;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            border-left: 4px solid #007bff;
+        }
+    </style>
+</head>
+<body>
+    <h1>🚀 Automatic Cloud Sync Setup</h1>
+    
+    <div class="setup-section">
+        <h2>✨ Automatic Cloud Sync Features</h2>
+        <div class="feature-list">
+            <ul>
+                <li><strong>🔄 Auto-Sync:</strong> Data automatically saves to cloud every time you make changes</li>
+                <li><strong>📱 Cross-Device:</strong> Your data syncs across all devices automatically</li>
+                <li><strong>🔐 Secure:</strong> Anonymous authentication keeps your data private</li>
+                <li><strong>⚡ Real-time:</strong> Changes appear instantly on all devices</li>
+                <li><strong>💾 Backup:</strong> Local storage backup ensures data never gets lost</li>
+                <li><strong>🔄 Offline Support:</strong> Works offline, syncs when online</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="setup-section">
+        <h2>🔧 Quick Setup (2 Steps)</h2>
+        
+        <div class="step">
+            <h3>Step 1: Enable Auto-Sync</h3>
+            <p>Click the button below to enable automatic cloud synchronization:</p>
+            <button class="btn btn-primary" onclick="enableAutoSync()">🚀 Enable Automatic Cloud Sync</button>
+        </div>
+        
+        <div class="step">
+            <h3>Step 2: Test the Setup</h3>
+            <p>Once enabled, go to the main app and test the automatic sync:</p>
+            <button class="btn btn-success" onclick="testAutoSync()">🧪 Test Auto-Sync</button>
+            <button class="btn btn-warning" onclick="checkSyncStatus()">📊 Check Sync Status</button>
+        </div>
+    </div>
+
+    <div class="setup-section">
+        <h2>📊 Current Status</h2>
+        <div id="status-display">
+            <div class="status info">Checking setup status...</div>
+        </div>
+    </div>
+
+    <div class="setup-section">
+        <h2>🔍 Debug Information</h2>
+        <div id="debug-output" class="output"></div>
+    </div>
+
+    <div class="setup-section">
+        <h2>🎯 Next Steps</h2>
+        <div class="feature-list">
+            <p><strong>After enabling auto-sync:</strong></p>
+            <ol>
+                <li>Go to the main application</li>
+                <li>Login with your credentials</li>
+                <li>Add some data (customers, inventory, etc.)</li>
+                <li>Open the app on another device</li>
+                <li>Login with the same credentials</li>
+                <li>Your data should automatically appear!</li>
+            </ol>
+        </div>
+        <a href="index.html" class="btn btn-primary">🏠 Go to Main Application</a>
+    </div>
+
+    <script type="module">
+        // Import Firebase modules
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
+        import { getFirestore, collection, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
+
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCvuJuOlhqasNbpCkyJjOH1YKJKnjvxLvk",
+            authDomain: "repair-shop-inventory.firebaseapp.com",
+            projectId: "repair-shop-inventory",
+            storageBucket: "repair-shop-inventory.firebasestorage.app",
+            messagingSenderId: "91629691464",
+            appId: "1:91629691464:web:d20cabddb6dcbf755dee7d",
+            measurementId: "G-K78PVPW0MG"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        let currentUser = null;
+        let autoSyncEnabled = false;
+
+        function log(message) {
+            const debugOutput = document.getElementById('debug-output');
+            debugOutput.textContent += message + '\n';
+            console.log(message);
+        }
+
+        function updateStatus(message, type = 'info') {
+            const statusDisplay = document.getElementById('status-display');
+            statusDisplay.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+
+        // Check initial status
+        try {
+            log('Firebase initialized successfully');
+            updateStatus('Firebase connected! Ready to enable auto-sync.', 'success');
+        } catch (error) {
+            log('Firebase initialization error: ' + error.message);
+            updateStatus('Firebase connection failed: ' + error.message, 'error');
+        }
+
+        // Monitor auth state
+        onAuthStateChanged(auth, (user) => {
+            currentUser = user;
+            if (user) {
+                log('User authenticated: ' + (user.email || 'Anonymous'));
+                updateStatus('✅ Auto-sync enabled! User authenticated: ' + (user.email || 'Anonymous'), 'success');
+                autoSyncEnabled = true;
+            } else {
+                log('User not authenticated');
+                updateStatus('⏳ Auto-sync not yet enabled. Click "Enable Automatic Cloud Sync" to start.', 'info');
+                autoSyncEnabled = false;
+            }
+        });
+
+        // Global functions for buttons
+        window.enableAutoSync = async function() {
+            try {
+                log('Enabling automatic cloud sync...');
+                updateStatus('🔄 Enabling auto-sync...', 'info');
+                
+                // Try anonymous auth first, if it fails, use email/password
+                let userCredential;
+                try {
+                    userCredential = await signInAnonymously(auth);
+                    log('Anonymous sign-in successful: ' + userCredential.user.uid);
+                } catch (anonymousError) {
+                    log('Anonymous auth failed, trying email/password: ' + anonymousError.message);
+                    
+                    // Prompt for email and password
+                    const email = prompt('Enter email address for cloud sync:');
+                    const password = prompt('Enter password (min 6 characters):');
+                    
+                    if (!email || !password) {
+                        throw new Error('Email and password are required');
+                    }
+                    
+                    // Import signInWithEmailAndPassword
+                    const { signInWithEmailAndPassword, createUserWithEmailAndPassword } = await import("https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js");
+                    
+                    try {
+                        userCredential = await signInWithEmailAndPassword(auth, email, password);
+                        log('Email sign-in successful: ' + userCredential.user.email);
+                        
+                        // Store credentials for future auto-login
+                        localStorage.setItem('cloudSyncEmail', email);
+                        localStorage.setItem('cloudSyncPassword', password);
+                        log('Credentials stored for future auto-login');
+                        
+                    } catch (signInError) {
+                        // If sign-in fails, try to create account
+                        if (signInError.code === 'auth/user-not-found') {
+                            userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                            log('Account created and signed in: ' + userCredential.user.email);
+                            
+                            // Store credentials for future auto-login
+                            localStorage.setItem('cloudSyncEmail', email);
+                            localStorage.setItem('cloudSyncPassword', password);
+                            log('Credentials stored for future auto-login');
+                            
+                        } else {
+                            throw signInError;
+                        }
+                    }
+                }
+                
+                // Upload current data to cloud
+                const data = {
+                    inventory: JSON.parse(localStorage.getItem('inventory') || '[]'),
+                    vendors: JSON.parse(localStorage.getItem('vendors') || '[]'),
+                    customers: JSON.parse(localStorage.getItem('customers') || '[]'),
+                    repairs: JSON.parse(localStorage.getItem('repairs') || '[]'),
+                    invoices: JSON.parse(localStorage.getItem('invoices') || '[]'),
+                    quotations: JSON.parse(localStorage.getItem('quotations') || '[]'),
+                    purchases: JSON.parse(localStorage.getItem('purchases') || '[]'),
+                    payments: JSON.parse(localStorage.getItem('payments') || '[]'),
+                    users: JSON.parse(localStorage.getItem('users') || '[]'),
+                    lastUpdated: new Date().toISOString()
+                };
+                
+                await setDoc(doc(collection(db, 'users'), userCredential.user.uid), data);
+                log('Initial data uploaded to cloud successfully');
+                
+                updateStatus('✅ Auto-sync enabled successfully! Your data is now syncing to the cloud automatically.', 'success');
+                
+                // Store sync preference
+                localStorage.setItem('autoSyncEnabled', 'true');
+                
+            } catch (error) {
+                log('Error enabling auto-sync: ' + error.message);
+                updateStatus('❌ Error enabling auto-sync: ' + error.message, 'error');
+            }
+        };
+
+        window.testAutoSync = async function() {
+            if (!currentUser) {
+                updateStatus('❌ Please enable auto-sync first!', 'error');
+                return;
+            }
+            
+            try {
+                log('Testing auto-sync functionality...');
+                updateStatus('🧪 Testing auto-sync...', 'info');
+                
+                // Create test data
+                const testData = {
+                    test: true,
+                    timestamp: new Date().toISOString(),
+                    message: 'Auto-sync test successful!'
+                };
+                
+                // Save test data to cloud
+                await setDoc(doc(collection(db, 'users'), currentUser.uid), testData);
+                log('Test data saved to cloud successfully');
+                
+                // Retrieve test data from cloud
+                const docRef = doc(collection(db, 'users'), currentUser.uid);
+                const docSnap = await getDoc(docRef);
+                
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    log('Test data retrieved from cloud: ' + JSON.stringify(data, null, 2));
+                    updateStatus('✅ Auto-sync test successful! Data is being saved and retrieved from cloud automatically.', 'success');
+                } else {
+                    updateStatus('❌ Auto-sync test failed: No data found in cloud', 'error');
+                }
+                
+            } catch (error) {
+                log('Error testing auto-sync: ' + error.message);
+                updateStatus('❌ Auto-sync test failed: ' + error.message, 'error');
+            }
+        };
+
+        window.checkSyncStatus = function() {
+            log('=== SYNC STATUS CHECK ===');
+            log('Firebase Auth: ' + (window.auth ? 'Available' : 'Not Available'));
+            log('Current User: ' + (currentUser ? (currentUser.email || 'Anonymous') : 'None'));
+            log('Auto Sync Enabled: ' + (autoSyncEnabled ? 'Yes' : 'No'));
+            log('Local Storage Auto Sync: ' + (localStorage.getItem('autoSyncEnabled') ? 'Enabled' : 'Not Enabled'));
+            log('Firebase Functions: ' + (window.setDoc && window.getDoc ? 'Available' : 'Not Available'));
+            
+            updateStatus('📊 Sync status checked. See debug output for details.', 'info');
+        };
+
+        // Initial log
+        log('Auto Sync Setup Page Loaded');
+        log('Firebase Config: ' + JSON.stringify(firebaseConfig, null, 2));
+    </script>
+</body>
+</html>

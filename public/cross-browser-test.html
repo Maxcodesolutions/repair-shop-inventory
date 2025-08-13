@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cross-Browser Sync Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .btn {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .btn-primary { background: #007bff; color: white; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-warning { background: #ffc107; color: black; }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .status.success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .status.error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .status.info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        .output {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 10px 0;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .data-display {
+            background: #e9ecef;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🌐 Cross-Browser Sync Test</h1>
+    
+    <div class="test-section">
+        <h2>🔐 Authentication</h2>
+        <div id="auth-status">
+            <div class="status info">Checking authentication...</div>
+        </div>
+        <button class="btn btn-primary" onclick="signInAnonymously()">👤 Sign In Anonymously</button>
+        <button class="btn btn-success" onclick="signInWithEmail()">📧 Sign In with Email</button>
+        <button class="btn btn-warning" onclick="signOut()">🚪 Sign Out</button>
+    </div>
+
+    <div class="test-section">
+        <h2>📝 Test Data</h2>
+        <p>Add some test data that should sync across browsers:</p>
+        <input type="text" id="test-customer" placeholder="Customer name" style="width: 200px; padding: 8px; margin: 5px;">
+        <input type="text" id="test-item" placeholder="Item name" style="width: 200px; padding: 8px; margin: 5px;">
+        <button class="btn btn-success" onclick="addTestData()">➕ Add Test Data</button>
+        <button class="btn btn-warning" onclick="loadTestData()">📥 Load Test Data</button>
+        <button class="btn btn-primary" onclick="saveToCloud()">☁️ Save to Cloud</button>
+    </div>
+
+    <div class="test-section">
+        <h2>📊 Current Data</h2>
+        <div id="data-display" class="data-display">
+            <p>No data loaded yet...</p>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>🔍 Debug Information</h2>
+        <div id="debug-output" class="output"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>📋 Instructions</h2>
+        <ol>
+            <li><strong>Sign in</strong> using one of the authentication methods</li>
+            <li><strong>Add test data</strong> using the form above</li>
+            <li><strong>Save to cloud</strong> to sync the data</li>
+            <li><strong>Open this page in a different browser</strong> (Chrome, Firefox, Safari, etc.)</li>
+            <li><strong>Sign in with the same method</strong> in the new browser</li>
+            <li><strong>Load test data</strong> to see if it syncs</li>
+        </ol>
+    </div>
+
+    <script src="firebase-global.js"></script>
+    <script>
+        let currentUser = null;
+        let testData = {
+            customers: [],
+            items: [],
+            lastUpdated: null
+        };
+
+        function log(message) {
+            const debugOutput = document.getElementById('debug-output');
+            debugOutput.textContent += new Date().toLocaleTimeString() + ': ' + message + '\n';
+            console.log(message);
+        }
+
+        function updateAuthStatus(message, type = 'info') {
+            const authStatus = document.getElementById('auth-status');
+            authStatus.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+
+        function updateDataDisplay() {
+            const dataDisplay = document.getElementById('data-display');
+            dataDisplay.innerHTML = `
+                <h3>Test Data:</h3>
+                <p><strong>Customers:</strong> ${testData.customers.length}</p>
+                <p><strong>Items:</strong> ${testData.items.length}</p>
+                <p><strong>Last Updated:</strong> ${testData.lastUpdated || 'Never'}</p>
+                <h4>Customer List:</h4>
+                <ul>${testData.customers.map(c => `<li>${c.name} (${c.time})</li>`).join('')}</ul>
+                <h4>Item List:</h4>
+                <ul>${testData.items.map(i => `<li>${i.name} (${i.time})</li>`).join('')}</ul>
+            `;
+        }
+
+        // Wait for Firebase to be ready
+        function waitForFirebase() {
+            return new Promise((resolve) => {
+                if (window.firebaseReady && window.auth) {
+                    resolve();
+                } else {
+                    window.addEventListener('firebaseReady', resolve);
+                }
+            });
+        }
+
+        // Initialize the test
+        async function initializeTest() {
+            try {
+                await waitForFirebase();
+                
+                // Monitor auth state
+                window.onAuthStateChanged(window.auth, (user) => {
+                    currentUser = user;
+                    if (user) {
+                        log('User authenticated: ' + (user.email || 'Anonymous'));
+                        updateAuthStatus('✅ User authenticated: ' + (user.email || 'Anonymous'), 'success');
+                        loadTestData(); // Auto-load data when authenticated
+                    } else {
+                        log('User not authenticated');
+                        updateAuthStatus('⏳ User not authenticated', 'info');
+                    }
+                });
+
+                // Try automatic authentication
+                try {
+                    log('Attempting automatic anonymous authentication...');
+                    await window.signInAnonymously(window.auth);
+                } catch (error) {
+                    log('Automatic authentication failed: ' + error.message);
+                }
+
+            } catch (error) {
+                log('Error initializing test: ' + error.message);
+            }
+        }
+
+        // Authentication functions
+        window.signInAnonymously = async function() {
+            try {
+                log('Attempting anonymous sign-in...');
+                await window.signInAnonymously(window.auth);
+                log('✅ Anonymous sign-in successful');
+            } catch (error) {
+                log('❌ Anonymous sign-in failed: ' + error.message);
+            }
+        };
+
+        window.signInWithEmail = async function() {
+            const email = prompt('Enter email address:');
+            const password = prompt('Enter password:');
+            
+            if (!email || !password) {
+                log('❌ Email and password required');
+                return;
+            }
+            
+            try {
+                log('Attempting email sign-in...');
+                await window.signInWithEmailAndPassword(window.auth, email, password);
+                log('✅ Email sign-in successful');
+            } catch (error) {
+                log('❌ Email sign-in failed: ' + error.message);
+            }
+        };
+
+        window.signOut = async function() {
+            try {
+                log('Signing out...');
+                await window.signOut(window.auth);
+                log('✅ Sign out successful');
+            } catch (error) {
+                log('❌ Sign out failed: ' + error.message);
+            }
+        };
+
+        // Data functions
+        window.addTestData = function() {
+            const customerName = document.getElementById('test-customer').value;
+            const itemName = document.getElementById('test-item').value;
+            
+            if (customerName) {
+                testData.customers.push({
+                    name: customerName,
+                    time: new Date().toLocaleTimeString()
+                });
+                log('✅ Added customer: ' + customerName);
+            }
+            
+            if (itemName) {
+                testData.items.push({
+                    name: itemName,
+                    time: new Date().toLocaleTimeString()
+                });
+                log('✅ Added item: ' + itemName);
+            }
+            
+            testData.lastUpdated = new Date().toLocaleString();
+            updateDataDisplay();
+            
+            // Clear inputs
+            document.getElementById('test-customer').value = '';
+            document.getElementById('test-item').value = '';
+        };
+
+        window.saveToCloud = async function() {
+            if (!currentUser) {
+                log('❌ No user authenticated for cloud save');
+                return;
+            }
+            
+            try {
+                log('Saving test data to cloud...');
+                await window.setDoc(window.doc(window.collection(window.db, 'testData'), currentUser.uid), testData);
+                log('✅ Test data saved to cloud successfully');
+            } catch (error) {
+                log('❌ Error saving to cloud: ' + error.message);
+            }
+        };
+
+        window.loadTestData = async function() {
+            if (!currentUser) {
+                log('❌ No user authenticated for cloud load');
+                return;
+            }
+            
+            try {
+                log('Loading test data from cloud...');
+                const docRef = window.doc(window.collection(window.db, 'testData'), currentUser.uid);
+                const docSnap = await window.getDoc(docRef);
+                
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    testData = data;
+                    log('✅ Test data loaded from cloud');
+                    log('Loaded data: ' + JSON.stringify(data, null, 2));
+                    updateDataDisplay();
+                } else {
+                    log('❌ No test data found in cloud');
+                }
+            } catch (error) {
+                log('❌ Error loading from cloud: ' + error.message);
+            }
+        };
+
+        // Start the test
+        initializeTest();
+    </script>
+</body>
+</html>
+
+
+

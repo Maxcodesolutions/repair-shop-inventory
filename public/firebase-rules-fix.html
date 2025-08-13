@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firebase Rules Fix - Repair Shop Inventory</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .step {
+            background: #f8f9fa;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border-left: 4px solid #007bff;
+        }
+        .step h3 {
+            color: #007bff;
+            margin-top: 0;
+        }
+        .code-block {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+        }
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+        }
+        .error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+        }
+        .test-section {
+            background: #e3f2fd;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button.danger {
+            background: #dc3545;
+        }
+        button.danger:hover {
+            background: #c82333;
+        }
+        button.success {
+            background: #28a745;
+        }
+        button.success:hover {
+            background: #218838;
+        }
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 15px;
+            border-radius: 5px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .status.warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Firebase Rules Fix - Repair Shop Inventory</h1>
+        
+        <div class="warning">
+            <strong>⚠️ Current Issue:</strong> "Missing or insufficient permissions" error indicates that Firebase Firestore security rules are blocking read/write operations.
+        </div>
+
+        <div class="step">
+            <h3>📋 Step 1: Go to Firebase Console</h3>
+            <ol>
+                <li><strong>Open:</strong> <a href="https://console.firebase.google.com/" target="_blank" rel="noopener">Firebase Console</a></li>
+                <li><strong>Select:</strong> Your `repair-shop-inventory` project</li>
+                <li><strong>Navigate:</strong> Firestore Database → Rules</li>
+            </ol>
+        </div>
+
+        <div class="step">
+            <h3>🔒 Step 2: Update Security Rules</h3>
+            <p>Replace the current rules with these permissive rules for testing:</p>
+            
+            <div class="code-block">
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Allow read/write access to all users under any document
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}
+            </div>
+            
+            <div class="warning">
+                <strong>⚠️ Security Note:</strong> This rule set allows complete access to all users. Use only for testing.
+            </div>
+        </div>
+
+        <div class="step">
+            <h3>🚀 Step 3: Publish Rules</h3>
+            <ol>
+                <li><strong>Click:</strong> "Publish" button in Firebase Console</li>
+                <li><strong>Wait:</strong> For rules to take effect (usually 1-2 minutes)</li>
+                <li><strong>Refresh:</strong> Your application</li>
+            </ol>
+        </div>
+
+        <div class="step">
+            <h3>🔐 Alternative: More Secure Rules</h3>
+            <p>For production use, consider these more secure rules:</p>
+            
+            <div class="code-block">
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Allow users to read/write their own data
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Allow users to read/write their own sync data
+    match /sync/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Allow users to read/write their own test data
+    match /testData/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Allow users to read/write their own connection test data
+    match /connection-test/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h3>🧪 Test the Fix</h3>
+            <p>Use these buttons to test if the rules fix worked:</p>
+            
+            <button onclick="testFirebaseConnection()">Test Firebase Connection</button>
+            <button onclick="testCloudWrite()">Test Cloud Write</button>
+            <button onclick="testCloudRead()">Test Cloud Read</button>
+            <button onclick="testFullSync()">Test Full Sync</button>
+            <button onclick="clearTestData()" class="danger">Clear Test Data</button>
+            
+            <div id="test-results" class="log"></div>
+        </div>
+
+        <div class="step">
+            <h3>📊 Expected Results</h3>
+            <p>After updating the rules, you should see:</p>
+            <ul>
+                <li>✅ <strong>No more permission errors</strong></li>
+                <li>✅ <strong>Data saves to cloud successfully</strong></li>
+                <li>✅ <strong>Cross-browser sync works</strong></li>
+                <li>✅ <strong>Real-time updates function</strong></li>
+            </ul>
+        </div>
+
+        <div class="step">
+            <h3>🛠️ Troubleshooting</h3>
+            <p>If issues persist:</p>
+            <ol>
+                <li><strong>Check Firebase Console</strong> for any rule syntax errors</li>
+                <li><strong>Wait longer</strong> for rules to propagate (up to 5 minutes)</li>
+                <li><strong>Clear browser cache</strong> and try again</li>
+                <li><strong>Check browser console</strong> for new error messages</li>
+            </ol>
+        </div>
+
+        <div class="step">
+            <h3>📱 Quick Test</h3>
+            <p>After updating rules, test with:</p>
+            <ol>
+                <li><strong>Open:</strong> <a href="cross-browser-test.html" target="_blank">cross-browser-test.html</a></li>
+                <li><strong>Sign in</strong> anonymously</li>
+                <li><strong>Add test data</strong></li>
+                <li><strong>Save to cloud</strong> - should work without errors</li>
+                <li><strong>Open in different browser</strong> - data should sync</li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        function log(message, type = 'info') {
+            const results = document.getElementById('test-results');
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.className = `status ${type}`;
+            logEntry.innerHTML = `[${timestamp}] ${message}`;
+            results.appendChild(logEntry);
+            results.scrollTop = results.scrollHeight;
+        }
+
+        function testFirebaseConnection() {
+            log('Testing Firebase connection...', 'info');
+            
+            if (typeof window !== 'undefined' && window.auth) {
+                log('✅ Firebase Auth available', 'success');
+                
+                if (window.auth.currentUser) {
+                    log(`✅ User authenticated: ${window.auth.currentUser.uid}`, 'success');
+                } else {
+                    log('⚠️ No authenticated user', 'warning');
+                }
+            } else {
+                log('❌ Firebase Auth not available', 'error');
+            }
+            
+            if (typeof window !== 'undefined' && window.db) {
+                log('✅ Firestore Database available', 'success');
+            } else {
+                log('❌ Firestore Database not available', 'error');
+            }
+        }
+
+        function testCloudWrite() {
+            log('Testing cloud write...', 'info');
+            
+            if (!window.auth || !window.auth.currentUser) {
+                log('❌ No authenticated user for write test', 'error');
+                return;
+            }
+            
+            if (!window.setDoc || !window.doc || !window.collection) {
+                log('❌ Firebase write functions not available', 'error');
+                return;
+            }
+            
+            const testData = {
+                test: true,
+                timestamp: new Date().toISOString(),
+                message: 'Test write from rules fix page'
+            };
+            
+            try {
+                window.setDoc(window.doc(window.collection(window.db, 'testData'), window.auth.currentUser.uid), testData)
+                    .then(() => {
+                        log('✅ Cloud write successful!', 'success');
+                    })
+                    .catch((error) => {
+                        log(`❌ Cloud write failed: ${error.message}`, 'error');
+                    });
+            } catch (error) {
+                log(`❌ Cloud write error: ${error.message}`, 'error');
+            }
+        }
+
+        function testCloudRead() {
+            log('Testing cloud read...', 'info');
+            
+            if (!window.auth || !window.auth.currentUser) {
+                log('❌ No authenticated user for read test', 'error');
+                return;
+            }
+            
+            if (!window.getDoc || !window.doc || !window.collection) {
+                log('❌ Firebase read functions not available', 'error');
+                return;
+            }
+            
+            try {
+                window.getDoc(window.doc(window.collection(window.db, 'testData'), window.auth.currentUser.uid))
+                    .then((doc) => {
+                        if (doc.exists()) {
+                            log('✅ Cloud read successful!', 'success');
+                            log(`Data: ${JSON.stringify(doc.data())}`, 'info');
+                        } else {
+                            log('⚠️ No test data found (this is normal)', 'warning');
+                        }
+                    })
+                    .catch((error) => {
+                        log(`❌ Cloud read failed: ${error.message}`, 'error');
+                    });
+            } catch (error) {
+                log(`❌ Cloud read error: ${error.message}`, 'error');
+            }
+        }
+
+        function testFullSync() {
+            log('Testing full sync...', 'info');
+            
+            if (typeof window !== 'undefined' && window.forceSyncToCloud) {
+                window.forceSyncToCloud();
+                log('✅ Full sync function called', 'success');
+            } else {
+                log('❌ Full sync function not available', 'error');
+            }
+        }
+
+        function clearTestData() {
+            log('Clearing test data...', 'info');
+            
+            if (!window.auth || !window.auth.currentUser) {
+                log('❌ No authenticated user for clear test', 'error');
+                return;
+            }
+            
+            if (!window.setDoc || !window.doc || !window.collection) {
+                log('❌ Firebase functions not available', 'error');
+                return;
+            }
+            
+            try {
+                window.setDoc(window.doc(window.collection(window.db, 'testData'), window.auth.currentUser.uid), {})
+                    .then(() => {
+                        log('✅ Test data cleared!', 'success');
+                    })
+                    .catch((error) => {
+                        log(`❌ Clear failed: ${error.message}`, 'error');
+                    });
+            } catch (error) {
+                log(`❌ Clear error: ${error.message}`, 'error');
+            }
+        }
+
+        // Auto-test on page load
+        window.addEventListener('load', () => {
+            log('Firebase Rules Fix page loaded', 'info');
+            setTimeout(() => {
+                testFirebaseConnection();
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

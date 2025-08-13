@@ -601,9 +601,6 @@ function initializeApplication() {
     // Setup Firebase auth listener for automatic cloud sync
     setupFirebaseAuthListener();
     
-    // Start connection monitoring
-    startConnectionMonitoring();
-    
     // Load data first
     loadData();
     
@@ -791,11 +788,9 @@ function loadDataFromLocal() {
             users: users.length
         });
         
-        // Validate and fix data consistency issues
-        validateAndFixDataConsistency();
-        
-        // Only save if we loaded new data to prevent overwriting
-        console.log('Data loaded from localStorage successfully');
+        // Save data immediately to ensure persistence
+        console.log('Saving data to ensure persistence...');
+        saveData();
         
     } catch (error) {
         console.error('Error loading data from localStorage:', error);
@@ -851,19 +846,22 @@ async function loadDataFromCloud() {
             console.log('Cloud data keys:', Object.keys(data));
             console.log('Cloud data timestamp:', data.lastUpdated);
             
-            // Load data from cloud with better validation
-            inventory = Array.isArray(data.inventory) && data.inventory.length > 0 ? data.inventory : getDefaultInventory();
-            vendors = Array.isArray(data.vendors) && data.vendors.length > 0 ? data.vendors : getDefaultVendors();
-            customers = Array.isArray(data.customers) && data.customers.length > 0 ? data.customers : getDefaultCustomers();
-            purchases = Array.isArray(data.purchases) ? data.purchases : [];
-            repairs = Array.isArray(data.repairs) ? data.repairs : [];
-            outsourceRepairs = Array.isArray(data.outsourceRepairs) ? data.outsourceRepairs : [];
-            invoices = Array.isArray(data.invoices) ? data.invoices : [];
-            quotations = Array.isArray(data.quotations) ? data.quotations : [];
-            pickDrops = Array.isArray(data.pickDrops) ? data.pickDrops : [];
-            payments = Array.isArray(data.payments) ? data.payments : [];
-            deliveries = Array.isArray(data.deliveries) && data.deliveries.length > 0 ? data.deliveries : getDefaultDeliveries();
-            users = Array.isArray(data.users) && data.users.length > 0 ? data.users : getDefaultUsers();
+            // Load data from cloud
+            inventory = data.inventory || getDefaultInventory();
+            vendors = data.vendors || getDefaultVendors();
+            customers = data.customers || getDefaultCustomers();
+            purchases = data.purchases || [];
+            repairs = data.repairs || [];
+            outsourceRepairs = data.outsourceRepairs || [];
+            invoices = data.invoices || [];
+            quotations = data.quotations || [];
+            pickDrops = data.pickDrops || [];
+            payments = data.payments || [];
+            deliveries = data.deliveries || getDefaultDeliveries();
+            users = data.users || getDefaultUsers();
+            
+            // Also save to localStorage as backup
+            saveData();
             
             console.log('✅ Data loaded successfully from cloud:', {
                 inventory: inventory.length,
@@ -871,12 +869,8 @@ async function loadDataFromCloud() {
                 customers: customers.length,
                 repairs: repairs.length,
                 invoices: invoices.length,
-                quotations: quotations.length,
-                pickDrops: pickDrops.length
+                quotations: quotations.length
             });
-            
-            // Validate and fix data consistency issues
-            validateAndFixDataConsistency();
             
             // Check sync timestamp
             try {
@@ -2945,72 +2939,6 @@ function generateQuotationNumber() {
     return `QT-${year}${month}-${String(count).padStart(3, '0')}`;
 }
 
-// Make the validation function available globally
-window.validateAndFixDataConsistency = validateAndFixDataConsistency;
-
-// Function to update connection status indicator
-function updateConnectionStatus() {
-    const statusIndicator = document.getElementById('status-indicator');
-    const statusText = document.getElementById('status-text');
-    
-    if (!statusIndicator || !statusText) return;
-    
-    // Check current connection status
-    const onlineStatus = window.checkOnlineStatus ? window.checkOnlineStatus() : null;
-    const firestoreStatus = window.checkFirestoreConnection ? window.checkFirestoreConnection() : null;
-    
-    let status = 'offline';
-    let text = 'Offline';
-    
-    if (onlineStatus) {
-        if (!onlineStatus.browserOnline) {
-            status = 'offline';
-            text = 'Browser Offline';
-        } else if (!onlineStatus.firebaseReady) {
-            status = 'connecting';
-            text = 'Connecting...';
-        } else if (window.firebaseOffline) {
-            status = 'error';
-            text = 'Firebase Offline';
-        } else if (firestoreStatus && firestoreStatus.status === 'connected') {
-            status = 'online';
-            text = 'Connected';
-        } else {
-            status = 'connecting';
-            text = 'Testing Connection...';
-        }
-    }
-    
-    // Update the indicator
-    statusIndicator.className = `status-indicator ${status}`;
-    statusText.textContent = text;
-    
-    // Add tooltip with detailed status
-    statusText.title = `Browser: ${onlineStatus?.browserOnline ? 'Online' : 'Offline'}\nFirebase: ${onlineStatus?.firebaseReady ? 'Ready' : 'Not Ready'}\nFirestore: ${firestoreStatus?.status || 'Unknown'}`;
-}
-
-// Function to start connection monitoring
-function startConnectionMonitoring() {
-    // Update status immediately
-    updateConnectionStatus();
-    
-    // Update status every 5 seconds
-    setInterval(updateConnectionStatus, 5000);
-    
-    // Update status when Firebase becomes ready
-    window.addEventListener('firebaseReady', updateConnectionStatus);
-    
-    // Update status when network status changes
-    window.addEventListener('online', updateConnectionStatus);
-    window.addEventListener('offline', updateConnectionStatus);
-    
-    console.log('🔌 Connection monitoring started');
-}
-
-// Make connection monitoring functions available globally
-window.updateConnectionStatus = updateConnectionStatus;
-window.startConnectionMonitoring = startConnectionMonitoring;
-
 // Dashboard update
 function updateDashboard() {
     console.log('Updating dashboard...');
@@ -4948,46 +4876,31 @@ function updatePickDropStatus(id, newStatus = null) {
             targetStatus = statuses[nextIndex];
         }
         
-        console.log(`🔄 Updating Pick & Drop ${id} status:`, {
-            currentStatus: pickDrop.status,
-            targetStatus: targetStatus,
-            pickDropData: pickDrop
-        });
-        
         // Check if status is actually changing
         if (pickDrop.status !== targetStatus) {
             pickDrop.status = targetStatus;
             
             // If status is changing to "in-repair", create a repair entry
             if (targetStatus === 'in-repair') {
-                console.log(`🔧 Creating repair for Pick & Drop ${id}`);
                 createRepairFromPickDrop(pickDrop);
             }
             
-            console.log(`💾 Saving data after status update...`);
             saveData();
-            console.log(`📊 Rendering updated data...`);
             renderPickDrops();
             renderRepairs(); // Refresh repairs to show the new entry
             updateDashboard();
             
             console.log(`✅ Pick & Drop ${id} status updated to: ${targetStatus}`);
-        } else {
-            console.log(`ℹ️ Pick & Drop ${id} status unchanged: ${pickDrop.status}`);
         }
-    } else {
-        console.error(`❌ Pick & Drop with ID ${id} not found`);
     }
 }
 
 // New function to create a repair from pick & drop
 function createRepairFromPickDrop(pickDrop) {
-    console.log(`🔧 Starting repair creation for Pick & Drop ${pickDrop.id}:`, pickDrop);
-    
     // Check if a repair already exists for this pick & drop
     const existingRepair = repairs.find(r => r.pickDropId === pickDrop.id);
     if (existingRepair) {
-        console.log(`⚠️ Repair already exists for Pick & Drop ${pickDrop.id}:`, existingRepair);
+        console.log(`⚠️ Repair already exists for Pick & Drop ${pickDrop.id}`);
         return existingRepair;
     }
     
@@ -5032,21 +4945,13 @@ function createRepairFromPickDrop(pickDrop) {
         ]
     };
     
-    console.log(`📝 Created repair object:`, newRepair);
-    
     repairs.push(newRepair);
-    console.log(`📋 Added repair to repairs array. Total repairs: ${repairs.length}`);
     
     // Update pick & drop with repair reference
     pickDrop.repairId = newRepair.id;
     
-    // Ensure the pick & drop status is properly set to 'in-repair'
-    pickDrop.status = 'in-repair';
-    
     console.log(`✅ Created new repair ${newRepair.id} from Pick & Drop ${pickDrop.id}`);
     console.log('New repair details:', newRepair);
-    console.log('Updated pick & drop status to:', pickDrop.status);
-    console.log('Updated pick & drop object:', pickDrop);
     
     return newRepair;
 }
@@ -7877,7 +7782,7 @@ function editPickDrop() {
                 'edit-pickdrop-pickup-time': pickDrop.pickupTime || '',
                 'edit-pickdrop-delivery-date': pickDrop.deliveryDate || '',
                 'edit-pickdrop-delivery-time': pickDrop.deliveryTime || '',
-                'edit-pickdrop-status': pickDrop.status || (pickDrop.repairId ? 'in-repair' : 'scheduled'),
+                'edit-pickdrop-status': pickDrop.status || 'scheduled',
                 'edit-pickdrop-fee': pickDrop.fee || 0,
                 'edit-pickdrop-instructions': pickDrop.instructions || '',
                 'edit-pickdrop-notes': pickDrop.notes || ''
@@ -9997,7 +9902,7 @@ function forceConsistentAuthAndClear() {
 // Make the force function available globally
 window.forceConsistentAuthAndClear = forceConsistentAuthAndClear;
 
-// Function to check and fix credentials
+// Function to check and fix credential consistency
 function checkAndFixCredentials() {
     console.log('=== CHECKING AND FIXING CREDENTIALS ===');
     
@@ -10593,91 +10498,3 @@ function checkLocalStorageData() {
 
 // Make localStorage check function available globally
 window.checkLocalStorageData = checkLocalStorageData;
-
-// Function to validate and fix data consistency between pick & drops and repairs
-function validateAndFixDataConsistency() {
-    console.log('=== VALIDATING DATA CONSISTENCY ===');
-    
-    let issuesFound = 0;
-    let fixesApplied = 0;
-    
-    // Check pick & drops that have repairId but the repair doesn't exist
-    pickDrops.forEach(pickDrop => {
-        if (pickDrop.repairId) {
-            const repair = repairs.find(r => r.id === pickDrop.repairId);
-            if (!repair) {
-                console.log(`⚠️ Pick & Drop ${pickDrop.id} has repairId ${pickDrop.repairId} but repair doesn't exist`);
-                issuesFound++;
-                
-                // Fix: Remove the invalid repairId reference
-                delete pickDrop.repairId;
-                if (pickDrop.status === 'in-repair') {
-                    pickDrop.status = 'picked-up'; // Reset to previous logical status
-                }
-                fixesApplied++;
-            } else if (pickDrop.status !== 'in-repair') {
-                console.log(`⚠️ Pick & Drop ${pickDrop.id} has repair ${pickDrop.repairId} but status is ${pickDrop.status}, should be 'in-repair'`);
-                issuesFound++;
-                
-                // Fix: Update status to match repair existence
-                pickDrop.status = 'in-repair';
-                fixesApplied++;
-            }
-        }
-    });
-    
-    // Check repairs that have pickDropId but the pick & drop doesn't exist
-    repairs.forEach(repair => {
-        if (repair.pickDropId) {
-            const pickDrop = pickDrops.find(pd => pd.id === repair.pickDropId);
-            if (!pickDrop) {
-                console.log(`⚠️ Repair ${repair.id} has pickDropId ${repair.pickDropId} but pick & drop doesn't exist`);
-                issuesFound++;
-                
-                // Fix: Remove the invalid pickDropId reference
-                delete repair.pickDropId;
-                fixesApplied++;
-            }
-        }
-    });
-    
-    // Check for orphaned repairs (repairs without pickDropId that should have one)
-    repairs.forEach(repair => {
-        if (!repair.pickDropId && repair.status === 'in-progress') {
-            // Look for a pick & drop that might be related by customer and device
-            const relatedPickDrop = pickDrops.find(pd => 
-                pd.customer === repair.customer && 
-                pd.deviceType === repair.deviceType &&
-                !pd.repairId
-            );
-            
-            if (relatedPickDrop) {
-                console.log(`⚠️ Found orphaned repair ${repair.id} that could be linked to Pick & Drop ${relatedPickDrop.id}`);
-                issuesFound++;
-                
-                // Fix: Link the repair to the pick & drop
-                repair.pickDropId = relatedPickDrop.id;
-                relatedPickDrop.repairId = repair.id;
-                relatedPickDrop.status = 'in-repair';
-                fixesApplied++;
-            }
-        }
-    });
-    
-    if (issuesFound > 0) {
-        console.log(`🔧 Found ${issuesFound} data consistency issues, applied ${fixesApplied} fixes`);
-        
-        // Save the fixed data
-        if (fixesApplied > 0) {
-            console.log('💾 Saving fixed data...');
-            saveData();
-        }
-    } else {
-        console.log('✅ No data consistency issues found');
-    }
-    
-    return { issuesFound, fixesApplied };
-}
-
-// Make the validation function available globally
-window.validateAndFixDataConsistency = validateAndFixDataConsistency;

@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cloud Sync Setup</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .setup-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .btn {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+        .btn-warning {
+            background: #ffc107;
+            color: black;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .output {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 10px 0;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>☁️ Cloud Sync Setup</h1>
+    
+    <div class="setup-section">
+        <h2>Current Status</h2>
+        <div id="status-display">
+            <div class="status info">Checking Firebase connection...</div>
+        </div>
+    </div>
+
+    <div class="setup-section">
+        <h2>Authentication</h2>
+        <p>To enable cloud storage, you need to create a Firebase account and authenticate.</p>
+        
+        <div id="auth-section">
+            <button class="btn btn-primary" onclick="createFirebaseAccount()">Create Firebase Account</button>
+            <button class="btn btn-success" onclick="signInWithEmail()">Sign In with Email</button>
+            <button class="btn btn-warning" onclick="signInAnonymously()">Sign In Anonymously</button>
+        </div>
+        
+        <div id="user-info" style="display: none;">
+            <h3>Current User</h3>
+            <div id="user-details"></div>
+            <button class="btn btn-warning" onclick="signOut()">Sign Out</button>
+        </div>
+    </div>
+
+    <div class="setup-section">
+        <h2>Data Sync</h2>
+        <p>Once authenticated, your data will automatically sync to the cloud.</p>
+        
+        <button class="btn btn-primary" onclick="uploadToCloud()">Upload Current Data to Cloud</button>
+        <button class="btn btn-success" onclick="downloadFromCloud()">Download Data from Cloud</button>
+        <button class="btn btn-warning" onclick="clearLocalData()">Clear Local Data</button>
+    </div>
+
+    <div class="setup-section">
+        <h2>Debug Information</h2>
+        <div id="debug-output" class="output"></div>
+    </div>
+
+    <div class="setup-section">
+        <h2>Go to Main App</h2>
+        <a href="index.html" class="btn btn-primary">Open Repair Shop Inventory</a>
+    </div>
+
+    <script type="module">
+        // Import Firebase modules
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
+        import { getFirestore, collection, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signInAnonymously, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
+
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCvuJuOlhqasNbpCkyJjOH1YKJKnjvxLvk",
+            authDomain: "repair-shop-inventory.firebaseapp.com",
+            projectId: "repair-shop-inventory",
+            storageBucket: "repair-shop-inventory.firebasestorage.app",
+            messagingSenderId: "91629691464",
+            appId: "1:91629691464:web:d20cabddb6dcbf755dee7d",
+            measurementId: "G-K78PVPW0MG"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        let currentUser = null;
+
+        function log(message) {
+            const debugOutput = document.getElementById('debug-output');
+            debugOutput.textContent += message + '\n';
+            console.log(message);
+        }
+
+        function updateStatus(message, type = 'info') {
+            const statusDisplay = document.getElementById('status-display');
+            statusDisplay.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+
+        // Check Firebase connection
+        try {
+            log('Firebase initialized successfully');
+            updateStatus('Firebase connected successfully!', 'success');
+        } catch (error) {
+            log('Firebase initialization error: ' + error.message);
+            updateStatus('Firebase connection failed: ' + error.message, 'error');
+        }
+
+        // Monitor auth state
+        onAuthStateChanged(auth, (user) => {
+            currentUser = user;
+            if (user) {
+                log('User authenticated: ' + user.email);
+                updateStatus('User authenticated: ' + (user.email || 'Anonymous'), 'success');
+                document.getElementById('user-info').style.display = 'block';
+                document.getElementById('user-details').innerHTML = `
+                    <p><strong>Email:</strong> ${user.email || 'Anonymous'}</p>
+                    <p><strong>UID:</strong> ${user.uid}</p>
+                `;
+            } else {
+                log('User not authenticated');
+                updateStatus('User not authenticated', 'info');
+                document.getElementById('user-info').style.display = 'none';
+            }
+        });
+
+        // Global functions for buttons
+        window.createFirebaseAccount = async function() {
+            const email = prompt('Enter email address:');
+            const password = prompt('Enter password (min 6 characters):');
+            
+            if (!email || !password) {
+                alert('Email and password are required');
+                return;
+            }
+            
+            try {
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                log('Account created successfully: ' + userCredential.user.email);
+                alert('Account created successfully!');
+            } catch (error) {
+                log('Error creating account: ' + error.message);
+                alert('Error creating account: ' + error.message);
+            }
+        };
+
+        window.signInWithEmail = async function() {
+            const email = prompt('Enter email address:');
+            const password = prompt('Enter password:');
+            
+            if (!email || !password) {
+                alert('Email and password are required');
+                return;
+            }
+            
+            try {
+                const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                log('Signed in successfully: ' + userCredential.user.email);
+                alert('Signed in successfully!');
+            } catch (error) {
+                log('Error signing in: ' + error.message);
+                alert('Error signing in: ' + error.message);
+            }
+        };
+
+        window.signInAnonymously = async function() {
+            try {
+                const userCredential = await signInAnonymously(auth);
+                log('Signed in anonymously: ' + userCredential.user.uid);
+                alert('Signed in anonymously!');
+            } catch (error) {
+                log('Error signing in anonymously: ' + error.message);
+                alert('Error signing in anonymously: ' + error.message);
+            }
+        };
+
+        window.signOut = async function() {
+            try {
+                await signOut(auth);
+                log('Signed out successfully');
+                alert('Signed out successfully!');
+            } catch (error) {
+                log('Error signing out: ' + error.message);
+                alert('Error signing out: ' + error.message);
+            }
+        };
+
+        window.uploadToCloud = async function() {
+            if (!currentUser) {
+                alert('Please sign in first');
+                return;
+            }
+            
+            try {
+                // Get data from localStorage
+                const data = {
+                    inventory: JSON.parse(localStorage.getItem('inventory') || '[]'),
+                    vendors: JSON.parse(localStorage.getItem('vendors') || '[]'),
+                    customers: JSON.parse(localStorage.getItem('customers') || '[]'),
+                    repairs: JSON.parse(localStorage.getItem('repairs') || '[]'),
+                    invoices: JSON.parse(localStorage.getItem('invoices') || '[]'),
+                    quotations: JSON.parse(localStorage.getItem('quotations') || '[]'),
+                    purchases: JSON.parse(localStorage.getItem('purchases') || '[]'),
+                    payments: JSON.parse(localStorage.getItem('payments') || '[]'),
+                    users: JSON.parse(localStorage.getItem('users') || '[]'),
+                    lastUpdated: new Date().toISOString()
+                };
+                
+                await setDoc(doc(collection(db, 'users'), currentUser.uid), data);
+                log('Data uploaded to cloud successfully');
+                alert('Data uploaded to cloud successfully!');
+            } catch (error) {
+                log('Error uploading to cloud: ' + error.message);
+                alert('Error uploading to cloud: ' + error.message);
+            }
+        };
+
+        window.downloadFromCloud = async function() {
+            if (!currentUser) {
+                alert('Please sign in first');
+                return;
+            }
+            
+            try {
+                const docRef = doc(collection(db, 'users'), currentUser.uid);
+                const docSnap = await getDoc(docRef);
+                
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    
+                    // Save to localStorage
+                    localStorage.setItem('inventory', JSON.stringify(data.inventory || []));
+                    localStorage.setItem('vendors', JSON.stringify(data.vendors || []));
+                    localStorage.setItem('customers', JSON.stringify(data.customers || []));
+                    localStorage.setItem('repairs', JSON.stringify(data.repairs || []));
+                    localStorage.setItem('invoices', JSON.stringify(data.invoices || []));
+                    localStorage.setItem('quotations', JSON.stringify(data.quotations || []));
+                    localStorage.setItem('purchases', JSON.stringify(data.purchases || []));
+                    localStorage.setItem('payments', JSON.stringify(data.payments || []));
+                    localStorage.setItem('users', JSON.stringify(data.users || []));
+                    
+                    log('Data downloaded from cloud successfully');
+                    alert('Data downloaded from cloud successfully!');
+                } else {
+                    log('No data found in cloud');
+                    alert('No data found in cloud');
+                }
+            } catch (error) {
+                log('Error downloading from cloud: ' + error.message);
+                alert('Error downloading from cloud: ' + error.message);
+            }
+        };
+
+        window.clearLocalData = function() {
+            if (confirm('Are you sure you want to clear all local data?')) {
+                localStorage.clear();
+                log('Local data cleared');
+                alert('Local data cleared!');
+            }
+        };
+
+        // Initial log
+        log('Cloud Sync Setup Page Loaded');
+        log('Firebase Config: ' + JSON.stringify(firebaseConfig, null, 2));
+    </script>
+</body>
+</html>
+
+
+

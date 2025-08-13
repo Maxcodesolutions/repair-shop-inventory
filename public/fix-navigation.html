@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Navigation Fix Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .nav-link {
+            display: inline-block;
+            padding: 10px 20px;
+            margin: 5px;
+            background: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .nav-link:hover {
+            background: #0056b3;
+        }
+        .content-section {
+            display: none;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        .content-section.active {
+            display: block;
+        }
+        .output {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 10px 0;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Navigation Fix Test</h1>
+    
+    <div class="test-section">
+        <h2>Navigation Links</h2>
+        <a href="#" class="nav-link" data-section="dashboard">Dashboard</a>
+        <a href="#" class="nav-link" data-section="inventory">Inventory</a>
+        <a href="#" class="nav-link" data-section="customers">Customers</a>
+        <a href="#" class="nav-link" data-section="repairs">Repairs</a>
+        <a href="#" class="nav-link" data-section="invoices">Invoices</a>
+    </div>
+
+    <div class="test-section">
+        <h2>Content Sections</h2>
+        <div id="dashboard" class="content-section active">
+            <h3>Dashboard</h3>
+            <p>This is the dashboard section.</p>
+        </div>
+        <div id="inventory" class="content-section">
+            <h3>Inventory</h3>
+            <p>This is the inventory section.</p>
+        </div>
+        <div id="customers" class="content-section">
+            <h3>Customers</h3>
+            <p>This is the customers section.</p>
+        </div>
+        <div id="repairs" class="content-section">
+            <h3>Repairs</h3>
+            <p>This is the repairs section.</p>
+        </div>
+        <div id="invoices" class="content-section">
+            <h3>Invoices</h3>
+            <p>This is the invoices section.</p>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>Debug Output</h2>
+        <div id="debug-output" class="output"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test Buttons</h2>
+        <button onclick="testNavigation('dashboard')">Test Dashboard</button>
+        <button onclick="testNavigation('inventory')">Test Inventory</button>
+        <button onclick="testNavigation('customers')">Test Customers</button>
+        <button onclick="testNavigation('repairs')">Test Repairs</button>
+        <button onclick="testNavigation('invoices')">Test Invoices</button>
+        <button onclick="setupNavigation()">Setup Navigation</button>
+        <button onclick="checkNavigation()">Check Navigation</button>
+    </div>
+
+    <div class="test-section">
+        <h2>Go to Main App</h2>
+        <a href="index.html" style="background: #28a745; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px;">Open Main Application</a>
+    </div>
+
+    <script>
+        let debugOutput = document.getElementById('debug-output');
+        
+        function log(message) {
+            debugOutput.textContent += message + '\n';
+            console.log(message);
+        }
+        
+        function showSection(sectionName) {
+            log(`showSection called with: ${sectionName}`);
+            
+            // Check if section element exists
+            const sectionElement = document.getElementById(sectionName);
+            if (!sectionElement) {
+                log(`ERROR: Section element not found: ${sectionName}`);
+                return;
+            }
+            
+            // Check if nav link exists
+            const navLink = document.querySelector(`[data-section="${sectionName}"]`);
+            if (!navLink) {
+                log(`ERROR: Nav link not found for section: ${sectionName}`);
+                return;
+            }
+            
+            // Hide all sections
+            document.querySelectorAll('.content-section').forEach(section => {
+                section.classList.remove('active');
+            });
+            
+            // Show selected section
+            sectionElement.classList.add('active');
+            
+            // Update navigation
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('active');
+            });
+            navLink.classList.add('active');
+            
+            log(`SUCCESS: Section ${sectionName} is now active`);
+        }
+        
+        function setupNavigation() {
+            log('Setting up navigation...');
+            
+            const navLinks = document.querySelectorAll('.nav-link');
+            log(`Found ${navLinks.length} navigation links`);
+            
+            navLinks.forEach((link, index) => {
+                const section = link.getAttribute('data-section');
+                log(`Setting up nav link ${index + 1}: ${link.textContent.trim()} -> ${section}`);
+                
+                // Remove existing event listeners
+                const newLink = link.cloneNode(true);
+                link.parentNode.replaceChild(newLink, link);
+                
+                // Add click event listener
+                newLink.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    const clickedSection = this.getAttribute('data-section');
+                    log(`Nav link clicked: ${clickedSection}`);
+                    
+                    if (clickedSection) {
+                        showSection(clickedSection);
+                    } else {
+                        log('ERROR: No data-section attribute found on nav link');
+                    }
+                });
+                
+                // Also add onclick as backup
+                newLink.onclick = function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    const clickedSection = this.getAttribute('data-section');
+                    log(`Nav link onclick triggered: ${clickedSection}`);
+                    
+                    if (clickedSection) {
+                        showSection(clickedSection);
+                    }
+                };
+            });
+            
+            log('Navigation setup completed');
+        }
+        
+        function testNavigation(sectionName) {
+            log(`Testing navigation to: ${sectionName}`);
+            showSection(sectionName);
+        }
+        
+        function checkNavigation() {
+            log('=== NAVIGATION CHECK ===');
+            const navLinks = document.querySelectorAll('.nav-link');
+            log(`Navigation links found: ${navLinks.length}`);
+            
+            navLinks.forEach((link, index) => {
+                const section = link.getAttribute('data-section');
+                const text = link.textContent.trim();
+                log(`${index + 1}. "${text}" -> ${section || 'NO SECTION'}`);
+            });
+            
+            const sections = document.querySelectorAll('.content-section');
+            log(`Content sections found: ${sections.length}`);
+            
+            sections.forEach((section, index) => {
+                log(`${index + 1}. Section ID: ${section.id}, Active: ${section.classList.contains('active')}`);
+            });
+        }
+        
+        // Auto-setup navigation when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            log('Page loaded, setting up navigation...');
+            setupNavigation();
+            checkNavigation();
+        });
+    </script>
+</body>
+</html>
+
+
+

@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Favicon Generator</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; text-align: center; }
+        .instructions { max-width: 600px; margin: 0 auto; text-align: left; }
+        .favicon-preview { margin: 20px; padding: 20px; border: 1px solid #ccc; border-radius: 10px; }
+        .download-btn { 
+            background: #2563eb; 
+            color: white; 
+            padding: 10px 20px; 
+            border: none; 
+            border-radius: 5px; 
+            cursor: pointer; 
+            margin: 10px;
+        }
+        .download-btn:hover { background: #1e40af; }
+    </style>
+</head>
+<body>
+    <h1>🔧 Repair Shop Favicon Generator</h1>
+    
+    <div class="instructions">
+        <h3>How to create favicon.ico:</h3>
+        <ol>
+            <li><strong>Right-click</strong> on the favicon preview below</li>
+            <li>Select <strong>"Save image as..."</strong></li>
+            <li>Save it as <strong>"favicon.ico"</strong> in your project root</li>
+            <li>Or use the download button below</li>
+        </ol>
+        
+        <p><strong>Note:</strong> The SVG favicon is already created and will work in modern browsers. The ICO file is for older browser compatibility.</p>
+    </div>
+    
+    <div class="favicon-preview">
+        <h3>Favicon Preview:</h3>
+        <img src="favicon.svg" alt="Repair Shop Favicon" style="width: 64px; height: 64px; border: 1px solid #ddd;">
+        <br>
+        <button class="download-btn" onclick="downloadFavicon()">Download favicon.ico</button>
+    </div>
+    
+    <div class="instructions">
+        <h3>Alternative: Use Online Converter</h3>
+        <p>If the download doesn't work, you can:</p>
+        <ol>
+            <li>Go to <a href="https://convertio.co/svg-ico/" target="_blank" rel="noopener">Convertio SVG to ICO</a></li>
+            <li>Upload the <code>favicon.svg</code> file</li>
+            <li>Download the converted <code>favicon.ico</code></li>
+            <li>Place it in your project root directory</li>
+        </ol>
+    </div>
+
+    <script>
+        function downloadFavicon() {
+            // Create a canvas to convert SVG to PNG/ICO-like format
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = 32;
+            canvas.height = 32;
+            
+            // Create a simple favicon design
+            ctx.fillStyle = '#2563eb';
+            ctx.beginPath();
+            ctx.arc(16, 16, 15, 0, 2 * Math.PI);
+            ctx.fill();
+            
+            ctx.strokeStyle = '#1e40af';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            // Add wrench icon
+            ctx.fillStyle = 'white';
+            ctx.beginPath();
+            ctx.arc(12, 12, 4, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(20, 20, 4, 0, 2 * Math.PI);
+            ctx.fill();
+            
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(12, 16);
+            ctx.lineTo(20, 8);
+            ctx.stroke();
+            
+            // Download the canvas as PNG (closest we can get to ICO in browser)
+            const link = document.createElement('a');
+            link.download = 'favicon.png';
+            link.href = canvas.toDataURL();
+            link.click();
+            
+            alert('Downloaded favicon.png - rename it to favicon.ico for best compatibility!');
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,23 @@
+# Netlify redirects file
+# This file provides more granular control than netlify.toml
+# Only redirect specific SPA routes, allowing static assets to be served directly
+
+# Redirect SPA routes to index.html (only routes without file extensions)
+/dashboard    /index.html   200
+/inventory   /index.html   200
+/purchases   /index.html   200
+/vendors     /index.html   200
+/customers   /index.html   200
+/repairs     /index.html   200
+/outsource   /index.html   200
+/invoices    /index.html   200
+/quotations  /index.html   200
+/pickdrop    /index.html   200
+/delivery    /index.html   200
+/payments    /index.html   200
+/warranties  /index.html   200
+/reports     /index.html   200
+/users       /index.html   200
+
+# Note: Static assets (js, css, images) will be served directly by Netlify
+# without any redirects, which fixes the MIME type error

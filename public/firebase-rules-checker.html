@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firebase Rules Checker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .check-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .btn {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .btn-primary { background: #007bff; color: white; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-warning { background: #ffc107; color: black; }
+        .btn-danger { background: #dc3545; color: white; }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .status.success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .status.error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .status.info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        .output {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 10px 0;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .test-result {
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 4px;
+            border-left: 4px solid #007bff;
+        }
+        .test-result.success { border-left-color: #28a745; background: #f8fff9; }
+        .test-result.error { border-left-color: #dc3545; background: #fff8f8; }
+    </style>
+</head>
+<body>
+    <h1>🔐 Firebase Rules Checker</h1>
+    
+    <div class="check-section">
+        <h2>📊 Current Status</h2>
+        <div id="status-display">
+            <div class="status info">Checking Firebase rules...</div>
+        </div>
+    </div>
+
+    <div class="check-section">
+        <h2>🧪 Rules Tests</h2>
+        <button class="btn btn-primary" onclick="testAuthentication()">🔐 Test Authentication</button>
+        <button class="btn btn-success" onclick="testWritePermission()">📝 Test Write Permission</button>
+        <button class="btn btn-warning" onclick="testReadPermission()">📖 Test Read Permission</button>
+        <button class="btn btn-danger" onclick="testFullPermissions()">🔄 Test Full Permissions</button>
+    </div>
+
+    <div class="check-section">
+        <h2>📋 Rules Status</h2>
+        <div id="rules-status">
+            <p>Click the test buttons above to check your Firebase rules...</p>
+        </div>
+    </div>
+
+    <div class="check-section">
+        <h2>🔍 Debug Information</h2>
+        <div id="debug-output" class="output"></div>
+    </div>
+
+    <div class="check-section">
+        <h2>📖 Instructions</h2>
+        <ol>
+            <li><strong>If tests fail</strong> - Update your Firebase security rules</li>
+            <li><strong>Go to Firebase Console</strong> → Firestore Database → Rules</li>
+            <li><strong>Replace rules</strong> with the ones from <code>firebase-rules.md</code></li>
+            <li><strong>Publish rules</strong> and wait 1-2 minutes</li>
+            <li><strong>Run tests again</strong> to verify fix</li>
+        </ol>
+        <a href="firebase-rules.md" class="btn btn-primary">📖 View Rules Guide</a>
+    </div>
+
+    <script src="firebase-global.js"></script>
+    <script>
+        let currentUser = null;
+
+        function log(message) {
+            const debugOutput = document.getElementById('debug-output');
+            debugOutput.textContent += new Date().toLocaleTimeString() + ': ' + message + '\n';
+            console.log(message);
+        }
+
+        function updateStatus(message, type = 'info') {
+            const statusDisplay = document.getElementById('status-display');
+            statusDisplay.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+
+        function addTestResult(message, success = true) {
+            const container = document.createElement('div');
+            container.className = `test-result ${success ? 'success' : 'error'}`;
+            container.innerHTML = `<strong>${success ? '✅' : '❌'}</strong> ${message}`;
+            document.getElementById('rules-status').appendChild(container);
+        }
+
+        // Wait for Firebase to be ready
+        function waitForFirebase() {
+            return new Promise((resolve) => {
+                if (window.firebaseReady && window.auth) {
+                    resolve();
+                } else {
+                    window.addEventListener('firebaseReady', resolve);
+                }
+            });
+        }
+
+        // Initialize the checker
+        async function initializeChecker() {
+            try {
+                await waitForFirebase();
+                
+                // Monitor auth state
+                window.onAuthStateChanged(window.auth, (user) => {
+                    currentUser = user;
+                    if (user) {
+                        log('User authenticated: ' + (user.email || 'Anonymous'));
+                        updateStatus('✅ User authenticated: ' + (user.email || 'Anonymous'), 'success');
+                    } else {
+                        log('User not authenticated');
+                        updateStatus('⏳ User not authenticated', 'info');
+                    }
+                });
+
+                // Try automatic authentication
+                try {
+                    log('Attempting automatic anonymous authentication...');
+                    await window.signInAnonymously(window.auth);
+                } catch (error) {
+                    log('Automatic authentication failed: ' + error.message);
+                }
+
+            } catch (error) {
+                log('Error initializing checker: ' + error.message);
+            }
+        }
+
+        // Test authentication
+        window.testAuthentication = async function() {
+            try {
+                log('Testing authentication...');
+                
+                if (!currentUser) {
+                    log('No user authenticated, attempting anonymous sign-in...');
+                    await window.signInAnonymously(window.auth);
+                }
+                
+                if (currentUser) {
+                    log('✅ Authentication successful: ' + currentUser.uid);
+                    addTestResult('Authentication successful', true);
+                } else {
+                    log('❌ Authentication failed');
+                    addTestResult('Authentication failed', false);
+                }
+            } catch (error) {
+                log('❌ Authentication test failed: ' + error.message);
+                addTestResult('Authentication test failed: ' + error.message, false);
+            }
+        };
+
+        // Test write permission
+        window.testWritePermission = async function() {
+            if (!currentUser) {
+                log('❌ No user authenticated for write test');
+                addTestResult('Write test - No user authenticated', false);
+                return;
+            }
+
+            try {
+                log('Testing write permission...');
+                const testData = {
+                    test: true,
+                    timestamp: new Date().toISOString(),
+                    message: 'Write permission test'
+                };
+
+                await window.setDoc(window.doc(window.collection(window.db, 'test'), currentUser.uid), testData);
+                log('✅ Write permission test successful');
+                addTestResult('Write permission test successful', true);
+            } catch (error) {
+                log('❌ Write permission test failed: ' + error.message);
+                addTestResult('Write permission test failed: ' + error.message, false);
+            }
+        };
+
+        // Test read permission
+        window.testReadPermission = async function() {
+            if (!currentUser) {
+                log('❌ No user authenticated for read test');
+                addTestResult('Read test - No user authenticated', false);
+                return;
+            }
+
+            try {
+                log('Testing read permission...');
+                const docRef = window.doc(window.collection(window.db, 'test'), currentUser.uid);
+                const docSnap = await window.getDoc(docRef);
+
+                if (docSnap.exists()) {
+                    log('✅ Read permission test successful');
+                    addTestResult('Read permission test successful', true);
+                } else {
+                    log('❌ Read permission test failed: No data found');
+                    addTestResult('Read permission test failed: No data found', false);
+                }
+            } catch (error) {
+                log('❌ Read permission test failed: ' + error.message);
+                addTestResult('Read permission test failed: ' + error.message, false);
+            }
+        };
+
+        // Test full permissions
+        window.testFullPermissions = async function() {
+            if (!currentUser) {
+                log('❌ No user authenticated for full permissions test');
+                addTestResult('Full permissions test - No user authenticated', false);
+                return;
+            }
+
+            try {
+                log('Testing full permissions...');
+                
+                // Test write
+                const testData = {
+                    test: true,
+                    timestamp: new Date().toISOString(),
+                    message: 'Full permissions test'
+                };
+
+                await window.setDoc(window.doc(window.collection(window.db, 'users'), currentUser.uid), testData);
+                log('✅ Write to users collection successful');
+
+                // Test read
+                const docRef = window.doc(window.collection(window.db, 'users'), currentUser.uid);
+                const docSnap = await window.getDoc(docRef);
+
+                if (docSnap.exists()) {
+                    log('✅ Read from users collection successful');
+                    addTestResult('Full permissions test successful', true);
+                } else {
+                    log('❌ Read from users collection failed');
+                    addTestResult('Full permissions test failed: Read failed', false);
+                }
+            } catch (error) {
+                log('❌ Full permissions test failed: ' + error.message);
+                addTestResult('Full permissions test failed: ' + error.message, false);
+            }
+        };
+
+        // Start the checker
+        initializeChecker();
+    </script>
+</body>
+</html>
+
+
+
