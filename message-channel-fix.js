@@ -4,21 +4,45 @@
 
 console.log('🔧 Applying enhanced message channel error fix...');
 
+// Track message channel errors
+window.messageChannelErrors = 0;
+window.messageChannelErrorLog = [];
+
 // 1. Set up global error handler for message channel errors
 window.addEventListener('error', function(event) {
-    if (event.error && event.error.message && event.error.message.includes('message channel closed')) {
-        console.log('✅ Message channel error intercepted and prevented');
+    const errorMessage = event.error?.message || event.message || '';
+    
+    if (errorMessage.includes('message channel closed') ||
+        errorMessage.includes('asynchronous response') ||
+        errorMessage.includes('response by returning true') ||
+        errorMessage.includes('listener indicated') ||
+        errorMessage.includes('message channel closed before a response was received')) {
+        
+        window.messageChannelErrors++;
+        window.messageChannelErrorLog.push({
+            timestamp: new Date().toISOString(),
+            message: errorMessage,
+            stack: event.error?.stack || 'No stack trace'
+        });
+        
+        console.log('✅ Message channel error intercepted and prevented:', errorMessage);
         event.preventDefault();
         event.stopPropagation();
         return false;
     }
     
     // Also catch other related errors
-    if (event.error && event.error.message && (
-        event.error.message.includes('message channel') ||
-        event.error.message.includes('asynchronous response') ||
-        event.error.message.includes('response by returning true')
-    )) {
+    if (errorMessage.includes('message channel') ||
+        errorMessage.includes('asynchronous response') ||
+        errorMessage.includes('response by returning true')) {
+        
+        window.messageChannelErrors++;
+        window.messageChannelErrorLog.push({
+            timestamp: new Date().toISOString(),
+            message: errorMessage,
+            stack: event.error?.stack || 'No stack trace'
+        });
+        
         console.log('✅ Related message channel error intercepted and prevented');
         event.preventDefault();
         event.stopPropagation();
@@ -34,7 +58,16 @@ window.addEventListener('unhandledrejection', function(event) {
     if (message.includes('message channel closed') ||
         message.includes('asynchronous response') ||
         message.includes('response by returning true') ||
-        message.includes('listener indicated')) {
+        message.includes('listener indicated') ||
+        message.includes('message channel closed before a response was received')) {
+        
+        window.messageChannelErrors++;
+        window.messageChannelErrorLog.push({
+            timestamp: new Date().toISOString(),
+            message: message,
+            type: 'unhandledrejection',
+            stack: reason?.stack || 'No stack trace'
+        });
         
         console.log('✅ Unhandled message channel rejection intercepted:', message);
         event.preventDefault();
@@ -45,35 +78,53 @@ window.addEventListener('unhandledrejection', function(event) {
     console.warn('⚠️ Unhandled promise rejection:', reason);
 });
 
-// 3. Enhanced async operation manager
+// 3. Enhanced async operation manager with better timeout handling
 window.asyncOperationManager = {
     operations: new Map(),
     operationCount: 0,
     
-    addOperation: function(operation) {
+    addOperation: function(operation, timeout = 30000) {
         const id = `op_${++this.operationCount}_${Date.now()}`;
-        this.operations.set(id, {
+        const operationData = {
             operation: operation,
             timestamp: Date.now(),
-            status: 'pending'
-        });
+            status: 'pending',
+            timeout: timeout
+        };
+        
+        this.operations.set(id, operationData);
         
         // Set timeout to prevent hanging operations
-        setTimeout(() => {
+        const timeoutId = setTimeout(() => {
             if (this.operations.has(id)) {
-                console.warn(`⚠️ Operation ${id} timed out, cleaning up`);
-                this.removeOperation(id);
+                const op = this.operations.get(id);
+                if (op.status === 'pending') {
+                    console.warn(`⚠️ Operation ${id} timed out after ${timeout}ms, cleaning up`);
+                    op.status = 'timeout';
+                    this.removeOperation(id);
+                }
             }
-        }, 30000); // 30 second timeout
+        }, timeout);
+        
+        operationData.timeoutId = timeoutId;
         
         return id;
     },
     
     removeOperation: function(id) {
+        const operation = this.operations.get(id);
+        if (operation && operation.timeoutId) {
+            clearTimeout(operation.timeoutId);
+        }
         this.operations.delete(id);
     },
     
     cleanup: function() {
+        this.operations.forEach((operation, id) => {
+            if (operation.timeoutId) {
+                clearTimeout(operation.timeoutId);
+            }
+        });
         this.operations.clear();
         this.operationCount = 0;
     },
@@ -81,7 +132,8 @@ window.asyncOperationManager = {
     getStatus: function() {
         return {
             activeOperations: this.operations.size,
-            totalOperations: this.operationCount
+            totalOperations: this.operationCount,
+            errorCount: window.messageChannelErrors || 0
         };
     }
 };
@@ -92,14 +144,24 @@ console.error = function(...args) {
     const message = args.join(' ');
     if (message.includes('message channel closed') ||
         message.includes('asynchronous response') ||
-        message.includes('response by returning true')) {
+        message.includes('response by returning true') ||
+        message.includes('listener indicated') ||
+        message.includes('message channel closed before a response was received')) {
+        
+        window.messageChannelErrors++;
+        window.messageChannelErrorLog.push({
+            timestamp: new Date().toISOString(),
+            message: message,
+            type: 'console.error'
+        });
+        
         console.log('✅ Message channel error logged to console - handled');
         return;
     }
     originalConsoleError.apply(console, args);
 };
 
-// 5. Enhanced message event listener with proper cleanup
+// 5. Enhanced message event listener with proper cleanup and filtering
 let messageListener = null;
 function setupMessageListener() {
     if (messageListener) {
@@ -114,8 +176,12 @@ function setupMessageListener() {
                 if (event.data.source === 'react-devtools-content-script' || 
                     event.data.source === 'react-devtools-backend' ||
                     event.data.source === 'react-devtools' ||
-                    (event.data.hello && event.data.source && event.data.source.includes('devtools'))) {
-                    // Skip logging React DevTools messages
+                    (event.data.hello && event.data.source && event.data.source.includes('devtools')) ||
+                    event.data.source === 'webpack-dev-server' ||
+                    event.data.source === 'webpack' ||
+                    event.data.source === 'vite' ||
+                    event.data.source === 'parcel') {
+                    // Skip logging development tool messages
                     return;
                 }
                 
@@ -125,6 +191,10 @@ function setupMessageListener() {
                 }
             }
         } catch (error) {
+            if (error.message.includes('message channel')) {
+                console.log('✅ Message channel error in message listener prevented');
+                return;
+            }
             console.log('⚠️ Error processing message:', error.message);
         }
     };
@@ -146,6 +216,10 @@ function setupStorageListener() {
                 console.log('💾 Storage change:', event.key, event.newValue);
             }
         } catch (error) {
+            if (error.message.includes('message channel')) {
+                console.log('✅ Message channel error in storage listener prevented');
+                return;
+            }
             console.log('⚠️ Error processing storage event:', error.message);
         }
     };
@@ -164,7 +238,9 @@ function setupErrorPrevention() {
             try {
                 return callback.apply(this, args);
             } catch (error) {
-                if (error.message.includes('message channel')) {
+                if (error.message.includes('message channel') ||
+                    error.message.includes('asynchronous response') ||
+                    error.message.includes('response by returning true')) {
                     console.log('✅ Message channel error in setTimeout prevented');
                     return;
                 }
@@ -180,7 +256,9 @@ function setupErrorPrevention() {
             try {
                 return callback.apply(this, args);
             } catch (error) {
-                if (error.message.includes('message channel')) {
+                if (error.message.includes('message channel') ||
+                    error.message.includes('asynchronous response') ||
+                    error.message.includes('response by returning true')) {
                     console.log('✅ Message channel error in setInterval prevented');
                     return;
                 }
@@ -190,6 +268,52 @@ function setupErrorPrevention() {
         
         return originalSetInterval(wrappedCallback, delay);
     };
+    
+    // Override Promise constructor to catch message channel errors
+    const OriginalPromise = window.Promise;
+    window.Promise = function(executor) {
+        return new OriginalPromise((resolve, reject) => {
+            try {
+                executor(
+                    (value) => {
+                        try {
+                            resolve(value);
+                        } catch (error) {
+                            if (error.message.includes('message channel')) {
+                                console.log('✅ Message channel error in Promise resolve prevented');
+                                resolve(undefined);
+                            } else {
+                                reject(error);
+                            }
+                        }
+                    },
+                    (reason) => {
+                        try {
+                            reject(reason);
+                        } catch (error) {
+                            if (error.message.includes('message channel')) {
+                                console.log('✅ Message channel error in Promise reject prevented');
+                                reject(new Error('Operation cancelled due to message channel error'));
+                            } else {
+                                reject(error);
+                            }
+                        }
+                    }
+                );
+            } catch (error) {
+                if (error.message.includes('message channel')) {
+                    console.log('✅ Message channel error in Promise executor prevented');
+                    reject(new Error('Operation cancelled due to message channel error'));
+                } else {
+                    reject(error);
+                }
+            }
+        });
+    };
+    
+    // Copy static methods
+    Object.setPrototypeOf(window.Promise, OriginalPromise);
+    Object.setPrototypeOf(window.Promise.prototype, OriginalPromise.prototype);
 }
 
 // 8. Initialize all listeners
@@ -206,6 +330,11 @@ function initializeErrorHandling() {
         if (status.activeOperations > 10) {
             console.log('🧹 Cleaning up old operations');
             window.asyncOperationManager.cleanup();
+        }
+        
+        // Log error statistics
+        if (status.errorCount > 0) {
+            console.log(`📊 Message channel errors prevented: ${status.errorCount}`);
         }
     }, 60000); // Check every minute
     
@@ -239,7 +368,19 @@ window.messageChannelFix = {
     setupStorageListener: setupStorageListener,
     initializeErrorHandling: initializeErrorHandling,
     cleanupErrorHandling: cleanupErrorHandling,
-    asyncOperationManager: window.asyncOperationManager
+    asyncOperationManager: window.asyncOperationManager,
+    getErrorStats: function() {
+        return {
+            errorCount: window.messageChannelErrors || 0,
+            errorLog: window.messageChannelErrorLog || [],
+            operations: window.asyncOperationManager.getStatus()
+        };
+    },
+    clearErrorLog: function() {
+        window.messageChannelErrors = 0;
+        window.messageChannelErrorLog = [];
+        console.log('🧹 Error log cleared');
+    }
 };
 
 console.log('🔧 Enhanced message channel error fix loaded and ready');

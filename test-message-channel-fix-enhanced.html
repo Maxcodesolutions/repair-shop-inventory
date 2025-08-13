@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced Message Channel Fix Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .btn:hover {
+            background: #0056b3;
+        }
+        .btn-success { background: #28a745; }
+        .btn-warning { background: #ffc107; color: #000; }
+        .btn-danger { background: #dc3545; }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .status-success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .status-warning { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+        .status-error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 Enhanced Message Channel Fix Test</h1>
+    
+    <div class="test-section">
+        <h2>📊 Current Status</h2>
+        <div id="status-display"></div>
+        <button class="btn" onclick="checkStatus()">Check Status</button>
+        <button class="btn btn-warning" onclick="clearLog()">Clear Log</button>
+    </div>
+    
+    <div class="test-section">
+        <h2>🧪 Test Message Channel Fix</h2>
+        <button class="btn" onclick="testMessageChannelFix()">Test Message Channel Fix</button>
+        <button class="btn btn-success" onclick="simulateMessageChannelError()">Simulate Error</button>
+        <button class="btn btn-warning" onclick="testAsyncOperations()">Test Async Operations</button>
+        <button class="btn btn-danger" onclick="testPromiseErrors()">Test Promise Errors</button>
+    </div>
+    
+    <div class="test-section">
+        <h2>📝 Console Log</h2>
+        <div id="console-log" class="log"></div>
+    </div>
+
+    <script>
+        // Override console.log to capture output
+        const originalConsoleLog = console.log;
+        const originalConsoleError = console.error;
+        const originalConsoleWarn = console.warn;
+        
+        function log(message, type = 'log') {
+            const consoleLogDiv = document.getElementById('console-log');
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = `[${timestamp}] ${type.toUpperCase()}: ${message}\n`;
+            
+            consoleLogDiv.textContent += logEntry;
+            consoleLogDiv.scrollTop = consoleLogDiv.scrollTop + 1000;
+            
+            // Also log to original console
+            switch(type) {
+                case 'error':
+                    originalConsoleError(message);
+                    break;
+                case 'warn':
+                    originalConsoleWarn(message);
+                    break;
+                default:
+                    originalConsoleLog(message);
+            }
+        }
+        
+        console.log = function(...args) {
+            log(args.join(' '), 'log');
+        };
+        
+        console.error = function(...args) {
+            log(args.join(' '), 'error');
+        };
+        
+        console.warn = function(...args) {
+            log(args.join(' '), 'warn');
+        };
+
+        function checkStatus() {
+            const statusDiv = document.getElementById('status-display');
+            let status = '<h3>System Status:</h3>';
+            
+            // Check message channel fix
+            const hasMessageChannelFix = !!window.messageChannelFix;
+            status += `<div>${hasMessageChannelFix ? '✅' : '❌'} Message channel fix: ${hasMessageChannelFix ? 'Available' : 'Not available'}</div>`;
+            
+            if (hasMessageChannelFix) {
+                const errorStats = window.messageChannelFix.getErrorStats();
+                status += `<div>📊 Errors prevented: ${errorStats.errorCount}</div>`;
+                status += `<div>🔧 Active operations: ${errorStats.operations.activeOperations}</div>`;
+                status += `<div>📈 Total operations: ${errorStats.operations.totalOperations}</div>`;
+            }
+            
+            // Check async operation manager
+            const hasAsyncManager = !!window.asyncOperationManager;
+            status += `<div>${hasAsyncManager ? '✅' : '❌'} Async operation manager: ${hasAsyncManager ? 'Available' : 'Not available'}</div>`;
+            
+            // Check error tracking
+            const hasErrorTracking = !!(window.messageChannelErrors !== undefined);
+            status += `<div>${hasErrorTracking ? '✅' : '❌'} Error tracking: ${hasErrorTracking ? 'Enabled' : 'Disabled'}</div>`;
+            
+            statusDiv.innerHTML = status;
+        }
+
+        function testMessageChannelFix() {
+            log('🧪 Testing message channel fix...', 'log');
+            
+            if (window.messageChannelFix && typeof window.messageChannelFix.initializeErrorHandling === 'function') {
+                try {
+                    window.messageChannelFix.initializeErrorHandling();
+                    log('✅ Message channel fix initialized successfully', 'log');
+                } catch (error) {
+                    log(`❌ Error initializing message channel fix: ${error.message}`, 'error');
+                }
+            } else {
+                log('❌ Message channel fix not available', 'error');
+            }
+            
+            // Check status after test
+            setTimeout(checkStatus, 1000);
+        }
+
+        function simulateMessageChannelError() {
+            log('⚠️ Simulating message channel error...', 'warn');
+            
+            try {
+                // Simulate the specific error
+                const error = new Error('A listener indicated an asynchronous response by returning true, but the message channel closed before a response was received');
+                throw error;
+            } catch (error) {
+                log(`✅ Error caught: ${error.message}`, 'log');
+            }
+            
+            // Check if error was tracked
+            setTimeout(() => {
+                if (window.messageChannelErrors > 0) {
+                    log(`✅ Error tracked: ${window.messageChannelErrors} errors prevented`, 'log');
+                } else {
+                    log('⚠️ Error not tracked - check if fix is working', 'warn');
+                }
+                checkStatus();
+            }, 1000);
+        }
+
+        function testAsyncOperations() {
+            log('🧪 Testing async operations...', 'log');
+            
+            if (window.asyncOperationManager) {
+                try {
+                    // Add a test operation
+                    const opId = window.asyncOperationManager.addOperation(() => {
+                        log('Async operation completed', 'log');
+                    }, 5000);
+                    
+                    log(`✅ Test operation added with ID: ${opId}`, 'log');
+                    
+                    // Check status
+                    const status = window.asyncOperationManager.getStatus();
+                    log(`📊 Operations status: ${JSON.stringify(status)}`, 'log');
+                    
+                } catch (error) {
+                    log(`❌ Error testing async operations: ${error.message}`, 'error');
+                }
+            } else {
+                log('❌ Async operation manager not available', 'error');
+            }
+            
+            setTimeout(checkStatus, 1000);
+        }
+
+        function testPromiseErrors() {
+            log('🧪 Testing Promise error handling...', 'log');
+            
+            try {
+                // Create a promise that might cause message channel errors
+                const testPromise = new Promise((resolve, reject) => {
+                    setTimeout(() => {
+                        try {
+                            // Simulate a message channel error
+                            const error = new Error('A listener indicated an asynchronous response by returning true, but the message channel closed before a response was received');
+                            reject(error);
+                        } catch (e) {
+                            reject(e);
+                        }
+                    }, 100);
+                });
+                
+                testPromise.catch(error => {
+                    if (error.message.includes('message channel')) {
+                        log('✅ Promise error caught and handled', 'log');
+                    } else {
+                        log(`⚠️ Unexpected error: ${error.message}`, 'warn');
+                    }
+                });
+                
+            } catch (error) {
+                log(`❌ Error testing promises: ${error.message}`, 'error');
+            }
+            
+            setTimeout(checkStatus, 1000);
+        }
+
+        function clearLog() {
+            document.getElementById('console-log').textContent = '';
+            log('Log cleared', 'log');
+        }
+
+        // Auto-check status when page loads
+        window.addEventListener('load', () => {
+            log('🔧 Enhanced message channel fix test page loaded', 'log');
+            
+            // Wait a bit for scripts to load
+            setTimeout(() => {
+                checkStatus();
+                testMessageChannelFix();
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

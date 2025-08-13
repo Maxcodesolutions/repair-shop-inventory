@@ -3011,6 +3011,30 @@ function startConnectionMonitoring() {
 window.updateConnectionStatus = updateConnectionStatus;
 window.startConnectionMonitoring = startConnectionMonitoring;
 
+// Additional message channel error prevention
+window.addEventListener('error', function(event) {
+    const errorMessage = event.error?.message || event.message || '';
+    if (errorMessage.includes('message channel closed before a response was received')) {
+        console.log('🔧 Main app: Message channel error intercepted and prevented');
+        event.preventDefault();
+        event.stopPropagation();
+        return false;
+    }
+}, true);
+
+// Handle unhandled promise rejections
+window.addEventListener('unhandledrejection', function(event) {
+    const reason = event.reason;
+    const message = reason?.message || reason?.toString() || '';
+    
+    if (message.includes('message channel closed before a response was received') ||
+        message.includes('asynchronous response by returning true')) {
+        console.log('🔧 Main app: Message channel promise rejection intercepted');
+        event.preventDefault();
+        return false;
+    }
+});
+
 // Dashboard update
 function updateDashboard() {
     console.log('Updating dashboard...');
