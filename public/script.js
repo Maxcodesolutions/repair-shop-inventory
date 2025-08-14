@@ -11789,7 +11789,7 @@ window.testFirestoreFunctionsIndividually = function() {
                     console.log('🔄 Calling doc(collection, "test-doc")...');
                     const testDoc = window.doc(testCollection, 'test-doc');
                     results.docWorking = true;
-                    console.log('✅ Doc function call successful:', testDoc);
+                    console.log('✅ Collection function call successful:', testDoc);
                 } catch (docError) {
                     results.docWorking = false;
                     console.log('❌ Doc function call failed:', docError.message);
@@ -11813,6 +11813,130 @@ window.testFirestoreFunctionsIndividually = function() {
     
     console.log('📊 Individual Function Test Results:', results);
     return results;
+};
+
+// Function to inspect what the collection and doc functions actually are
+window.inspectFirestoreFunctions = function() {
+    console.log('🔍 Inspecting Firestore functions to identify the issue...');
+    
+    // Check if we're in mock mode
+    if (window.originalFirestoreFunctions) {
+        console.log('⚠️ WARNING: Firestore is in mock mode!');
+        console.log('🔧 The functions you\'re calling are mock functions, not real Firestore functions');
+        console.log('🔧 Use enableFirestore() to restore real functions');
+        return {
+            status: 'mock_mode',
+            message: 'Firestore is in mock mode - use enableFirestore() to restore real functions'
+        };
+    }
+    
+    // Inspect the collection function
+    console.log('🔍 Collection function inspection:');
+    console.log('  - Function type:', typeof window.collection);
+    console.log('  - Function name:', window.collection.name);
+    console.log('  - Function length (parameters):', window.collection.length);
+    console.log('  - Function toString (first 200 chars):', window.collection.toString().substring(0, 200));
+    console.log('  - Function prototype:', Object.getPrototypeOf(window.collection));
+    console.log('  - Is native function:', window.collection.toString().includes('[native code]'));
+    
+    // Inspect the doc function
+    console.log('🔍 Doc function inspection:');
+    console.log('  - Function type:', typeof window.doc);
+    console.log('  - Function name:', window.doc.name);
+    console.log('  - Function length (parameters):', window.doc.length);
+    console.log('  - Function toString (first 200 chars):', window.doc.toString().substring(0, 200));
+    console.log('  - Function prototype:', Object.getPrototypeOf(window.doc));
+    console.log('  - Is native function:', window.doc.toString().includes('[native code]'));
+    
+    // Check if these are the real Firestore functions
+    const isRealFirestore = window.collection.toString().includes('[native code]') && 
+                           window.doc.toString().includes('[native code]');
+    
+    if (isRealFirestore) {
+        console.log('✅ These appear to be real Firestore functions');
+    } else {
+        console.log('❌ These are NOT real Firestore functions');
+        console.log('🔧 They might be mock functions or overridden functions');
+    }
+    
+    // Check if there are any conflicting function names
+    const conflictingNames = ['collection', 'doc', 'getDoc', 'setDoc'];
+    console.log('🔍 Checking for conflicting function names:');
+    conflictingNames.forEach(name => {
+        if (window[name] && typeof window[name] === 'function') {
+            console.log(`  - ${name}: ${window[name].name} (${window[name].length} params)`);
+        }
+    });
+    
+    return {
+        status: isRealFirestore ? 'real_firestore' : 'not_real_firestore',
+        collectionFunction: window.collection,
+        docFunction: window.doc,
+        isNative: isRealFirestore
+    };
+};
+
+// Function to check for function conflicts and overrides
+window.checkFunctionConflicts = function() {
+    console.log('🔍 Checking for function conflicts and overrides...');
+    
+    const conflicts = {};
+    
+    // Check if functions have been overridden
+    const functionNames = ['collection', 'doc', 'getDoc', 'setDoc', 'onSnapshot'];
+    
+    functionNames.forEach(name => {
+        if (window[name]) {
+            const func = window[name];
+            conflicts[name] = {
+                exists: true,
+                type: typeof func,
+                isFunction: typeof func === 'function',
+                name: func.name || 'anonymous',
+                length: func.length,
+                isNative: func.toString().includes('[native code]'),
+                toString: func.toString().substring(0, 100)
+            };
+        } else {
+            conflicts[name] = { exists: false };
+        }
+    });
+    
+    console.log('🔍 Function conflict analysis:', conflicts);
+    
+    // Check if any functions are not native
+    const nonNativeFunctions = Object.entries(conflicts)
+        .filter(([name, info]) => info.exists && info.isFunction && !info.isNative)
+        .map(([name, info]) => name);
+    
+    if (nonNativeFunctions.length > 0) {
+        console.log('⚠️ WARNING: Non-native functions detected:', nonNativeFunctions);
+        console.log('🔧 These functions might be mock functions or overrides');
+        console.log('🔧 Check if disableFirestore() was called earlier');
+    }
+    
+    // Check if functions have unexpected parameter counts
+    const expectedParams = {
+        collection: 2, // (db, path)
+        doc: 2,        // (collection, path)
+        getDoc: 1,     // (docRef)
+        setDoc: 2      // (docRef, data)
+    };
+    
+    Object.entries(expectedParams).forEach(([name, expected]) => {
+        if (conflicts[name] && conflicts[name].exists && conflicts[name].isFunction) {
+            if (conflicts[name].length !== expected) {
+                console.log(`⚠️ WARNING: ${name} has ${conflicts[name].length} parameters, expected ${expected}`);
+                console.log('🔧 This suggests the function has been overridden');
+            }
+        }
+    });
+    
+    return {
+        conflicts: conflicts,
+        nonNativeFunctions: nonNativeFunctions,
+        hasConflicts: nonNativeFunctions.length > 0
+    };
 };
 
 // Function to check Firebase loading status and provide solutions
