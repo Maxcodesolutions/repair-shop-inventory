@@ -157,9 +157,34 @@ function handleLogin(e) {
         if (window.auth) {
             console.log('🌐 Cloud sync - attempting Firebase authentication...');
             
+            // Debug username variable
+            console.log('🔍 Username debug:', {
+                username: username,
+                type: typeof username,
+                value: username,
+                isString: typeof username === 'string',
+                length: username ? username.length : 'undefined'
+            });
+            
+            // Ensure username is a valid string
+            if (!username || typeof username !== 'string' || username.trim() === '') {
+                console.error('❌ Invalid username for Firebase auth:', username);
+                console.log('🔧 Skipping Firebase authentication due to invalid username');
+                return;
+            }
+            
             // Create a valid email for cross-browser sync
-            const syncEmail = `${username}@repairshop.com`; // Fixed email format
+            const syncEmail = `${username.trim()}@repairshop.com`; // Fixed email format
             const syncPassword = 'admin123456'; // Use stronger password for Firebase
+            
+            // Validate email format
+            console.log('🔍 Email validation:', {
+                rawUsername: username,
+                trimmedUsername: username.trim(),
+                constructedEmail: syncEmail,
+                emailType: typeof syncEmail,
+                emailLength: syncEmail.length
+            });
             
             console.log('🔑 Firebase Auth Details:', {
                 email: syncEmail,
@@ -175,6 +200,29 @@ function handleLogin(e) {
             
             // Try to sign in with email/password for consistent cross-browser sync
             if (window.signInWithEmailAndPassword) {
+                // Final validation before Firebase call
+                console.log('🔍 Final validation before Firebase sign-in:', {
+                    auth: !!window.auth,
+                    email: syncEmail,
+                    emailType: typeof syncEmail,
+                    password: '***' + syncPassword.slice(-4),
+                    passwordType: typeof syncPassword,
+                    functionAvailable: !!window.signInWithEmailAndPassword
+                });
+                
+                // Ensure all parameters are valid
+                if (!window.auth || !syncEmail || !syncPassword || typeof syncEmail !== 'string' || typeof syncPassword !== 'string') {
+                    console.error('❌ Invalid parameters for Firebase sign-in:', {
+                        auth: !!window.auth,
+                        email: syncEmail,
+                        password: !!syncPassword,
+                        emailType: typeof syncEmail,
+                        passwordType: typeof syncPassword
+                    });
+                    console.log('🔧 Skipping Firebase sign-in due to invalid parameters');
+                    return;
+                }
+                
                 console.log('🔄 Attempting Firebase sign-in...');
                 window.signInWithEmailAndPassword(window.auth, syncEmail, syncPassword)
                     .then((userCredential) => {
@@ -213,6 +261,29 @@ function handleLogin(e) {
                         
                         // Try to create account if sign-in fails
                         if (window.createUserWithEmailAndPassword) {
+                            // Final validation before Firebase account creation
+                            console.log('🔍 Final validation before Firebase account creation:', {
+                                auth: !!window.auth,
+                                email: syncEmail,
+                                emailType: typeof syncEmail,
+                                password: '***' + syncPassword.slice(-4),
+                                passwordType: typeof syncPassword,
+                                functionAvailable: !!window.createUserWithEmailAndPassword
+                            });
+                            
+                            // Ensure all parameters are valid
+                            if (!window.auth || !syncEmail || !syncPassword || typeof syncEmail !== 'string' || typeof syncPassword !== 'string') {
+                                console.error('❌ Invalid parameters for Firebase account creation:', {
+                                    auth: !!window.auth,
+                                    email: syncEmail,
+                                    password: !!syncPassword,
+                                    emailType: typeof syncEmail,
+                                    passwordType: typeof syncPassword
+                                });
+                                console.log('🔧 Skipping Firebase account creation due to invalid parameters');
+                                return;
+                            }
+                            
                             console.log('🔄 Attempting to create Firebase account...');
                             window.createUserWithEmailAndPassword(window.auth, syncEmail, syncPassword)
                                 .then((userCredential) => {
