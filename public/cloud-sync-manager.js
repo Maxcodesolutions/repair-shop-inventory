@@ -112,7 +112,7 @@ class CloudSyncManager {
             }
             
             // Test basic read operation
-            const testCollection = window.collection('_connection_test');
+            const testCollection = window.collection(window.db, '_connection_test');
             const testDoc = window.doc(testCollection, 'test');
             
             // Try to get the document (this will fail if there are connection issues)
