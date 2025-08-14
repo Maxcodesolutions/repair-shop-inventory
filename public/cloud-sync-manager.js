@@ -91,6 +91,26 @@ class CloudSyncManager {
         try {
             console.log('☁️ Cloud Sync Manager: Testing Firestore connection...');
             
+            // Check browser online status first
+            if (!navigator.onLine) {
+                console.warn('☁️ Cloud Sync Manager: ⚠️ Browser is offline, skipping connection test');
+                return false;
+            }
+            
+            // Check if Firebase is marked as offline
+            if (window.firebaseOffline) {
+                console.warn('☁️ Cloud Sync Manager: ⚠️ Firebase marked as offline, attempting to reset...');
+                if (window.resetFirestoreConnection) {
+                    try {
+                        await window.resetFirestoreConnection();
+                        console.log('☁️ Cloud Sync Manager: ✅ Firebase connection reset successful');
+                    } catch (resetError) {
+                        console.error('☁️ Cloud Sync Manager: ❌ Failed to reset Firebase connection:', resetError);
+                        return false;
+                    }
+                }
+            }
+            
             // Test basic read operation
             const testCollection = window.collection('_connection_test');
             const testDoc = window.doc(testCollection, 'test');
@@ -118,6 +138,13 @@ class CloudSyncManager {
                         console.error('☁️ Cloud Sync Manager: ❌ Failed to reset Firestore connection:', resetError);
                     }
                 }
+            }
+            
+            // Check for offline-specific errors
+            if (error.message.includes('client is offline') || error.message.includes('Failed to get document')) {
+                console.warn('☁️ Cloud Sync Manager: ⚠️ Client appears to be offline, will retry when connection is restored');
+                window.firebaseOffline = true;
+                return false;
             }
             
             throw error;
@@ -206,31 +233,49 @@ class CloudSyncManager {
                 console.log('☁️ Cloud Sync Manager: Found stored credentials, attempting automatic sign-in...');
                 console.log('☁️ Cloud Sync Manager: Email:', storedEmail);
                 
-                if (window.signInWithEmailAndPassword && typeof window.signInWithEmailAndPassword === 'function') {
+                if (window.signInWithEmailAndPassword && typeof window.signInWithEmailAndPassword === 'function' && window.auth) {
                     try {
-                        await window.signInWithEmailAndPassword(storedEmail, storedPassword);
+                        console.log('☁️ Cloud Sync Manager: Attempting sign-in with stored credentials...');
+                        console.log('☁️ Cloud Sync Manager: Auth object:', !!window.auth);
+                        console.log('☁️ Cloud Sync Manager: Email:', storedEmail);
+                        
+                        await window.signInWithEmailAndPassword(window.auth, storedEmail, storedPassword);
                         console.log('☁️ Cloud Sync Manager: Automatic sign-in successful');
                     } catch (signInError) {
                         console.log('☁️ Cloud Sync Manager: Automatic sign-in failed:', signInError.message);
+                        console.log('☁️ Cloud Sync Manager: Error code:', signInError.code);
                         
-                        // If it's an auth/user-not-found error, try to create the account
-                        if (signInError.message.includes('user-not-found') && window.createUserWithEmailAndPassword) {
+                        // Check for specific error types
+                        if (signInError.code === 'auth/invalid-credential') {
+                            console.log('☁️ Cloud Sync Manager: Invalid credentials - clearing stored data');
+                            this.clearStoredCredentials();
+                        } else if (signInError.code === 'auth/user-not-found' && window.createUserWithEmailAndPassword) {
                             console.log('☁️ Cloud Sync Manager: User not found, attempting to create account...');
                             try {
-                                await window.createUserWithEmailAndPassword(storedEmail, storedPassword);
+                                await window.createUserWithEmailAndPassword(window.auth, storedEmail, storedPassword);
                                 console.log('☁️ Cloud Sync Manager: Account created successfully');
                             } catch (createError) {
                                 console.log('☁️ Cloud Sync Manager: Account creation failed:', createError.message);
+                                console.log('☁️ Cloud Sync Manager: Create error code:', createError.code);
+                                
                                 // Clear invalid stored credentials
                                 this.clearStoredCredentials();
                             }
+                        } else if (signInError.code === 'auth/too-many-requests') {
+                            console.log('☁️ Cloud Sync Manager: Too many requests - rate limited');
+                        } else if (signInError.code === 'auth/network-request-failed') {
+                            console.log('☁️ Cloud Sync Manager: Network request failed');
                         } else {
-                            // Clear invalid stored credentials
+                            console.log('☁️ Cloud Sync Manager: Unknown error - clearing stored credentials');
                             this.clearStoredCredentials();
                         }
                     }
                 } else {
-                    console.log('☁️ Cloud Sync Manager: signInWithEmailAndPassword function not available');
+                    console.log('☁️ Cloud Sync Manager: Required functions not available:', {
+                        signInWithEmailAndPassword: !!window.signInWithEmailAndPassword,
+                        auth: !!window.auth,
+                        createUserWithEmailAndPassword: !!window.createUserWithEmailAndPassword
+                    });
                 }
             } else {
                 console.log('☁️ Cloud Sync Manager: No stored credentials found, user needs to sign in manually');
@@ -256,7 +301,16 @@ class CloudSyncManager {
         localStorage.removeItem('userPassword');
         localStorage.removeItem('email');
         localStorage.removeItem('password');
+        localStorage.removeItem('consistentUserId');
         console.log('☁️ Cloud Sync Manager: Stored credentials cleared');
+    }
+
+    // Manual credential clearing for debugging
+    manualClearCredentials() {
+        console.log('☁️ Cloud Sync Manager: Manual credential clearing triggered');
+        this.clearStoredCredentials();
+        console.log('☁️ Cloud Sync Manager: All stored credentials have been manually cleared');
+        console.log('☁️ Cloud Sync Manager: You can now try logging in again');
     }
 
     // Check current authentication status and provide debugging info
@@ -1165,5 +1219,34 @@ window.addEventListener('unhandledrejection', (event) => {
 window.CloudSyncManager = CloudSyncManager;
 window.initializeCloudSync = initializeCloudSync;
 
+// Global utility functions for debugging
+window.clearCloudCredentials = function() {
+    if (window.cloudSyncManager) {
+        window.cloudSyncManager.manualClearCredentials();
+    } else {
+        console.log('☁️ Cloud Sync Manager: Manager not initialized, clearing credentials manually...');
+        localStorage.removeItem('cloudSyncEmail');
+        localStorage.removeItem('cloudSyncPassword');
+        localStorage.removeItem('userEmail');
+        localStorage.removeItem('userPassword');
+        localStorage.removeItem('email');
+        localStorage.removeItem('password');
+        localStorage.removeItem('consistentUserId');
+        console.log('☁️ Cloud Sync Manager: Credentials cleared manually');
+    }
+};
+
+window.checkCloudAuth = function() {
+    if (window.cloudSyncManager) {
+        return window.cloudSyncManager.checkAuthStatus();
+    } else {
+        console.log('☁️ Cloud Sync Manager: Manager not initialized');
+        return null;
+    }
+};
+
 console.log('☁️ Cloud Sync Manager: Script loaded and ready');
+console.log('☁️ Cloud Sync Manager: Global functions available:');
+console.log('☁️ Cloud Sync Manager: - clearCloudCredentials() - Clear stored credentials');
+console.log('☁️ Cloud Sync Manager: - checkCloudAuth() - Check authentication status');
 
