@@ -508,15 +508,18 @@ body {
 /* Specific styling for repairs table to fix action column width */
 #repairs-table-container {
     overflow-x: auto; /* Allow horizontal scroll if needed */
+    max-width: 100%; /* Ensure container doesn't exceed viewport */
 }
 
 #repairs-table {
-    min-width: 1100px; /* Ensure table has enough width but not too wide */
+    min-width: 900px; /* Reduced from 1100px for better fit on smaller screens */
+    max-width: 100%; /* Ensure table doesn't exceed container */
 }
 
 #repairs-table th:last-child,
 #repairs-table td:last-child {
-    min-width: 180px; /* Ensure Actions column has enough width */
+    min-width: 200px; /* Increased from 180px to ensure buttons fit */
+    max-width: 250px; /* Prevent actions column from getting too wide */
 }
 
 /* Ensure buttons in Actions column are properly spaced and stacked vertically */
@@ -535,6 +538,49 @@ body {
 
 #repairs-table td:last-child .btn:last-child {
     margin-bottom: 0; /* No margin for last button */
+}
+
+/* Responsive design for smaller screens (14" MacBook Pro, etc.) */
+@media (max-width: 1440px) {
+    #repairs-table {
+        min-width: 800px; /* Even smaller for medium screens */
+    }
+    
+    #repairs-table th:last-child,
+    #repairs-table td:last-child {
+        min-width: 180px; /* Slightly smaller actions column */
+    }
+}
+
+@media (max-width: 1200px) {
+    #repairs-table {
+        min-width: 700px; /* Compact for smaller screens */
+    }
+    
+    #repairs-table th:last-child,
+    #repairs-table td:last-child {
+        min-width: 160px; /* Compact actions column */
+    }
+    
+    #repairs-table td:last-child .btn {
+        font-size: 0.8rem; /* Smaller button text */
+        padding: 0.5rem 0.75rem; /* Compact button padding */
+    }
+}
+
+@media (max-width: 768px) {
+    #repairs-table-container {
+        overflow-x: auto; /* Ensure horizontal scroll on mobile */
+    }
+    
+    #repairs-table {
+        min-width: 600px; /* Very compact for mobile */
+    }
+    
+    #repairs-table th:last-child,
+    #repairs-table td:last-child {
+        min-width: 140px; /* Compact actions column for mobile */
+    }
 }
 
 table {
