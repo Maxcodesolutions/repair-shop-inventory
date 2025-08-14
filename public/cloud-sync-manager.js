@@ -229,7 +229,7 @@ class CloudSyncManager {
                                   localStorage.getItem('userPassword') || 
                                   localStorage.getItem('password');
             
-            if (storedEmail && storedPassword) {
+            if (storedEmail && storedPassword && storedEmail !== 'null' && storedPassword !== 'null') {
                 console.log('☁️ Cloud Sync Manager: Found stored credentials, attempting automatic sign-in...');
                 console.log('☁️ Cloud Sync Manager: Email:', storedEmail);
                 
@@ -315,14 +315,20 @@ class CloudSyncManager {
                     });
                 }
             } else {
-                console.log('☁️ Cloud Sync Manager: No stored credentials found, user needs to sign in manually');
-                console.log('☁️ Cloud Sync Manager: Available credential keys:', {
-                    cloudSyncEmail: !!localStorage.getItem('cloudSyncEmail'),
-                    cloudSyncPassword: !!localStorage.getItem('cloudSyncPassword'),
-                    userEmail: !!localStorage.getItem('userEmail'),
-                    userPassword: !!localStorage.getItem('userPassword'),
-                    email: !!localStorage.getItem('email'),
-                    password: !!localStorage.getItem('password')
+                console.log('☁️ Cloud Sync Manager: No valid stored credentials found, user needs to sign in manually');
+                console.log('☁️ Cloud Sync Manager: Raw credential values:', {
+                    cloudSyncEmail: localStorage.getItem('cloudSyncEmail'),
+                    cloudSyncPassword: localStorage.getItem('cloudSyncPassword') ? '***' + localStorage.getItem('cloudSyncPassword').slice(-4) : 'null',
+                    userEmail: localStorage.getItem('userEmail'),
+                    userPassword: localStorage.getItem('userPassword') ? '***' + localStorage.getItem('userPassword').slice(-4) : 'null',
+                    email: localStorage.getItem('email'),
+                    password: localStorage.getItem('password') ? '***' + localStorage.getItem('password').slice(-4) : 'null'
+                });
+                console.log('☁️ Cloud Sync Manager: Credential validation:', {
+                    cloudSyncEmail: storedEmail && storedEmail !== 'null' ? 'Valid' : 'Invalid/Null',
+                    cloudSyncPassword: storedPassword && storedPassword !== 'null' ? 'Valid' : 'Invalid/Null',
+                    userEmail: localStorage.getItem('userEmail') && localStorage.getItem('userEmail') !== 'null' ? 'Valid' : 'Invalid/Null',
+                    userPassword: localStorage.getItem('userPassword') && localStorage.getItem('userPassword') !== 'null' ? 'Valid' : 'Invalid/Null'
                 });
             }
         } catch (error) {
@@ -1314,9 +1320,30 @@ window.testFirebaseEmail = function() {
     return { email: storedEmail, type: typeof storedEmail };
 };
 
+// Function to manually create test credentials for debugging
+window.createTestCredentials = function() {
+    console.log('🧪 Creating test credentials for debugging...');
+    
+    const testEmail = 'admin@repairshop.com';
+    const testPassword = 'admin123456';
+    
+    localStorage.setItem('cloudSyncEmail', testEmail);
+    localStorage.setItem('cloudSyncPassword', testPassword);
+    
+    console.log('✅ Test credentials created:', {
+        email: testEmail,
+        password: '***' + testPassword.slice(-4)
+    });
+    
+    console.log('🔄 Now try testFirebaseEmail() again to verify credentials');
+    
+    return { email: testEmail, password: testPassword };
+};
+
 console.log('☁️ Cloud Sync Manager: Script loaded and ready');
 console.log('☁️ Cloud Sync Manager: Global functions available:');
 console.log('☁️ Cloud Sync Manager: - clearCloudCredentials() - Clear stored credentials');
 console.log('☁️ Cloud Sync Manager: - checkCloudAuth() - Check authentication status');
 console.log('☁️ Cloud Sync Manager: - testFirebaseEmail() - Debug email parameter issues');
+console.log('☁️ Cloud Sync Manager: - createTestCredentials() - Create test credentials for debugging');
 
