@@ -68,7 +68,7 @@ async function initializeFirebase() {
         window.isInitialized = true;
 
         // Expose commonly used functions directly (not async)
-        window.collection = (collectionPath) => firestoreCollection(db, collectionPath);
+        window.collection = (db, collectionPath) => firestoreCollection(db, collectionPath);
         window.doc = (collectionRef, documentId) => firestoreDoc(collectionRef, documentId);
         window.setDoc = (docRef, data, options) => firestoreSetDoc(docRef, data, options);
         window.getDoc = (docRef) => firestoreGetDoc(docRef);

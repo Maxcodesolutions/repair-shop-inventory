@@ -68,7 +68,7 @@ async function initializeFirebase() {
         window.isInitialized = true;
 
         // Expose commonly used functions directly (not async)
-        window.collection = (collectionPath) => firestoreCollection(db, collectionPath);
+        window.collection = (db, collectionPath) => firestoreCollection(db, collectionPath);
         window.doc = (collectionRef, documentId) => firestoreDoc(collectionRef, documentId);
         window.setDoc = (docRef, data, options) => firestoreSetDoc(docRef, data, options);
         window.getDoc = (docRef) => firestoreGetDoc(docRef);
@@ -100,6 +100,22 @@ async function initializeFirebase() {
             }
         };
 
+        // Add offline detection
+        window.checkOnlineStatus = () => {
+            const isOnline = navigator.onLine;
+            const hasFirebase = !!window.firebaseReady;
+            const hasAuth = !!window.auth;
+            const hasDb = !!window.db;
+            
+            return {
+                browserOnline: isOnline,
+                firebaseReady: hasFirebase,
+                authAvailable: hasAuth,
+                dbAvailable: hasDb,
+                timestamp: new Date().toISOString()
+            };
+        };
+
         // Add connection reset functionality
         window.resetFirestoreConnection = async () => {
             try {
@@ -125,6 +141,37 @@ async function initializeFirebase() {
             }
         };
 
+        // Add network status monitoring
+        window.setupNetworkMonitoring = () => {
+            // Monitor online/offline status
+            window.addEventListener('online', () => {
+                console.log('🔥 Firebase Global: Browser went online, checking Firebase connection...');
+                if (window.checkFirestoreConnection) {
+                    const status = window.checkFirestoreConnection();
+                    console.log('🔥 Firebase Global: Connection status after going online:', status);
+                }
+            });
+
+            window.addEventListener('offline', () => {
+                console.log('🔥 Firebase Global: Browser went offline');
+                // Mark Firebase as potentially offline
+                window.firebaseOffline = true;
+            });
+
+            // Check connection periodically
+            setInterval(() => {
+                if (window.checkFirestoreConnection) {
+                    const status = window.checkFirestoreConnection();
+                    if (status.status === 'error') {
+                        console.log('🔥 Firebase Global: Periodic connection check failed:', status);
+                        window.firebaseOffline = true;
+                    } else {
+                        window.firebaseOffline = false;
+                    }
+                }
+            }, 30000); // Check every 30 seconds
+        };
+
         console.log('🔥 Firebase Global: ✅ Firebase initialized successfully');
         console.log('🔥 Firebase Global: Services available:', {
             app: !!app,
@@ -147,6 +194,9 @@ async function initializeFirebase() {
             clearInterval(connectionRetryInterval);
             connectionRetryInterval = null;
         }
+        
+        // Setup network monitoring
+        window.setupNetworkMonitoring();
         
         // Dispatch ready event
         window.dispatchEvent(new CustomEvent('firebaseReady'));
