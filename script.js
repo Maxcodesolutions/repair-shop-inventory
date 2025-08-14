@@ -237,12 +237,21 @@ function handleLogin(e) {
                         console.log('Error code:', error.code);
                         
                         // Check for 400 error (authentication disabled)
-                        if (error.code === 'auth/admin-restricted-operation' || error.message.includes('400')) {
-                            console.log('🔧 SOLUTION: Firebase Authentication is disabled in your project');
-                            console.log('To enable cloud sync:');
+                        if (error.code === 'auth/admin-restricted-operation' || error.message.includes('400') || error.code === 'auth/invalid-value-(email),-starting-an-object-on-a-scalar-field') {
+                            console.log('🔧 SOLUTION: Firebase Authentication is disabled or misconfigured');
+                            console.log('This error typically means:');
+                            console.log('1. Firebase Authentication is disabled in your project');
+                            console.log('2. Email/Password sign-in method is not enabled');
+                            console.log('3. Your domain is not authorized');
+                            console.log('4. API key restrictions are blocking the request');
+                            console.log('');
+                            console.log('To fix this:');
                             console.log('1. Go to Firebase Console → Authentication → Sign-in method');
                             console.log('2. Enable Email/Password authentication');
-                            console.log('3. Add your domain to authorized domains');
+                            console.log('3. Go to Authentication → Settings → Authorized domains');
+                            console.log('4. Add your domain (localhost, your actual domain)');
+                            console.log('5. Check Google Cloud Console for API key restrictions');
+                            console.log('');
                             console.log('Falling back to anonymous auth...');
                             tryAnonymousAuth();
                             return;
@@ -298,12 +307,21 @@ function handleLogin(e) {
                                     console.log('Error code:', createError.code);
                                     
                                     // Check for 400 error (authentication disabled)
-                                    if (createError.code === 'auth/admin-restricted-operation' || createError.message.includes('400')) {
-                                        console.log('🔧 SOLUTION: Firebase Authentication is disabled in your project');
-                                        console.log('To enable cloud sync:');
+                                    if (createError.code === 'auth/admin-restricted-operation' || createError.message.includes('400') || createError.code === 'auth/invalid-value-(email),-starting-an-object-on-a-scalar-field') {
+                                        console.log('🔧 SOLUTION: Firebase Authentication is disabled or misconfigured');
+                                        console.log('This error typically means:');
+                                        console.log('1. Firebase Authentication is disabled in your project');
+                                        console.log('2. Email/Password sign-in method is not enabled');
+                                        console.log('3. Your domain is not authorized');
+                                        console.log('4. API key restrictions are blocking the request');
+                                        console.log('');
+                                        console.log('To fix this:');
                                         console.log('1. Go to Firebase Console → Authentication → Sign-in method');
                                         console.log('2. Enable Email/Password authentication');
-                                        console.log('3. Add your domain to authorized domains');
+                                        console.log('3. Go to Authentication → Settings → Authorized domains');
+                                        console.log('4. Add your domain (localhost, your actual domain)');
+                                        console.log('5. Check Google Cloud Console for API key restrictions');
+                                        console.log('');
                                         console.log('Falling back to anonymous auth...');
                                         tryAnonymousAuth();
                                         return;
@@ -11319,6 +11337,88 @@ function updateUsernameInHeader() {
 
 // Make the function available globally
 window.updateUsernameInHeader = updateUsernameInHeader;
+
+// Function to test Firebase configuration
+window.testFirebaseConfig = function() {
+    console.log('🧪 Testing Firebase configuration...');
+    
+    const config = {
+        auth: !!window.auth,
+        signInWithEmailAndPassword: !!window.signInWithEmailAndPassword,
+        createUserWithEmailAndPassword: !!window.createUserWithEmailAndPassword,
+        signInAnonymously: !!window.signInAnonymously,
+        onAuthStateChanged: !!window.onAuthStateChanged,
+        firebaseReady: window.firebaseReady,
+        apiKey: window.firebaseConfig?.apiKey ? '***' + window.firebaseConfig.apiKey.slice(-4) : 'Not found'
+    };
+    
+    console.log('🔍 Firebase Configuration:', config);
+    
+    if (!config.auth) {
+        console.error('❌ Firebase Auth object not available');
+        console.log('🔧 Check if firebase-global.js is loaded properly');
+    }
+    
+    if (!config.signInWithEmailAndPassword) {
+        console.error('❌ signInWithEmailAndPassword function not available');
+        console.log('🔧 Check if Firebase Auth SDK is loaded');
+    }
+    
+    if (!config.apiKey) {
+        console.error('❌ Firebase API key not found');
+        console.log('🔧 Check firebase-config.js configuration');
+    }
+    
+    return config;
+};
+
+// Function to temporarily disable Firebase authentication for testing
+window.disableFirebaseAuth = function() {
+    console.log('🔧 Temporarily disabling Firebase authentication...');
+    
+    // Store the original functions
+    if (!window.originalFirebaseFunctions) {
+        window.originalFirebaseFunctions = {
+            signInWithEmailAndPassword: window.signInWithEmailAndPassword,
+            createUserWithEmailAndPassword: window.createUserWithEmailAndPassword,
+            signInAnonymously: window.signInAnonymously
+        };
+    }
+    
+    // Replace with dummy functions that return successful promises
+    window.signInWithEmailAndPassword = function(auth, email, password) {
+        console.log('🔧 Mock Firebase sign-in called with:', { email, password: '***' });
+        return Promise.resolve({ user: { uid: 'mock-user-id' } });
+    };
+    
+    window.createUserWithEmailAndPassword = function(auth, email, password) {
+        console.log('🔧 Mock Firebase account creation called with:', { email, password: '***' });
+        return Promise.resolve({ user: { uid: 'mock-user-id' } });
+    };
+    
+    window.signInAnonymously = function(auth) {
+        console.log('🔧 Mock Firebase anonymous sign-in called');
+        return Promise.resolve({ user: { uid: 'mock-anonymous-id' } });
+    };
+    
+    console.log('✅ Firebase authentication temporarily disabled for testing');
+    console.log('🔧 Use enableFirebaseAuth() to restore original functions');
+};
+
+// Function to restore original Firebase authentication
+window.enableFirebaseAuth = function() {
+    if (window.originalFirebaseFunctions) {
+        console.log('🔧 Restoring original Firebase authentication...');
+        
+        window.signInWithEmailAndPassword = window.originalFirebaseFunctions.signInWithEmailAndPassword;
+        window.createUserWithEmailAndPassword = window.originalFirebaseFunctions.createUserWithEmailAndPassword;
+        window.signInAnonymously = window.originalFirebaseFunctions.signInAnonymously;
+        
+        console.log('✅ Original Firebase authentication restored');
+    } else {
+        console.log('ℹ️ No original Firebase functions to restore');
+    }
+};
 
 // Test function to immediately update username when DOM is ready
 function testUsernameUpdate() {
