@@ -380,20 +380,20 @@
         <main class="main-content">
             <!-- Header -->
             <header class="header">
-                <div class="header-left">
-                    <h1 id="page-title">Dashboard</h1>
-                </div>
-                <div class="header-right">
-                    <div class="search-bar">
-                        <i class="fas fa-search"></i>
-                        <input type="text" placeholder="Search..." id="search-input">
+                <div class="header-content">
+                    <div class="logo-section">
+                        <img src="favicon.svg" alt="Logo" class="logo">
+                        <h1>Repair Shop Inventory</h1>
                     </div>
-                    <div class="user-menu">
-                        <span class="user-name" id="current-user-name">Admin</span>
-                        <i class="fas fa-user-circle"></i>
-                        <button id="logout-btn" class="logout-btn" onclick="logout()">
-                            <i class="fas fa-sign-out-alt"></i> Logout
-                        </button>
+                    <div class="header-actions">
+                        <div class="connection-status" id="connection-status">
+                            <span class="status-indicator offline" id="status-indicator"></span>
+                            <span class="status-text" id="status-text">Checking connection...</span>
+                        </div>
+                        <div class="user-section" id="user-section">
+                            <span class="username" id="username">Guest</span>
+                            <button class="btn btn-secondary" onclick="logout()">Logout</button>
+                        </div>
                     </div>
                 </div>
             </header>
