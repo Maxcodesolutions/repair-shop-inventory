@@ -239,7 +239,34 @@ class CloudSyncManager {
                         console.log('☁️ Cloud Sync Manager: Auth object:', !!window.auth);
                         console.log('☁️ Cloud Sync Manager: Email:', storedEmail);
                         
-                        await window.signInWithEmailAndPassword(window.auth, storedEmail, storedPassword);
+                        // Enhanced debugging for email parameter
+                        console.log('🔍 Cloud Sync Manager: Email parameter debugging:', {
+                            email: storedEmail,
+                            emailType: typeof storedEmail,
+                            emailLength: storedEmail ? storedEmail.length : 'undefined',
+                            emailTrimmed: storedEmail ? storedEmail.trim() : 'undefined',
+                            emailJSON: JSON.stringify(storedEmail),
+                            emailKeys: storedEmail && typeof storedEmail === 'object' ? Object.keys(storedEmail) : 'N/A',
+                            emailConstructor: storedEmail ? storedEmail.constructor.name : 'N/A'
+                        });
+                        
+                        // Validate email before Firebase call
+                        if (!storedEmail || typeof storedEmail !== 'string') {
+                            console.error('❌ Cloud Sync Manager: Invalid email type for Firebase:', {
+                                email: storedEmail,
+                                type: typeof storedEmail
+                            });
+                            this.clearStoredCredentials();
+                            return;
+                        }
+                        
+                        // Ensure email is properly trimmed
+                        const cleanEmail = storedEmail.trim();
+                        if (cleanEmail !== storedEmail) {
+                            console.log('🔧 Cloud Sync Manager: Email trimmed from:', JSON.stringify(storedEmail), 'to:', JSON.stringify(cleanEmail));
+                        }
+                        
+                        await window.signInWithEmailAndPassword(window.auth, cleanEmail, storedPassword);
                         console.log('☁️ Cloud Sync Manager: Automatic sign-in successful');
                     } catch (signInError) {
                         console.log('☁️ Cloud Sync Manager: Automatic sign-in failed:', signInError.message);
@@ -252,7 +279,17 @@ class CloudSyncManager {
                         } else if (signInError.code === 'auth/user-not-found' && window.createUserWithEmailAndPassword) {
                             console.log('☁️ Cloud Sync Manager: User not found, attempting to create account...');
                             try {
-                                await window.createUserWithEmailAndPassword(window.auth, storedEmail, storedPassword);
+                                // Enhanced debugging for account creation
+                                console.log('🔍 Cloud Sync Manager: Account creation debugging:', {
+                                    email: storedEmail,
+                                    emailType: typeof storedEmail,
+                                    emailTrimmed: storedEmail ? storedEmail.trim() : 'undefined',
+                                    emailJSON: JSON.stringify(storedEmail)
+                                });
+                                
+                                // Use clean email for account creation
+                                const cleanEmail = storedEmail ? storedEmail.trim() : storedEmail;
+                                await window.createUserWithEmailAndPassword(window.auth, cleanEmail, storedPassword);
                                 console.log('☁️ Cloud Sync Manager: Account created successfully');
                             } catch (createError) {
                                 console.log('☁️ Cloud Sync Manager: Account creation failed:', createError.message);
@@ -1245,8 +1282,41 @@ window.checkCloudAuth = function() {
     }
 };
 
+// Test function to debug email parameter issues
+window.testFirebaseEmail = function() {
+    console.log('🧪 Testing Firebase email parameter...');
+    
+    const storedEmail = localStorage.getItem('cloudSyncEmail');
+    const storedPassword = localStorage.getItem('cloudSyncPassword');
+    
+    console.log('🔍 Stored credentials test:', {
+        email: storedEmail,
+        emailType: typeof storedEmail,
+        emailLength: storedEmail ? storedEmail.length : 'undefined',
+        emailTrimmed: storedEmail ? storedEmail.trim() : 'undefined',
+        emailJSON: JSON.stringify(storedEmail),
+        emailKeys: storedEmail && typeof storedEmail === 'object' ? Object.keys(storedEmail) : 'N/A',
+        emailConstructor: storedEmail ? storedEmail.constructor.name : 'N/A',
+        password: storedPassword ? '***' + storedPassword.slice(-4) : 'undefined'
+    });
+    
+    if (storedEmail && typeof storedEmail === 'string') {
+        console.log('✅ Email appears to be a valid string');
+        console.log('🔍 Email content analysis:');
+        console.log('  - Raw:', JSON.stringify(storedEmail));
+        console.log('  - Length:', storedEmail.length);
+        console.log('  - Characters:', Array.from(storedEmail).map(c => c.charCodeAt(0)));
+        console.log('  - Trimmed:', JSON.stringify(storedEmail.trim()));
+    } else {
+        console.error('❌ Email is not a valid string:', storedEmail);
+    }
+    
+    return { email: storedEmail, type: typeof storedEmail };
+};
+
 console.log('☁️ Cloud Sync Manager: Script loaded and ready');
 console.log('☁️ Cloud Sync Manager: Global functions available:');
 console.log('☁️ Cloud Sync Manager: - clearCloudCredentials() - Clear stored credentials');
 console.log('☁️ Cloud Sync Manager: - checkCloudAuth() - Check authentication status');
+console.log('☁️ Cloud Sync Manager: - testFirebaseEmail() - Debug email parameter issues');
 
