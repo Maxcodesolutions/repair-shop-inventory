@@ -12281,3 +12281,95 @@ function testUsernameUpdate() {
 
 // Make test function available globally
 window.testUsernameUpdate = testUsernameUpdate;
+
+// Cloud Sync Credential Management Functions
+window.setCloudSyncCredentials = function(email, password) {
+    console.log('🔧 Setting cloud sync credentials...');
+    
+    if (!email || !password) {
+        console.error('❌ Email and password are required');
+        return false;
+    }
+    
+    // Store the credentials
+    localStorage.setItem('cloudSyncEmail', email);
+    localStorage.setItem('cloudSyncPassword', password);
+    
+    console.log('✅ Cloud sync credentials stored');
+    console.log('📧 Email:', email);
+    console.log('🔑 Password: ***' + password.slice(-4));
+    
+    return true;
+};
+
+window.setupDefaultCloudSyncCredentials = function() {
+    console.log('🔧 Setting up default cloud sync credentials...');
+    
+    // Get the current user's email and password from localStorage
+    const userEmail = localStorage.getItem('userEmail');
+    const userPassword = localStorage.getItem('userPassword');
+    
+    if (!userEmail || !userPassword) {
+        console.log('❌ No user credentials found');
+        console.log('🔧 SOLUTION: Log in to the application first to get user credentials');
+        return false;
+    }
+    
+    // Create cloud sync email (usually user@repairshop.com format)
+    const cloudSyncEmail = userEmail.includes('@repairshop.com') ? userEmail : `${userEmail.split('@')[0]}@repairshop.com`;
+    const cloudSyncPassword = userPassword;
+    
+    console.log('🔧 Creating cloud sync credentials from user credentials');
+    console.log('👤 User email:', userEmail);
+    console.log('☁️ Cloud sync email:', cloudSyncEmail);
+    
+    // Store the cloud sync credentials
+    window.setCloudSyncCredentials(cloudSyncEmail, cloudSyncPassword);
+    
+    return true;
+};
+
+window.checkCloudSyncCredentials = function() {
+    console.log('🔍 Checking cloud sync credentials...');
+    
+    const credentials = {
+        userEmail: localStorage.getItem('userEmail'),
+        userPassword: localStorage.getItem('userPassword'),
+        cloudSyncEmail: localStorage.getItem('cloudSyncEmail'),
+        cloudSyncPassword: localStorage.getItem('cloudSyncPassword')
+    };
+    
+    console.log('🔍 Current credentials:', {
+        userEmail: credentials.userEmail ? '***' + credentials.userEmail.slice(-10) : 'Not found',
+        userPassword: credentials.userPassword ? '***' + credentials.userPassword.slice(-4) : 'Not found',
+        cloudSyncEmail: credentials.cloudSyncEmail ? '***' + credentials.cloudSyncEmail.slice(-10) : 'Not found',
+        cloudSyncPassword: credentials.cloudSyncPassword ? '***' + credentials.cloudSyncPassword.slice(-4) : 'Not found'
+    });
+    
+    const status = {
+        hasUserCredentials: !!(credentials.userEmail && credentials.userPassword),
+        hasCloudSyncCredentials: !!(credentials.cloudSyncEmail && credentials.cloudSyncPassword),
+        userEmailValid: credentials.userEmail && credentials.userEmail !== 'null',
+        userPasswordValid: credentials.userPassword && credentials.userPassword !== 'null',
+        cloudSyncEmailValid: credentials.cloudSyncEmail && credentials.cloudSyncEmail !== 'null',
+        cloudSyncPasswordValid: credentials.cloudSyncPassword && credentials.cloudSyncPassword !== 'null'
+    };
+    
+    console.log('📊 Credential status:', status);
+    
+    if (!status.hasUserCredentials) {
+        console.log('🔧 SOLUTION: Log in to the application first');
+        console.log('🔧 This will store userEmail and userPassword');
+    }
+    
+    if (!status.hasCloudSyncCredentials && status.hasUserCredentials) {
+        console.log('🔧 SOLUTION: Run setupDefaultCloudSyncCredentials() to create cloud sync credentials');
+    }
+    
+    if (status.hasCloudSyncCredentials) {
+        console.log('✅ Cloud sync credentials are available');
+        console.log('🔧 You can now test Firebase authentication');
+    }
+    
+    return status;
+};
