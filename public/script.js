@@ -6576,12 +6576,26 @@ function populateJobCardPartsList(partsData) {
     }
     
     try {
-        // Try to parse JSON if it's stored as string
         let parts = partsData;
+        
+        // Handle different data formats
         if (typeof partsData === 'string') {
-            parts = JSON.parse(partsData);
+            // Check if it's valid JSON first
+            if (partsData.trim().startsWith('[') || partsData.trim().startsWith('{')) {
+                try {
+                    parts = JSON.parse(partsData);
+                } catch (jsonError) {
+                    console.warn('JSON parsing failed, treating as plain text:', jsonError);
+                    // If JSON parsing fails, treat as plain text
+                    parts = null;
+                }
+            } else {
+                // It's plain text, not JSON
+                parts = null;
+            }
         }
         
+        // If we have structured parts data (array or object)
         if (Array.isArray(parts) && parts.length > 0) {
             // Clear existing content
             partsListContainer.innerHTML = '';
@@ -6590,7 +6604,7 @@ function populateJobCardPartsList(partsData) {
             parts.forEach(part => {
                 const partItem = document.createElement('li');
                 partItem.innerHTML = `
-                    <strong>${part.name}</strong>
+                    <strong>${part.name || part}</strong>
                     ${part.brand ? ` - ${part.brand}` : ''}
                     ${part.model ? ` ${part.model}` : ''}
                     ${part.category ? ` (${part.category})` : ''}
@@ -6598,14 +6612,26 @@ function populateJobCardPartsList(partsData) {
                 `;
                 partsListContainer.appendChild(partItem);
             });
+        } else if (typeof partsData === 'string' && partsData.trim()) {
+            // Handle plain text parts description
+            const partsText = partsData.trim();
+            if (partsText && partsText !== 'undefined' && partsText !== 'null') {
+                partsListContainer.innerHTML = `<li><strong>Required Parts:</strong> ${partsText}</li>`;
+            } else {
+                partsListContainer.innerHTML = '<li>No parts required</li>';
+            }
         } else {
             partsListContainer.innerHTML = '<li>No parts required</li>';
         }
     } catch (error) {
-        console.warn('Error parsing parts data:', error);
-        // Fallback to displaying as plain text if JSON parsing fails
-        if (typeof partsData === 'string' && partsData.trim()) {
-            partsListContainer.innerHTML = `<li>${partsData}</li>`;
+        console.warn('Error processing parts data:', error);
+        console.log('Parts data received:', partsData);
+        console.log('Type of parts data:', typeof partsData);
+        
+        // Final fallback
+        if (typeof partsData === 'string' && partsData.trim() && 
+            partsData.trim() !== 'undefined' && partsData.trim() !== 'null') {
+            partsListContainer.innerHTML = `<li><strong>Required Parts:</strong> ${partsData.trim()}</li>`;
         } else {
             partsListContainer.innerHTML = '<li>No parts required</li>';
         }
