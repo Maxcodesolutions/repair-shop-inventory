@@ -814,7 +814,7 @@ function loadDataFromLocal() {
         users = getDefaultUsers();
         
         console.log('Loaded default data due to error');
-        saveData();
+        // Don't save default data as it could overwrite existing data
     }
 }
 
@@ -2945,9 +2945,6 @@ function generateQuotationNumber() {
     return `QT-${year}${month}-${String(count).padStart(3, '0')}`;
 }
 
-// Make the validation function available globally
-window.validateAndFixDataConsistency = validateAndFixDataConsistency;
-
 // Function to update connection status indicator
 function updateConnectionStatus() {
     const statusIndicator = document.getElementById('status-indicator');
@@ -4995,6 +4992,12 @@ function updatePickDropStatus(id, newStatus = null) {
             renderRepairs(); // Refresh repairs to show the new entry
             updateDashboard();
             
+            // Log the current data state for debugging
+            setTimeout(() => {
+                console.log('🔍 Data state after status update:');
+                logDataState();
+            }, 100);
+            
             console.log(`✅ Pick & Drop ${id} status updated to: ${targetStatus}`);
         } else {
             console.log(`ℹ️ Pick & Drop ${id} status unchanged: ${pickDrop.status}`);
@@ -5071,6 +5074,10 @@ function createRepairFromPickDrop(pickDrop) {
     console.log('New repair details:', newRepair);
     console.log('Updated pick & drop status to:', pickDrop.status);
     console.log('Updated pick & drop object:', pickDrop);
+    
+    // IMPORTANT: Save the data immediately after creating the repair
+    console.log('💾 Saving data after repair creation...');
+    saveData();
     
     return newRepair;
 }
@@ -10705,3 +10712,33 @@ function validateAndFixDataConsistency() {
 
 // Make the validation function available globally
 window.validateAndFixDataConsistency = validateAndFixDataConsistency;
+
+// Debug function to log current data state
+function logDataState() {
+    console.log('=== CURRENT DATA STATE ===');
+    console.log('Pick & Drops:', pickDrops);
+    console.log('Repairs:', repairs);
+    
+    // Check for linked data
+    pickDrops.forEach(pd => {
+        if (pd.repairId) {
+            const repair = repairs.find(r => r.id === pd.repairId);
+            console.log(`Pick & Drop ${pd.id} (${pd.status}) -> Repair ${pd.repairId} ${repair ? '(exists)' : '(MISSING!)'}`);
+        } else {
+            console.log(`Pick & Drop ${pd.id} (${pd.status}) -> No repair linked`);
+        }
+    });
+    
+    repairs.forEach(r => {
+        if (r.pickDropId) {
+            const pickDrop = pickDrops.find(pd => pd.id === r.pickDropId);
+            console.log(`Repair ${r.id} -> Pick & Drop ${r.pickDropId} ${pickDrop ? '(exists)' : '(MISSING!)'}`);
+        } else {
+            console.log(`Repair ${r.id} -> No pick & drop linked`);
+        }
+    });
+    console.log('=== END DATA STATE ===');
+}
+
+// Make debug function available globally
+window.logDataState = logDataState;
