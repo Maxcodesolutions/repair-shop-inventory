@@ -1300,7 +1300,10 @@ function applyUserPermissions() {
     }
     
     // Update current user name in header
-    document.getElementById('current-user-name').textContent = currentUser.fullName;
+    const usernameElement = document.getElementById('username');
+    if (usernameElement) {
+        usernameElement.textContent = currentUser.fullName;
+    }
 }
 
 function createUser(userData) {
