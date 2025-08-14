@@ -607,10 +607,12 @@ function initializeApplication() {
     // Make utility functions available globally early
     window.logDataState = logDataState;
     window.validateAndFixDataConsistency = validateAndFixDataConsistency;
+    window.checkDataVariablesState = checkDataVariablesState;
     
     console.log('🔧 Utility functions made available globally:', {
         logDataState: typeof window.logDataState,
-        validateAndFixDataConsistency: typeof window.validateAndFixDataConsistency
+        validateAndFixDataConsistency: typeof window.validateAndFixDataConsistency,
+        checkDataVariablesState: typeof window.checkDataVariablesState
     });
     
     // Load data first
@@ -10642,9 +10644,26 @@ window.checkLocalStorageData = checkLocalStorageData;
 function validateAndFixDataConsistency() {
     console.log('=== VALIDATING DATA CONSISTENCY ===');
     
+    // Debug: Log the current state of variables
+    console.log('Debug - Raw variable values:', {
+        'window.pickDrops': window.pickDrops,
+        'pickDrops': pickDrops,
+        'window.repairs': window.repairs,
+        'repairs': repairs
+    });
+    
     // Safely access global variables with better validation
     const currentPickDrops = (window.pickDrops || pickDrops || []);
     const currentRepairs = (window.repairs || repairs || []);
+    
+    console.log('Debug - After fallback logic:', {
+        currentPickDrops: currentPickDrops,
+        currentRepairs: currentRepairs,
+        'currentPickDrops type': typeof currentPickDrops,
+        'currentRepairs type': typeof currentRepairs,
+        'currentPickDrops isArray': Array.isArray(currentPickDrops),
+        'currentRepairs isArray': Array.isArray(currentRepairs)
+    });
     
     // Ensure they are arrays before proceeding
     if (!Array.isArray(currentPickDrops)) {
@@ -10857,3 +10876,43 @@ function emergencyDataRecovery() {
 
 // Make recovery function available globally
 window.emergencyDataRecovery = emergencyDataRecovery;
+
+// Function to check the current state of all data variables
+function checkDataVariablesState() {
+    console.log('=== CHECKING DATA VARIABLES STATE ===');
+    
+    const variables = {
+        inventory: { value: inventory, type: typeof inventory, isArray: Array.isArray(inventory), length: Array.isArray(inventory) ? inventory.length : 'N/A' },
+        vendors: { value: vendors, type: typeof vendors, isArray: Array.isArray(vendors), length: Array.isArray(vendors) ? vendors.length : 'N/A' },
+        customers: { value: customers, type: typeof customers, isArray: Array.isArray(customers), length: Array.isArray(customers) ? customers.length : 'N/A' },
+        purchases: { value: purchases, type: typeof purchases, isArray: Array.isArray(purchases), length: Array.isArray(purchases) ? purchases.length : 'N/A' },
+        repairs: { value: repairs, type: typeof repairs, isArray: Array.isArray(repairs), length: Array.isArray(repairs) ? repairs.length : 'N/A' },
+        outsourceRepairs: { value: outsourceRepairs, type: typeof outsourceRepairs, isArray: Array.isArray(outsourceRepairs), length: Array.isArray(outsourceRepairs) ? outsourceRepairs.length : 'N/A' },
+        invoices: { value: invoices, type: typeof invoices, isArray: Array.isArray(invoices), length: Array.isArray(invoices) ? invoices.length : 'N/A' },
+        quotations: { value: quotations, type: typeof quotations, isArray: Array.isArray(quotations), length: Array.isArray(quotations) ? quotations.length : 'N/A' },
+        pickDrops: { value: pickDrops, type: typeof pickDrops, isArray: Array.isArray(pickDrops), length: Array.isArray(pickDrops) ? pickDrops.length : 'N/A' },
+        payments: { value: payments, type: typeof payments, isArray: Array.isArray(payments), length: Array.isArray(payments) ? payments.length : 'N/A' },
+        deliveries: { value: deliveries, type: typeof deliveries, isArray: Array.isArray(deliveries), length: Array.isArray(deliveries) ? deliveries.length : 'N/A' },
+        users: { value: users, type: typeof users, isArray: Array.isArray(users), length: Array.isArray(users) ? users.length : 'N/A' }
+    };
+    
+    console.table(variables);
+    
+    // Check window object versions
+    console.log('Window object versions:');
+    Object.keys(variables).forEach(key => {
+        if (window[key] !== undefined) {
+            console.log(`${key}:`, {
+                value: window[key],
+                type: typeof window[key],
+                isArray: Array.isArray(window[key]),
+                length: Array.isArray(window[key]) ? window[key].length : 'N/A'
+            });
+        }
+    });
+    
+    return variables;
+}
+
+// Make the check function available globally
+window.checkDataVariablesState = checkDataVariablesState;
