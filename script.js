@@ -383,6 +383,9 @@ function initializeApp() {
     
     console.log('DOM loaded, checking login status...');
     
+    // Test username update immediately
+    testUsernameUpdate();
+    
     // Check if user is already logged in
     checkLoginStatus();
     
@@ -11196,3 +11199,30 @@ function updateUsernameInHeader() {
 
 // Make the function available globally
 window.updateUsernameInHeader = updateUsernameInHeader;
+
+// Test function to immediately update username when DOM is ready
+function testUsernameUpdate() {
+    console.log('🧪 Testing username update...');
+    
+    const usernameElement = document.getElementById('username');
+    if (usernameElement) {
+        console.log('✅ Username element found:', usernameElement);
+        console.log('Current text content:', usernameElement.textContent);
+        console.log('Current innerHTML:', usernameElement.innerHTML);
+        
+        // Try to update it
+        usernameElement.textContent = 'TEST - System Administrator';
+        console.log('✅ Username updated to test value');
+        
+        // Check if it actually updated
+        setTimeout(() => {
+            console.log('After update - textContent:', usernameElement.textContent);
+            console.log('After update - innerHTML:', usernameElement.innerHTML);
+        }, 100);
+    } else {
+        console.error('❌ Username element not found!');
+    }
+}
+
+// Make test function available globally
+window.testUsernameUpdate = testUsernameUpdate;
