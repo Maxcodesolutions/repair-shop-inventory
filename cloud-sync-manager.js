@@ -569,42 +569,38 @@ class CloudSyncManager {
 
     // Check current authentication status and provide debugging info
     checkAuthStatus() {
-        const authStatus = this.checkAuthStatus();
+        console.log('☁️ Cloud Sync Manager: === AUTHENTICATION STATUS CHECK ===');
+        console.log('☁️ Cloud Sync Manager: Current user:', this.currentUser);
+        console.log('☁️ Cloud Sync Manager: Firebase ready:', window.firebaseReady);
+        console.log('☁️ Cloud Sync Manager: Auth object available:', !!window.auth);
+        console.log('☁️ Cloud Sync Manager: Auth current user:', window.auth?.currentUser);
+        console.log('☁️ Cloud Sync Manager: Auth functions available:', {
+            onAuthStateChanged: !!window.onAuthStateChanged,
+            signInWithEmailAndPassword: !!window.signInWithEmailAndPassword,
+            createUserWithEmailAndPassword: !!window.createUserWithEmailAndPassword,
+            signOut: !!window.signOut
+        });
+        console.log('☁️ Cloud Sync Manager: Stored credentials:', {
+            email: !!localStorage.getItem('userEmail'),
+            password: !!localStorage.getItem('userPassword')
+        });
+        console.log('☁️ Cloud Sync Manager: ======================================');
         
-        if (!authStatus.firebaseReady) {
-            console.log('☁️ Cloud Sync Manager: Firebase not ready yet. Please wait for initialization...');
-            return { status: 'firebase_not_ready', message: 'Firebase is still initializing. Please wait a moment and try again.' };
-        }
-        
-        if (!authStatus.authAvailable) {
-            console.log('☁️ Cloud Sync Manager: Firebase Auth not available. Please refresh the page and try again.');
-            return { status: 'auth_not_available', message: 'Firebase Auth is not available. Please refresh the page and try again.' };
-        }
-        
-        if (authStatus.currentUser) {
-            console.log('☁️ Cloud Sync Manager: User is already authenticated:', authStatus.currentUser.email);
-            return { status: 'already_authenticated', message: 'User is already signed in.', user: authStatus.currentUser };
-        }
-        
-        if (authStatus.storedCredentials.email && authStatus.storedCredentials.password) {
-            console.log('☁️ Cloud Sync Manager: Found stored credentials, attempting automatic sign-in...');
-            try {
-                await this.checkForStoredCredentials();
-                return { status: 'attempting_auto_signin', message: 'Attempting automatic sign-in with stored credentials...' };
-            } catch (error) {
-                return { status: 'auto_signin_failed', message: 'Automatic sign-in failed. Please sign in manually.', error: error.message };
+        return {
+            currentUser: this.currentUser,
+            firebaseReady: window.firebaseReady,
+            authAvailable: !!window.auth,
+            authCurrentUser: window.auth?.currentUser,
+            authFunctions: {
+                onAuthStateChanged: !!window.onAuthStateChanged,
+                signInWithEmailAndPassword: !!window.signInWithEmailAndPassword,
+                createUserWithEmailAndPassword: !!window.createUserWithEmailAndPassword,
+                signOut: !!window.signOut
+            },
+            storedCredentials: {
+                email: !!localStorage.getItem('userEmail'),
+                password: !!localStorage.getItem('userPassword')
             }
-        }
-        
-        console.log('☁️ Cloud Sync Manager: No stored credentials found. User needs to sign in manually.');
-        return { 
-            status: 'needs_manual_signin', 
-            message: 'Please sign in to enable cloud synchronization.',
-            instructions: [
-                '1. Click the "Sign In" button or navigate to the login section',
-                '2. Enter your Firebase email and password',
-                '3. Once signed in, cloud sync will start automatically'
-            ]
         };
     }
 
