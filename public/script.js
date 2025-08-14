@@ -11516,6 +11516,60 @@ window.enableFirestore = function() {
     }
 };
 
+// Function to check if Firestore is enabled in the project
+window.checkFirestoreEnabled = function() {
+    console.log('🧪 Checking if Firestore is enabled in your project...');
+    
+    if (!window.firebaseConfig) {
+        console.error('❌ Firebase configuration not found');
+        return;
+    }
+    
+    const projectId = window.firebaseConfig.projectId;
+    console.log('🔍 Project ID:', projectId);
+    
+    // Check if Firestore SDK is available
+    if (!window.db) {
+        console.log('❌ Firestore database object not available');
+        console.log('🔧 This suggests Firestore is not enabled in your project');
+        console.log('');
+        console.log('🔧 SOLUTION: Enable Firestore in your Firebase project');
+        console.log('1. Go to https://console.firebase.google.com/');
+        console.log(`2. Select project: ${projectId}`);
+        console.log('3. Navigate to "Firestore Database" in the left sidebar');
+        console.log('4. Click "Create database"');
+        console.log('5. Choose "Start in test mode" for development');
+        console.log('6. Select a location (choose closest to your users)');
+        console.log('7. Click "Done"');
+        return;
+    }
+    
+    // Check if Firestore functions are available
+    const functionsAvailable = {
+        collection: !!window.collection,
+        doc: !!window.doc,
+        getDoc: !!window.getDoc,
+        setDoc: !!window.setDoc,
+        onSnapshot: !!window.onSnapshot
+    };
+    
+    console.log('🔍 Firestore functions available:', functionsAvailable);
+    
+    if (!functionsAvailable.collection || !functionsAvailable.doc) {
+        console.log('❌ Basic Firestore functions not available');
+        console.log('🔧 This suggests Firestore SDK is not properly loaded');
+        console.log('');
+        console.log('🔧 SOLUTION: Check your Firebase SDK loading');
+        console.log('1. Ensure firebase-global.js is loaded');
+        console.log('2. Check browser console for Firebase errors');
+        console.log('3. Verify Firebase project configuration');
+        return;
+    }
+    
+    console.log('✅ Firestore appears to be enabled and SDK is loaded');
+    console.log('🔧 If you\'re still getting errors, run testFirestoreConnection()');
+};
+
 // Function to test Firebase authentication with minimal parameters
 window.testFirebaseAuth = function() {
     console.log('🧪 Testing Firebase authentication with minimal parameters...');
@@ -11626,19 +11680,57 @@ window.checkFirebaseProject = function() {
     const projectId = window.firebaseConfig.projectId;
     console.log('🔍 Project ID:', projectId);
     
-    // Check if we can access the project
-    fetch(`https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents`)
-        .then(response => {
-            if (response.ok) {
-                console.log('✅ Firestore database accessible');
-            } else {
-                console.log('❌ Firestore database not accessible:', response.status, response.statusText);
-                console.log('🔧 This suggests Firestore rules or permissions issues');
-            }
-        })
-        .catch(error => {
-            console.error('❌ Error checking Firestore access:', error.message);
-        });
+    // Check if we can access the project using Firebase SDK instead of direct API
+    if (window.db && window.collection && window.doc && window.getDoc) {
+        console.log('🔄 Testing Firestore access through Firebase SDK...');
+        
+        try {
+            const testCollection = window.collection(window.db, 'test-connection');
+            const testDoc = window.doc(testCollection, 'connection-test');
+            
+            console.log('🔍 Test collection created:', testCollection);
+            console.log('🔍 Test document created:', testDoc);
+            
+            // Try to read the document (this will test actual Firestore access)
+            window.getDoc(testDoc)
+                .then((docSnap) => {
+                    if (docSnap.exists()) {
+                        console.log('✅ Firestore database accessible and readable');
+                    } else {
+                        console.log('✅ Firestore database accessible (document does not exist, which is expected)');
+                    }
+                })
+                .catch((error) => {
+                    console.log('❌ Firestore access failed:', error.message);
+                    console.log('🔧 This suggests Firestore rules or permissions issues');
+                    console.log('🔧 Error code:', error.code);
+                    
+                    if (error.code === 'permission-denied') {
+                        console.log('🔧 SOLUTION: Firestore security rules are blocking access');
+                        console.log('🔧 Go to Firebase Console → Firestore Database → Rules');
+                        console.log('🔧 For testing, use these rules:');
+                        console.log('rules_version = \'2\';');
+                        console.log('service cloud.firestore {');
+                        console.log('  match /databases/{database}/documents {');
+                        console.log('    match /{document=**} {');
+                        console.log('      allow read, write: if true;');
+                        console.log('    }');
+                        console.log('  }');
+                        console.log('}');
+                    } else if (error.code === 'unavailable') {
+                        console.log('🔧 SOLUTION: Firestore service is not available');
+                        console.log('🔧 Go to Firebase Console → Firestore Database');
+                        console.log('🔧 Click "Create database" if not already created');
+                    }
+                });
+                
+        } catch (error) {
+            console.error('❌ Error creating Firestore test objects:', error.message);
+        }
+    } else {
+        console.log('❌ Firestore SDK not available');
+        console.log('🔧 Check if firebase-global.js is loaded properly');
+    }
 };
 
 // Test function to immediately update username when DOM is ready
