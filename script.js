@@ -11724,6 +11724,97 @@ window.testFirestoreWithWait = async function() {
     }
 };
 
+// Function to test individual Firestore functions to isolate issues
+window.testFirestoreFunctionsIndividually = function() {
+    console.log('🧪 Testing individual Firestore functions...');
+    
+    const results = {};
+    
+    try {
+        // Test 1: Check if db object is valid
+        console.log('🔄 Test 1: Database object validation...');
+        if (window.db && typeof window.db === 'object') {
+            results.dbValid = true;
+            console.log('✅ Database object is valid');
+        } else {
+            results.dbValid = false;
+            console.log('❌ Database object is invalid');
+        }
+    } catch (error) {
+        results.dbValid = false;
+        console.log('❌ Database validation failed:', error.message);
+    }
+    
+    try {
+        // Test 2: Test collection function with minimal parameters
+        console.log('🔄 Test 2: Collection function test...');
+        if (typeof window.collection === 'function') {
+            // Try calling with just the function reference first
+            const collectionFunction = window.collection;
+            console.log('✅ Collection function is callable');
+            
+            // Now try calling it with parameters
+            if (window.db) {
+                console.log('🔄 Calling collection(db, "test")...');
+                const testCollection = window.collection(window.db, 'test');
+                results.collectionWorking = true;
+                console.log('✅ Collection function call successful:', testCollection);
+            } else {
+                results.collectionWorking = false;
+                console.log('❌ Cannot test collection - db not available');
+            }
+        } else {
+            results.collectionWorking = false;
+            console.log('❌ Collection function not available');
+        }
+    } catch (error) {
+        results.collectionWorking = false;
+        console.log('❌ Collection function test failed:', error.message);
+        console.log('🔍 Collection error details:', {
+            errorType: error.constructor.name,
+            errorStack: error.stack
+        });
+    }
+    
+    try {
+        // Test 3: Test doc function
+        console.log('🔄 Test 3: Doc function test...');
+        if (typeof window.doc === 'function') {
+            console.log('✅ Doc function is callable');
+            
+            // Try to create a test collection first
+            if (window.db && typeof window.collection === 'function') {
+                try {
+                    const testCollection = window.collection(window.db, 'test');
+                    console.log('🔄 Calling doc(collection, "test-doc")...');
+                    const testDoc = window.doc(testCollection, 'test-doc');
+                    results.docWorking = true;
+                    console.log('✅ Doc function call successful:', testDoc);
+                } catch (docError) {
+                    results.docWorking = false;
+                    console.log('❌ Doc function call failed:', docError.message);
+                    console.log('🔍 Doc error details:', {
+                        errorType: docError.constructor.name,
+                        errorStack: docError.stack
+                    });
+                }
+            } else {
+                results.docWorking = false;
+                console.log('❌ Cannot test doc - collection not working');
+            }
+        } else {
+            results.docWorking = false;
+            console.log('❌ Doc function not available');
+        }
+    } catch (error) {
+        results.docWorking = false;
+        console.log('❌ Doc function test failed:', error.message);
+    }
+    
+    console.log('📊 Individual Function Test Results:', results);
+    return results;
+};
+
 // Function to check Firebase loading status and provide solutions
 window.checkFirebaseLoadingStatus = function() {
     console.log('🔍 Checking Firebase loading status...');
@@ -11904,12 +11995,52 @@ window.testFirestoreConnection = function() {
                     throw new Error('doc function is not available');
                 }
                 
-                const testCollection = window.collection(window.db, 'test');
-                const testDoc = window.doc(testCollection, 'test-doc');
+                // Debug: Log the exact parameters being passed
+                console.log('🔍 Debug: Parameters for Firestore calls:', {
+                    db: window.db,
+                    dbType: typeof window.db,
+                    dbConstructor: window.db.constructor.name,
+                    dbPrototype: Object.getPrototypeOf(window.db).constructor.name,
+                    collectionFunction: window.collection,
+                    collectionFunctionType: typeof window.collection,
+                    docFunction: window.doc,
+                    docFunctionType: typeof window.doc
+                });
                 
-                console.log('✅ Basic Firestore operations successful');
-                console.log('🔍 Test collection:', testCollection);
-                console.log('🔍 Test document:', testDoc);
+                // Debug: Check if db has expected Firestore properties
+                if (window.db && typeof window.db === 'object') {
+                    console.log('🔍 Debug: Database object properties:', {
+                        hasCollection: typeof window.db.collection === 'function',
+                        hasDoc: typeof window.db.doc === 'function',
+                        hasGetDoc: typeof window.db.getDoc === 'function',
+                        hasSetDoc: typeof window.db.setDoc === 'function',
+                        keys: Object.keys(window.db).slice(0, 10), // First 10 keys
+                        prototypeKeys: Object.getPrototypeOf(window.db) ? Object.keys(Object.getPrototypeOf(window.db)).slice(0, 10) : 'No prototype'
+                    });
+                }
+                
+                try {
+                    console.log('🔄 Attempting to call collection() with db and "test"...');
+                    const testCollection = window.collection(window.db, 'test');
+                    console.log('✅ Collection created:', testCollection);
+                    
+                    console.log('🔄 Attempting to call doc() with collection and "test-doc"...');
+                    const testDoc = window.doc(testCollection, 'test-doc');
+                    console.log('✅ Document created:', testDoc);
+                    
+                    console.log('✅ Basic Firestore operations successful');
+                    console.log('🔍 Test collection:', testCollection);
+                    console.log('🔍 Test document:', testDoc);
+                    
+                } catch (operationError) {
+                    console.error('❌ Firestore operation failed:', operationError.message);
+                    console.log('🔍 Operation error details:', {
+                        errorType: operationError.constructor.name,
+                        errorStack: operationError.stack,
+                        operation: 'collection or doc call'
+                    });
+                    throw operationError;
+                }
             }
             
         } catch (error) {
