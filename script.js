@@ -153,67 +153,116 @@ function handleLogin(e) {
         const crossBrowserUserId = `user_${username}_${authenticatedUser.id}`;
         localStorage.setItem('crossBrowserUserId', crossBrowserUserId);
         
-        // Firebase authentication re-enabled for cloud sync
+        // Firebase authentication for cloud sync
         if (window.auth) {
-            console.log('🌐 Cloud sync re-enabled - attempting Firebase authentication...');
-                    // Create a valid email for cross-browser sync
-        const syncEmail = `${username}@repairshop.com`; // Fixed email format
-        const syncPassword = 'admin123456'; // Use stronger password for Firebase
+            console.log('🌐 Cloud sync - attempting Firebase authentication...');
+            
+            // Create a valid email for cross-browser sync
+            const syncEmail = `${username}@repairshop.com`; // Fixed email format
+            const syncPassword = 'admin123456'; // Use stronger password for Firebase
+            
+            console.log('🔑 Firebase Auth Details:', {
+                email: syncEmail,
+                password: '***' + syncPassword.slice(-4),
+                authAvailable: !!window.auth,
+                signInAvailable: !!window.signInWithEmailAndPassword,
+                createAccountAvailable: !!window.createUserWithEmailAndPassword
+            });
             
             // Store credentials for cross-browser sync
             localStorage.setItem('cloudSyncEmail', syncEmail);
             localStorage.setItem('cloudSyncPassword', syncPassword);
             
-                    // Try to sign in with email/password for consistent cross-browser sync
-        if (window.signInWithEmailAndPassword) {
-            window.signInWithEmailAndPassword(window.auth, syncEmail, syncPassword)
-                .then((userCredential) => {
-                    console.log('✅ Signed in with email for cross-browser sync:', userCredential.user.uid);
-                    console.log('Cross-browser user ID:', crossBrowserUserId);
-                    // Store the consistent UID for future reference
-                    localStorage.setItem('consistentUserId', userCredential.user.uid);
-                    // Data will be automatically loaded from cloud via the auth listener
-                })
-                .catch((error) => {
-                    console.log('Email sign-in failed, trying to create account:', error.message);
-                    
-                    // Check for 400 error (authentication disabled)
-                    if (error.message.includes('400') || error.message.includes('auth/admin-restricted-operation')) {
-                        console.log('Authentication disabled in Firebase Console, trying anonymous auth');
-                        tryAnonymousAuth();
-                        return;
-                    }
-                    
-                    // Try to create account if sign-in fails
-                    if (window.createUserWithEmailAndPassword) {
-                        window.createUserWithEmailAndPassword(window.auth, syncEmail, syncPassword)
-                            .then((userCredential) => {
-                                console.log('✅ Account created for cross-browser sync:', userCredential.user.uid);
-                                console.log('Cross-browser user ID:', crossBrowserUserId);
-                                // Store the consistent UID for future reference
-                                localStorage.setItem('consistentUserId', userCredential.user.uid);
-                                // Data will be automatically loaded from cloud via the auth listener
-                            })
-                            .catch((createError) => {
-                                console.log('Account creation failed, trying anonymous auth:', createError.message);
-                                
-                                // Check for 400 error (authentication disabled)
-                                if (createError.message.includes('400') || createError.message.includes('auth/admin-restricted-operation')) {
-                                    console.log('Authentication disabled in Firebase Console, trying anonymous auth');
+            // Try to sign in with email/password for consistent cross-browser sync
+            if (window.signInWithEmailAndPassword) {
+                console.log('🔄 Attempting Firebase sign-in...');
+                window.signInWithEmailAndPassword(window.auth, syncEmail, syncPassword)
+                    .then((userCredential) => {
+                        console.log('✅ Signed in with email for cross-browser sync:', userCredential.user.uid);
+                        console.log('Cross-browser user ID:', crossBrowserUserId);
+                        // Store the consistent UID for future reference
+                        localStorage.setItem('consistentUserId', userCredential.user.uid);
+                        // Data will be automatically loaded from cloud via the auth listener
+                    })
+                    .catch((error) => {
+                        console.log('❌ Email sign-in failed:', error.message);
+                        console.log('Error code:', error.code);
+                        
+                        // Check for 400 error (authentication disabled)
+                        if (error.code === 'auth/admin-restricted-operation' || error.message.includes('400')) {
+                            console.log('🔧 SOLUTION: Firebase Authentication is disabled in your project');
+                            console.log('To enable cloud sync:');
+                            console.log('1. Go to Firebase Console → Authentication → Sign-in method');
+                            console.log('2. Enable Email/Password authentication');
+                            console.log('3. Add your domain to authorized domains');
+                            console.log('Falling back to anonymous auth...');
+                            tryAnonymousAuth();
+                            return;
+                        }
+                        
+                        // Check for other common errors
+                        if (error.code === 'auth/user-not-found') {
+                            console.log('🔧 User not found, trying to create account...');
+                        } else if (error.code === 'auth/wrong-password') {
+                            console.log('🔧 Wrong password, trying to create account...');
+                        } else if (error.code === 'auth/invalid-email') {
+                            console.log('🔧 Invalid email format, trying to create account...');
+                        } else {
+                            console.log('🔧 Unknown error, trying to create account...');
+                        }
+                        
+                        // Try to create account if sign-in fails
+                        if (window.createUserWithEmailAndPassword) {
+                            console.log('🔄 Attempting to create Firebase account...');
+                            window.createUserWithEmailAndPassword(window.auth, syncEmail, syncPassword)
+                                .then((userCredential) => {
+                                    console.log('✅ Account created for cross-browser sync:', userCredential.user.uid);
+                                    console.log('Cross-browser user ID:', crossBrowserUserId);
+                                    // Store the consistent UID for future reference
+                                    localStorage.setItem('consistentUserId', userCredential.user.uid);
+                                    // Data will be automatically loaded from cloud via the auth listener
+                                })
+                                .catch((createError) => {
+                                    console.log('❌ Account creation failed:', createError.message);
+                                    console.log('Error code:', createError.code);
+                                    
+                                    // Check for 400 error (authentication disabled)
+                                    if (createError.code === 'auth/admin-restricted-operation' || createError.message.includes('400')) {
+                                        console.log('🔧 SOLUTION: Firebase Authentication is disabled in your project');
+                                        console.log('To enable cloud sync:');
+                                        console.log('1. Go to Firebase Console → Authentication → Sign-in method');
+                                        console.log('2. Enable Email/Password authentication');
+                                        console.log('3. Add your domain to authorized domains');
+                                        console.log('Falling back to anonymous auth...');
+                                        tryAnonymousAuth();
+                                        return;
+                                    }
+                                    
+                                    // Check for other common errors
+                                    if (createError.code === 'auth/email-already-in-use') {
+                                        console.log('🔧 Email already in use, trying anonymous auth...');
+                                    } else if (createError.code === 'auth/weak-password') {
+                                        console.log('🔧 Password too weak, trying anonymous auth...');
+                                    } else if (createError.code === 'auth/invalid-email') {
+                                        console.log('🔧 Invalid email format, trying anonymous auth...');
+                                    } else {
+                                        console.log('🔧 Unknown error, trying anonymous auth...');
+                                    }
+                                    
+                                    // Fallback to anonymous auth
                                     tryAnonymousAuth();
-                                    return;
-                                }
-                                
-                                // Fallback to anonymous auth
-                                tryAnonymousAuth();
-                            });
-                    } else {
-                        tryAnonymousAuth();
-                    }
-                });
+                                });
+                        } else {
+                            console.log('🔧 createUserWithEmailAndPassword not available, trying anonymous auth...');
+                            tryAnonymousAuth();
+                        }
+                    });
+            } else {
+                console.log('🔧 signInWithEmailAndPassword not available, trying anonymous auth...');
+                tryAnonymousAuth();
+            }
         } else {
-            tryAnonymousAuth();
-        }
+            console.log('🔧 Firebase auth not available, cloud sync disabled');
         }
         
 
