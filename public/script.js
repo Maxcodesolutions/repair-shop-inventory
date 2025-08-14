@@ -1680,7 +1680,8 @@ function showSection(sectionName) {
         warranties: 'Warranty Management',
         reports: 'Reports & Analytics'
     };
-    document.getElementById('page-title').textContent = titles[sectionName] || 'Dashboard';
+    // Note: page-title element was removed from header design
+    // The header now shows a fixed "Repair Shop Inventory" title
     
     // Save the current section to localStorage
     localStorage.setItem('lastActiveSection', sectionName);
