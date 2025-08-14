@@ -136,7 +136,12 @@ function handleLogin(e) {
         const crossBrowserUserId = `user_${username}_${authenticatedUser.id}`;
         localStorage.setItem('crossBrowserUserId', crossBrowserUserId);
         
-        // If Firebase auth is available, try to sign in for cloud sync
+        // Firebase authentication is disabled to prevent errors
+        // Cloud sync can be enabled later if needed
+        console.log('ℹ️ Firebase authentication skipped - using local authentication only');
+        
+        // Commented out Firebase auth to prevent errors
+        /*
         if (window.auth) {
                     // Create a consistent email for cross-browser sync
         const syncEmail = `${username}@repairshop.local`;
@@ -197,6 +202,7 @@ function handleLogin(e) {
             tryAnonymousAuth();
         }
         }
+        */
         
 
         
