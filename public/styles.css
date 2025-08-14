@@ -126,25 +126,122 @@ body {
     margin-left: 280px;
 }
 
+/* Header Styles */
 .header {
-    background: white;
-    padding: 1.5rem 2rem;
-    border-bottom: 1px solid #e2e8f0;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 1rem 2rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+
+.header-content {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    max-width: 1400px;
+    margin: 0 auto;
 }
 
-.header-left h1 {
-    font-size: 1.8rem;
+.logo-section {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.logo {
+    width: 40px;
+    height: 40px;
+    filter: brightness(0) invert(1);
+}
+
+.logo-section h1 {
+    margin: 0;
+    font-size: 1.5rem;
     font-weight: 600;
 }
 
-.header-right {
+.header-actions {
     display: flex;
     align-items: center;
     gap: 1.5rem;
+}
+
+.connection-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    font-size: 0.9rem;
+}
+
+.status-indicator {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.status-indicator.online {
+    background: #28a745;
+    box-shadow: 0 0 10px rgba(40, 167, 69, 0.5);
+}
+
+.status-indicator.offline {
+    background: #dc3545;
+    box-shadow: 0 0 10px rgba(220, 53, 69, 0.5);
+}
+
+.status-indicator.connecting {
+    background: #ffc107;
+    box-shadow: 0 0 10px rgba(255, 193, 7, 0.5);
+    animation: pulse 2s infinite;
+}
+
+.status-indicator.error {
+    background: #6f42c1;
+    box-shadow: 0 0 10px rgba(111, 66, 193, 0.5);
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+.status-text {
+    color: white;
+    font-weight: 500;
+}
+
+.user-section {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.username {
+    color: white;
+    font-weight: 500;
+}
+
+.user-section .btn {
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.user-section .btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    border-color: rgba(255, 255, 255, 0.5);
 }
 
 .search-bar {
@@ -406,6 +503,71 @@ body {
     border-radius: 12px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     overflow: hidden;
+}
+
+/* Specific styling for repairs table to fix action column width */
+#repairs-table {
+    table-layout: fixed;
+}
+
+#repairs-table th:last-child,
+#repairs-table td:last-child {
+    width: 200px; /* Ensure Actions column has enough width */
+    min-width: 200px;
+}
+
+#repairs-table th:nth-child(1) { width: 100px; } /* Repair ID */
+#repairs-table th:nth-child(2) { width: 120px; } /* Customer */
+#repairs-table th:nth-child(3) { width: 100px; } /* Device Type */
+#repairs-table th:nth-child(4) { width: 80px; }  /* Brand */
+#repairs-table th:nth-child(5) { width: 100px; } /* Model */
+#repairs-table th:nth-child(6) { width: 120px; } /* IMEI/Serial */
+#repairs-table th:nth-child(7) { width: 150px; } /* Issue */
+#repairs-table th:nth-child(8) { width: 100px; } /* Status */
+#repairs-table th:nth-child(9) { width: 100px; } /* Start Date */
+#repairs-table th:nth-child(10) { width: 140px; } /* Estimated Completion */
+#repairs-table th:nth-child(11) { width: 200px; } /* Actions */
+
+/* Ensure buttons in Actions column are properly spaced */
+#repairs-table td:last-child {
+    white-space: nowrap;
+}
+
+#repairs-table td:last-child .btn {
+    margin-right: 0.25rem;
+    margin-bottom: 0.25rem;
+}
+
+#repairs-table td:last-child .btn:last-child {
+    margin-right: 0;
+}
+
+/* Responsive handling for smaller screens */
+@media (max-width: 1200px) {
+    #repairs-table {
+        table-layout: auto;
+    }
+    
+    #repairs-table th,
+    #repairs-table td {
+        padding: 0.75rem 0.5rem;
+    }
+    
+    #repairs-table th:last-child,
+    #repairs-table td:last-child {
+        width: auto;
+        min-width: 180px;
+    }
+}
+
+@media (max-width: 768px) {
+    #repairs-table-container {
+        overflow-x: auto;
+    }
+    
+    #repairs-table {
+        min-width: 1000px; /* Ensure table doesn't get too cramped */
+    }
 }
 
 table {
