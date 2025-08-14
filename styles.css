@@ -519,18 +519,22 @@ body {
     min-width: 180px; /* Ensure Actions column has enough width */
 }
 
-/* Ensure buttons in Actions column are properly spaced */
+/* Ensure buttons in Actions column are properly spaced and stacked vertically */
 #repairs-table td:last-child {
-    white-space: nowrap;
+    white-space: normal; /* Allow text to wrap */
+    vertical-align: top; /* Align content to top */
 }
 
 #repairs-table td:last-child .btn {
-    margin-right: 0.25rem;
-    margin-bottom: 0.25rem;
+    display: block; /* Make buttons stack vertically */
+    width: 100%; /* Full width within the cell */
+    margin-bottom: 0.5rem; /* Space between buttons */
+    text-align: center; /* Center button text */
+    white-space: nowrap; /* Prevent button text from wrapping */
 }
 
 #repairs-table td:last-child .btn:last-child {
-    margin-right: 0;
+    margin-bottom: 0; /* No margin for last button */
 }
 
 table {
