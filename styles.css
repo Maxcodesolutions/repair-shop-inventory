@@ -512,7 +512,7 @@ body {
 }
 
 #repairs-table {
-    min-width: 900px; /* Reduced from 1100px for better fit on smaller screens */
+    min-width: 800px; /* Further reduced for better fit on 14" screens */
     max-width: 100%; /* Ensure table doesn't exceed container */
 }
 
@@ -541,30 +541,69 @@ body {
 }
 
 /* Responsive design for smaller screens (14" MacBook Pro, etc.) */
-@media (max-width: 1440px) {
+@media (max-width: 1680px) {
     #repairs-table {
-        min-width: 800px; /* Even smaller for medium screens */
+        min-width: 850px; /* Better fit for 15" screens */
     }
     
     #repairs-table th:last-child,
     #repairs-table td:last-child {
-        min-width: 180px; /* Slightly smaller actions column */
+        min-width: 190px; /* Adequate actions column width */
+    }
+}
+
+@media (max-width: 1440px) {
+    #repairs-table {
+        min-width: 750px; /* Optimized for 14" MacBook Pro at 100% zoom */
+    }
+    
+    #repairs-table th:last-child,
+    #repairs-table td:last-child {
+        min-width: 170px; /* Compact but functional actions column */
+    }
+    
+    /* Reduce padding for better fit */
+    #repairs-table th,
+    #repairs-table td {
+        padding: 0.75rem 0.5rem;
     }
 }
 
 @media (max-width: 1200px) {
     #repairs-table {
-        min-width: 700px; /* Compact for smaller screens */
+        min-width: 650px; /* Very compact for smaller screens */
     }
     
     #repairs-table th:last-child,
     #repairs-table td:last-child {
-        min-width: 160px; /* Compact actions column */
+        min-width: 150px; /* Compact actions column */
     }
     
     #repairs-table td:last-child .btn {
         font-size: 0.8rem; /* Smaller button text */
         padding: 0.5rem 0.75rem; /* Compact button padding */
+    }
+}
+
+@media (max-width: 1000px) {
+    #repairs-table {
+        min-width: 600px; /* Ultra-compact for very small viewports */
+    }
+    
+    #repairs-table th:last-child,
+    #repairs-table td:last-child {
+        min-width: 140px; /* Minimal actions column width */
+    }
+    
+    /* Very compact padding */
+    #repairs-table th,
+    #repairs-table td {
+        padding: 0.5rem 0.25rem;
+    }
+    
+    #repairs-table td:last-child .btn {
+        font-size: 0.75rem; /* Even smaller button text */
+        padding: 0.4rem 0.5rem; /* Minimal button padding */
     }
 }
 
