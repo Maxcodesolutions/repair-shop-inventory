@@ -837,6 +837,9 @@ function loadDataFromLocal() {
         // Only save if we loaded new data to prevent overwriting
         console.log('Data loaded from localStorage successfully');
         
+        // Update username in header after data is loaded
+        updateUsernameInHeader();
+        
     } catch (error) {
         console.error('Error loading data from localStorage:', error);
         // Load default data if there's an error
@@ -919,6 +922,9 @@ async function loadDataFromCloud() {
             setTimeout(() => {
                 validateAndFixDataConsistency();
             }, 100);
+            
+            // Update username in header after cloud data is loaded
+            updateUsernameInHeader();
             
             // Check sync timestamp
             try {
@@ -11149,3 +11155,44 @@ function checkDataMismatches() {
 
 // Make the mismatch check function available globally
 window.checkDataMismatches = checkDataMismatches;
+
+// Function to update username in header after data is loaded
+function updateUsernameInHeader() {
+    console.log('🔄 Updating username in header...');
+    
+    // Check if we have a current user
+    if (currentUser && currentUser.fullName) {
+        const usernameElement = document.getElementById('username');
+        if (usernameElement) {
+            usernameElement.textContent = currentUser.fullName;
+            console.log('✅ Username updated in header to:', currentUser.fullName);
+        } else {
+            console.warn('⚠️ Username element not found in header');
+        }
+    } else {
+        console.log('ℹ️ No current user available for username update');
+        
+        // Try to get user from localStorage if currentUser is not set
+        const loginStatus = localStorage.getItem('loginStatus');
+        const storedUserId = localStorage.getItem('currentUserId');
+        
+        if (loginStatus === 'true' && storedUserId) {
+            const userId = parseInt(storedUserId);
+            const user = users.find(u => u.id === userId);
+            
+            if (user && user.status === 'active') {
+                currentUser = user;
+                currentUserId = userId;
+                
+                const usernameElement = document.getElementById('username');
+                if (usernameElement) {
+                    usernameElement.textContent = user.fullName;
+                    console.log('✅ Username updated in header from localStorage to:', user.fullName);
+                }
+            }
+        }
+    }
+}
+
+// Make the function available globally
+window.updateUsernameInHeader = updateUsernameInHeader;
