@@ -210,6 +210,20 @@ function handleLogin(e) {
                     functionAvailable: !!window.signInWithEmailAndPassword
                 });
                 
+                // Deep email analysis
+                console.log('🔍 Deep email analysis:', {
+                    rawEmail: syncEmail,
+                    emailLength: syncEmail.length,
+                    emailCharCodes: Array.from(syncEmail).map(c => c.charCodeAt(0)),
+                    emailBytes: new TextEncoder().encode(syncEmail),
+                    emailTrimmed: syncEmail.trim(),
+                    emailNormalized: syncEmail.normalize(),
+                    emailJSON: JSON.stringify(syncEmail),
+                    emailStringified: String(syncEmail),
+                    emailConstructor: syncEmail.constructor.name,
+                    emailPrototype: Object.getPrototypeOf(syncEmail).constructor.name
+                });
+                
                 // Ensure all parameters are valid
                 if (!window.auth || !syncEmail || !syncPassword || typeof syncEmail !== 'string' || typeof syncPassword !== 'string') {
                     console.error('❌ Invalid parameters for Firebase sign-in:', {
@@ -221,6 +235,21 @@ function handleLogin(e) {
                     });
                     console.log('🔧 Skipping Firebase sign-in due to invalid parameters');
                     return;
+                }
+                
+                // Additional email validation
+                if (syncEmail.includes('\0') || syncEmail.includes('\u0000')) {
+                    console.error('❌ Email contains null characters');
+                    return;
+                }
+                
+                // Try to create a clean copy of the email
+                const cleanEmail = syncEmail.trim().normalize();
+                if (cleanEmail !== syncEmail) {
+                    console.log('🔧 Email cleaned:', {
+                        original: JSON.stringify(syncEmail),
+                        cleaned: JSON.stringify(cleanEmail)
+                    });
                 }
                 
                 console.log('🔄 Attempting Firebase sign-in...');
@@ -11418,6 +11447,46 @@ window.enableFirebaseAuth = function() {
     } else {
         console.log('ℹ️ No original Firebase functions to restore');
     }
+};
+
+// Function to test Firebase authentication with minimal parameters
+window.testFirebaseAuth = function() {
+    console.log('🧪 Testing Firebase authentication with minimal parameters...');
+    
+    if (!window.auth || !window.signInWithEmailAndPassword) {
+        console.error('❌ Firebase auth not available');
+        return;
+    }
+    
+    // Test with hardcoded values to isolate the issue
+    const testEmail = 'test@example.com';
+    const testPassword = 'testpass123';
+    
+    console.log('🔍 Test parameters:', {
+        email: testEmail,
+        emailType: typeof testEmail,
+        emailLength: testEmail.length,
+        emailCharCodes: Array.from(testEmail).map(c => c.charCodeAt(0)),
+        password: '***' + testPassword.slice(-4),
+        passwordType: typeof testPassword
+    });
+    
+    console.log('🔄 Testing Firebase sign-in with hardcoded values...');
+    
+    window.signInWithEmailAndPassword(window.auth, testEmail, testPassword)
+        .then((userCredential) => {
+            console.log('✅ Test sign-in successful:', userCredential.user.uid);
+        })
+        .catch((error) => {
+            console.log('❌ Test sign-in failed:', error.message);
+            console.log('Error code:', error.code);
+            
+            if (error.code === 'auth/invalid-value-(email),-starting-an-object-on-a-scalar-field') {
+                console.log('🔍 This confirms the issue is with Firebase configuration, not the email parameter');
+                console.log('🔧 The error suggests Firebase is receiving an object instead of a string');
+                console.log('🔧 This could be a Firebase SDK bug or configuration issue');
+            }
+        });
 };
 
 // Test function to immediately update username when DOM is ready
