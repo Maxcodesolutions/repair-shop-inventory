@@ -11630,6 +11630,169 @@ window.diagnoseFirestoreSDK = function() {
     };
 };
 
+// Function to wait for Firebase to be ready
+window.waitForFirebase = function(timeoutMs = 10000) {
+    return new Promise((resolve, reject) => {
+        console.log('⏳ Waiting for Firebase to be ready...');
+        
+        // If Firebase is already ready, resolve immediately
+        if (window.firebaseReady && window.db && window.auth) {
+            console.log('✅ Firebase already ready');
+            resolve({
+                status: 'ready',
+                db: window.db,
+                auth: window.auth,
+                firebaseConfig: window.firebaseConfig
+            });
+            return;
+        }
+        
+        // Set up timeout
+        const timeout = setTimeout(() => {
+            reject(new Error('Firebase initialization timeout after ' + timeoutMs + 'ms'));
+        }, timeoutMs);
+        
+        // Check every 100ms for Firebase readiness
+        const checkInterval = setInterval(() => {
+            if (window.firebaseReady && window.db && window.auth) {
+                clearInterval(checkInterval);
+                clearTimeout(timeout);
+                console.log('✅ Firebase became ready');
+                resolve({
+                    status: 'ready',
+                    db: window.db,
+                    auth: window.auth,
+                    firebaseConfig: window.firebaseConfig
+                });
+            }
+        }, 100);
+        
+        // Also listen for the firebaseReady event if it exists
+        if (window.addEventListener) {
+            const firebaseReadyHandler = () => {
+                clearInterval(checkInterval);
+                clearTimeout(timeout);
+                console.log('✅ Firebase ready event received');
+                resolve({
+                    status: 'ready',
+                    db: window.db,
+                    auth: window.auth,
+                    firebaseConfig: window.firebaseConfig
+                });
+            };
+            
+            // Listen for custom event
+            window.addEventListener('firebaseReady', firebaseReadyHandler, { once: true });
+            
+            // Clean up event listener if promise resolves/rejects
+            setTimeout(() => {
+                window.removeEventListener('firebaseReady', firebaseReadyHandler);
+            }, timeoutMs);
+        }
+    });
+};
+
+// Function to test Firestore with proper Firebase readiness check
+window.testFirestoreWithWait = async function() {
+    console.log('🧪 Testing Firestore with Firebase readiness check...');
+    
+    try {
+        // Wait for Firebase to be ready
+        const firebaseStatus = await window.waitForFirebase(5000);
+        console.log('✅ Firebase is ready:', firebaseStatus);
+        
+        // Now test Firestore
+        console.log('🔄 Testing Firestore operations...');
+        const result = window.testFirestoreConnection();
+        console.log('✅ Firestore test completed:', result);
+        
+        return result;
+        
+    } catch (error) {
+        console.error('❌ Failed to wait for Firebase:', error.message);
+        console.log('🔧 Firebase might not be loading properly');
+        console.log('🔧 Check browser console for Firebase loading errors');
+        console.log('🔧 Verify internet connection and Firebase CDN accessibility');
+        
+        return {
+            status: 'error',
+            error: error.message,
+            firebaseReady: window.firebaseReady,
+            db: !!window.db,
+            auth: !!window.auth
+        };
+    }
+};
+
+// Function to check Firebase loading status and provide solutions
+window.checkFirebaseLoadingStatus = function() {
+    console.log('🔍 Checking Firebase loading status...');
+    
+    const status = {
+        // Script loading
+        firebaseGlobalScript: typeof window.firebaseReady !== 'undefined',
+        firebaseConfig: !!window.firebaseConfig,
+        
+        // Firebase objects
+        firebaseReady: window.firebaseReady,
+        db: !!window.db,
+        auth: !!window.auth,
+        
+        // Functions
+        collection: typeof window.collection === 'function',
+        doc: typeof window.doc === 'function',
+        getDoc: typeof window.getDoc === 'function',
+        setDoc: typeof window.setDoc === 'function',
+        
+        // Auth functions
+        signInWithEmailAndPassword: typeof window.signInWithEmailAndPassword === 'function',
+        createUserWithEmailAndPassword: typeof window.createUserWithEmailAndPassword === 'function',
+        
+        // Mock state
+        isMockMode: !!window.originalFirestoreFunctions
+    };
+    
+    console.log('🔍 Firebase Loading Status:', status);
+    
+    // Provide specific solutions based on status
+    if (!status.firebaseGlobalScript) {
+        console.log('❌ firebase-global.js not loaded or not working');
+        console.log('🔧 SOLUTION: Check if firebase-global.js is loaded in HTML');
+        console.log('🔧 Check browser console for JavaScript errors');
+    }
+    
+    if (!status.firebaseConfig) {
+        console.log('❌ Firebase configuration not found');
+        console.log('🔧 SOLUTION: firebase-global.js might not have initialized properly');
+    }
+    
+    if (!status.db || !status.auth) {
+        console.log('❌ Firebase services not initialized');
+        console.log('🔧 SOLUTION: Firebase initialization might have failed');
+        console.log('🔧 Check browser console for Firebase loading errors');
+    }
+    
+    if (!status.collection || !status.doc) {
+        console.log('❌ Firestore functions not available');
+        console.log('🔧 SOLUTION: Firestore SDK might not be loaded');
+        console.log('🔧 Check if Firebase CDN is accessible');
+    }
+    
+    if (status.isMockMode) {
+        console.log('⚠️ Firestore is in mock mode');
+        console.log('🔧 Use enableFirestore() to restore real functions');
+    }
+    
+    // Check for common issues
+    if (status.firebaseGlobalScript && status.firebaseConfig && !status.db) {
+        console.log('🔍 POSSIBLE ISSUE: Firebase initialization timing');
+        console.log('🔧 SOLUTION: Try waitForFirebase() to wait for initialization');
+        console.log('🔧 Or use testFirestoreWithWait() for automatic waiting');
+    }
+    
+    return status;
+};
+
 // Function to test Firebase authentication with minimal parameters
 window.testFirebaseAuth = function() {
     console.log('🧪 Testing Firebase authentication with minimal parameters...');
