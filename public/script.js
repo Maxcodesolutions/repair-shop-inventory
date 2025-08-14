@@ -800,8 +800,10 @@ function loadDataFromLocal() {
             users: users.length
         });
         
-        // Validate and fix data consistency issues
-        validateAndFixDataConsistency();
+        // Validate and fix data consistency issues - delay to ensure data is loaded
+        setTimeout(() => {
+            validateAndFixDataConsistency();
+        }, 100);
         
         // Only save if we loaded new data to prevent overwriting
         console.log('Data loaded from localStorage successfully');
@@ -884,8 +886,10 @@ async function loadDataFromCloud() {
                 pickDrops: pickDrops.length
             });
             
-            // Validate and fix data consistency issues
-            validateAndFixDataConsistency();
+            // Validate and fix data consistency issues - delay to ensure data is loaded
+            setTimeout(() => {
+                validateAndFixDataConsistency();
+            }, 100);
             
             // Check sync timestamp
             try {
@@ -10638,17 +10642,33 @@ window.checkLocalStorageData = checkLocalStorageData;
 function validateAndFixDataConsistency() {
     console.log('=== VALIDATING DATA CONSISTENCY ===');
     
-    // Safely access global variables
-    const currentPickDrops = window.pickDrops || pickDrops || [];
-    const currentRepairs = window.repairs || repairs || [];
+    // Safely access global variables with better validation
+    const currentPickDrops = (window.pickDrops || pickDrops || []);
+    const currentRepairs = (window.repairs || repairs || []);
+    
+    // Ensure they are arrays before proceeding
+    if (!Array.isArray(currentPickDrops)) {
+        console.log('⚠️ currentPickDrops is not an array:', typeof currentPickDrops, currentPickDrops);
+        return { issuesFound: 0, fixesApplied: 0 };
+    }
+    
+    if (!Array.isArray(currentRepairs)) {
+        console.log('⚠️ currentRepairs is not an array:', typeof currentRepairs, currentRepairs);
+        return { issuesFound: 0, fixesApplied: 0 };
+    }
+    
+    console.log('Validating data consistency with:', {
+        pickDrops: currentPickDrops.length,
+        repairs: currentRepairs.length
+    });
     
     let issuesFound = 0;
     let fixesApplied = 0;
     
     // Check pick & drops that have repairId but the repair doesn't exist
     currentPickDrops.forEach(pickDrop => {
-        if (pickDrop.repairId) {
-            const repair = currentRepairs.find(r => r.id === pickDrop.repairId);
+        if (pickDrop && pickDrop.repairId) {
+            const repair = currentRepairs.find(r => r && r.id === pickDrop.repairId);
             if (!repair) {
                 console.log(`⚠️ Pick & Drop ${pickDrop.id} has repairId ${pickDrop.repairId} but repair doesn't exist`);
                 issuesFound++;
@@ -10672,8 +10692,8 @@ function validateAndFixDataConsistency() {
     
     // Check repairs that have pickDropId but the pick & drop doesn't exist
     currentRepairs.forEach(repair => {
-        if (repair.pickDropId) {
-            const pickDrop = currentPickDrops.find(pd => pd.id === repair.pickDropId);
+        if (repair && repair.pickDropId) {
+            const pickDrop = currentPickDrops.find(pd => pd && pd.id === repair.pickDropId);
             if (!pickDrop) {
                 console.log(`⚠️ Repair ${repair.id} has pickDropId ${repair.pickDropId} but pick & drop doesn't exist`);
                 issuesFound++;
@@ -10687,10 +10707,10 @@ function validateAndFixDataConsistency() {
     
     // Check for orphaned repairs (repairs without pickDropId that should have one)
     currentRepairs.forEach(repair => {
-        if (!repair.pickDropId && repair.status === 'in-progress') {
+        if (repair && !repair.pickDropId && repair.status === 'in-progress') {
             // Look for a pick & drop that might be related by customer and device
             const relatedPickDrop = currentPickDrops.find(pd => 
-                pd.customer === repair.customer && 
+                pd && pd.customer === repair.customer && 
                 pd.deviceType === repair.deviceType &&
                 !pd.repairId
             );
@@ -10730,28 +10750,39 @@ window.validateAndFixDataConsistency = validateAndFixDataConsistency;
 function logDataState() {
     console.log('=== CURRENT DATA STATE ===');
     
-    // Safely access global variables
-    const currentPickDrops = window.pickDrops || pickDrops || [];
-    const currentRepairs = window.repairs || repairs || [];
+    // Safely access global variables with better validation
+    const currentPickDrops = (window.pickDrops || pickDrops || []);
+    const currentRepairs = (window.repairs || repairs || []);
+    
+    // Ensure they are arrays before proceeding
+    if (!Array.isArray(currentPickDrops)) {
+        console.log('⚠️ currentPickDrops is not an array:', typeof currentPickDrops, currentPickDrops);
+        return;
+    }
+    
+    if (!Array.isArray(currentRepairs)) {
+        console.log('⚠️ currentRepairs is not an array:', typeof currentRepairs, currentRepairs);
+        return;
+    }
     
     console.log('Pick & Drops:', currentPickDrops);
     console.log('Repairs:', currentRepairs);
     
     // Check for linked data
     currentPickDrops.forEach(pd => {
-        if (pd.repairId) {
-            const repair = currentRepairs.find(r => r.id === pd.repairId);
+        if (pd && pd.repairId) {
+            const repair = currentRepairs.find(r => r && r.id === pd.repairId);
             console.log(`Pick & Drop ${pd.id} (${pd.status}) -> Repair ${pd.repairId} ${repair ? '(exists)' : '(MISSING!)'}`);
-        } else {
+        } else if (pd) {
             console.log(`Pick & Drop ${pd.id} (${pd.status}) -> No repair linked`);
         }
     });
     
     currentRepairs.forEach(r => {
-        if (r.pickDropId) {
-            const pickDrop = currentPickDrops.find(pd => pd.id === r.pickDropId);
+        if (r && r.pickDropId) {
+            const pickDrop = currentPickDrops.find(pd => pd && pd.id === r.pickDropId);
             console.log(`Repair ${r.id} -> Pick & Drop ${r.pickDropId} ${pickDrop ? '(exists)' : '(MISSING!)'}`);
-        } else {
+        } else if (r) {
             console.log(`Repair ${r.id} -> No pick & drop linked`);
         }
     });
