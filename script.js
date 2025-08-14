@@ -16,6 +16,14 @@ function checkLoginStatus() {
         
         if (currentUser && currentUser.status === 'active') {
             console.log('User found and active:', currentUser);
+            
+            // Update username in header immediately
+            const usernameElement = document.getElementById('username');
+            if (usernameElement) {
+                usernameElement.textContent = currentUser.fullName;
+                console.log('✅ Username updated in header during login check:', currentUser.fullName);
+            }
+            
             showApp();
             // Note: applyUserPermissions() is now called in showApp()
         } else {
@@ -55,6 +63,15 @@ function showApp() {
     
     // Show dashboard by default
     showSection('dashboard');
+    
+    // Update username in header
+    if (currentUser) {
+        const usernameElement = document.getElementById('username');
+        if (usernameElement) {
+            usernameElement.textContent = currentUser.fullName;
+            console.log('✅ Username updated in header during showApp:', currentUser.fullName);
+        }
+    }
     
     // Apply user permissions
     applyUserPermissions();
