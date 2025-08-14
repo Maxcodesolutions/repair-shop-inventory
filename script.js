@@ -860,19 +860,19 @@ async function loadDataFromCloud() {
             console.log('Cloud data keys:', Object.keys(data));
             console.log('Cloud data timestamp:', data.lastUpdated);
             
-            // Load data from cloud with better validation
-            inventory = Array.isArray(data.inventory) && data.inventory.length > 0 ? data.inventory : getDefaultInventory();
-            vendors = Array.isArray(data.vendors) && data.vendors.length > 0 ? data.vendors : getDefaultVendors();
-            customers = Array.isArray(data.customers) && data.customers.length > 0 ? data.customers : getDefaultCustomers();
-            purchases = Array.isArray(data.purchases) ? data.purchases : [];
-            repairs = Array.isArray(data.repairs) ? data.repairs : [];
-            outsourceRepairs = Array.isArray(data.outsourceRepairs) ? data.outsourceRepairs : [];
-            invoices = Array.isArray(data.invoices) ? data.invoices : [];
-            quotations = Array.isArray(data.quotations) ? data.quotations : [];
-            pickDrops = Array.isArray(data.pickDrops) ? data.pickDrops : [];
-            payments = Array.isArray(data.payments) ? data.payments : [];
-            deliveries = Array.isArray(data.deliveries) && data.deliveries.length > 0 ? data.deliveries : getDefaultDeliveries();
-            users = Array.isArray(data.users) && data.users.length > 0 ? data.users : getDefaultUsers();
+            // Load data from cloud with safer validation - only use defaults if data is completely missing
+            inventory = Array.isArray(data.inventory) ? data.inventory : (data.inventory || getDefaultInventory());
+            vendors = Array.isArray(data.vendors) ? data.vendors : (data.vendors || getDefaultVendors());
+            customers = Array.isArray(data.customers) ? data.customers : (data.customers || getDefaultCustomers());
+            purchases = Array.isArray(data.purchases) ? data.purchases : (data.purchases || []);
+            repairs = Array.isArray(data.repairs) ? data.repairs : (data.repairs || []);
+            outsourceRepairs = Array.isArray(data.outsourceRepairs) ? data.outsourceRepairs : (data.outsourceRepairs || []);
+            invoices = Array.isArray(data.invoices) ? data.invoices : (data.invoices || []);
+            quotations = Array.isArray(data.quotations) ? data.quotations : (data.quotations || []);
+            pickDrops = Array.isArray(data.pickDrops) ? data.pickDrops : (data.pickDrops || []);
+            payments = Array.isArray(data.payments) ? data.payments : (data.payments || []);
+            deliveries = Array.isArray(data.deliveries) ? data.deliveries : (data.deliveries || getDefaultDeliveries());
+            users = Array.isArray(data.users) ? data.users : (data.users || getDefaultUsers());
             
             console.log('✅ Data loaded successfully from cloud:', {
                 inventory: inventory.length,
@@ -10760,3 +10760,69 @@ function logDataState() {
 
 // Make debug function available globally
 window.logDataState = logDataState;
+
+// Emergency data recovery function
+function emergencyDataRecovery() {
+    console.log('🚨 EMERGENCY DATA RECOVERY STARTED ===');
+    
+    // Check if we can recover from localStorage
+    const localStorageKeys = ['inventory', 'vendors', 'customers', 'purchases', 'repairs', 'outsource', 'invoices', 'quotations', 'pickDrops', 'payments', 'deliveries', 'users'];
+    
+    let recoveredData = {};
+    let totalRecovered = 0;
+    
+    localStorageKeys.forEach(key => {
+        const stored = localStorage.getItem(key);
+        if (stored) {
+            try {
+                const parsed = JSON.parse(stored);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                    recoveredData[key] = parsed;
+                    totalRecovered += parsed.length;
+                    console.log(`✅ Recovered ${key}: ${parsed.length} items`);
+                }
+            } catch (e) {
+                console.log(`❌ Failed to parse ${key}:`, e.message);
+            }
+        }
+    });
+    
+    if (totalRecovered > 0) {
+        console.log(`🎉 RECOVERY SUCCESSFUL: Found ${totalRecovered} total items in localStorage`);
+        
+        // Restore the data
+        if (recoveredData.inventory) inventory = recoveredData.inventory;
+        if (recoveredData.vendors) vendors = recoveredData.vendors;
+        if (recoveredData.customers) customers = recoveredData.customers;
+        if (recoveredData.purchases) purchases = recoveredData.purchases;
+        if (recoveredData.repairs) repairs = recoveredData.repairs;
+        if (recoveredData.outsource) outsource = recoveredData.outsource;
+        if (recoveredData.invoices) invoices = recoveredData.invoices;
+        if (recoveredData.quotations) quotations = recoveredData.quotations;
+        if (recoveredData.pickDrops) pickDrops = recoveredData.pickDrops;
+        if (recoveredData.payments) payments = recoveredData.payments;
+        if (recoveredData.deliveries) deliveries = recoveredData.deliveries;
+        if (recoveredData.users) users = recoveredData.users;
+        
+        // Save the recovered data immediately
+        console.log('💾 Saving recovered data...');
+        saveData();
+        
+        // Re-render everything
+        if (typeof renderAll === 'function') {
+            renderAll();
+        }
+        if (typeof updateDashboard === 'function') {
+            updateDashboard();
+        }
+        
+        console.log('✅ Data recovery complete! Your data should now be visible.');
+        return true;
+    } else {
+        console.log('❌ No data found in localStorage to recover');
+        return false;
+    }
+}
+
+// Make recovery function available globally
+window.emergencyDataRecovery = emergencyDataRecovery;
