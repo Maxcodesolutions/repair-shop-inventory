@@ -10652,9 +10652,9 @@ function validateAndFixDataConsistency() {
         'repairs': repairs
     });
     
-    // Safely access global variables with better validation
-    const currentPickDrops = (window.pickDrops || pickDrops || []);
-    const currentRepairs = (window.repairs || repairs || []);
+    // Use local variables directly to avoid DOM element conflicts
+    const currentPickDrops = Array.isArray(pickDrops) ? pickDrops : [];
+    const currentRepairs = Array.isArray(repairs) ? repairs : [];
     
     console.log('Debug - After fallback logic:', {
         currentPickDrops: currentPickDrops,
@@ -10769,9 +10769,9 @@ window.validateAndFixDataConsistency = validateAndFixDataConsistency;
 function logDataState() {
     console.log('=== CURRENT DATA STATE ===');
     
-    // Safely access global variables with better validation
-    const currentPickDrops = (window.pickDrops || pickDrops || []);
-    const currentRepairs = (window.repairs || repairs || []);
+    // Use local variables directly to avoid DOM element conflicts
+    const currentPickDrops = Array.isArray(pickDrops) ? pickDrops : [];
+    const currentRepairs = Array.isArray(repairs) ? repairs : [];
     
     // Ensure they are arrays before proceeding
     if (!Array.isArray(currentPickDrops)) {
