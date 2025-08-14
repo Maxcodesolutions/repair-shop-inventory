@@ -608,11 +608,13 @@ function initializeApplication() {
     window.logDataState = logDataState;
     window.validateAndFixDataConsistency = validateAndFixDataConsistency;
     window.checkDataVariablesState = checkDataVariablesState;
+    window.checkDataMismatches = checkDataMismatches;
     
     console.log('🔧 Utility functions made available globally:', {
         logDataState: typeof window.logDataState,
         validateAndFixDataConsistency: typeof window.validateAndFixDataConsistency,
-        checkDataVariablesState: typeof window.checkDataVariablesState
+        checkDataVariablesState: typeof window.checkDataVariablesState,
+        checkDataMismatches: typeof window.checkDataMismatches
     });
     
     // Load data first
@@ -5001,7 +5003,18 @@ function updatePickDropStatus(id, newStatus = null) {
             }
             
             console.log(`💾 Saving data after status update...`);
+            
+            // Save to localStorage immediately as backup (synchronous)
+            try {
+                localStorage.setItem('pickDrops', JSON.stringify(pickDrops));
+                console.log('✅ Pick & drops saved to localStorage as backup');
+            } catch (e) {
+                console.error('❌ Failed to save pick & drops to localStorage:', e);
+            }
+            
+            // Also save to cloud (asynchronous)
             saveData();
+            
             console.log(`📊 Rendering updated data...`);
             renderPickDrops();
             renderRepairs(); // Refresh repairs to show the new entry
@@ -5092,6 +5105,17 @@ function createRepairFromPickDrop(pickDrop) {
     
     // IMPORTANT: Save the data immediately after creating the repair
     console.log('💾 Saving data after repair creation...');
+    
+    // Save to localStorage immediately as backup (synchronous)
+    try {
+        localStorage.setItem('repairs', JSON.stringify(repairs));
+        localStorage.setItem('pickDrops', JSON.stringify(pickDrops));
+        console.log('✅ Data saved to localStorage as backup');
+    } catch (e) {
+        console.error('❌ Failed to save to localStorage:', e);
+    }
+    
+    // Also save to cloud (asynchronous)
     saveData();
     
     return newRepair;
@@ -10916,3 +10940,39 @@ function checkDataVariablesState() {
 
 // Make the check function available globally
 window.checkDataVariablesState = checkDataVariablesState;
+
+// Function to check for data mismatches between localStorage and current variables
+function checkDataMismatches() {
+    console.log('🔍 CHECKING FOR DATA MISMATCHES ===');
+    
+    const localStorageKeys = ['inventory', 'vendors', 'customers', 'purchases', 'repairs', 'outsource', 'invoices', 'quotations', 'pickDrops', 'payments', 'deliveries', 'users'];
+    
+    localStorageKeys.forEach(key => {
+        const stored = localStorage.getItem(key);
+        if (stored) {
+            try {
+                const parsed = JSON.parse(stored);
+                const currentValue = eval(key); // Get current variable value
+                
+                if (Array.isArray(parsed) && Array.isArray(currentValue)) {
+                    if (parsed.length !== currentValue.length) {
+                        console.log(`⚠️ MISMATCH in ${key}: localStorage has ${parsed.length} items, current variable has ${currentValue.length} items`);
+                        
+                        // Show details for pickDrops and repairs
+                        if (key === 'pickDrops' || key === 'repairs') {
+                            console.log(`localStorage ${key}:`, parsed);
+                            console.log(`Current ${key}:`, currentValue);
+                        }
+                    }
+                }
+            } catch (e) {
+                console.log(`❌ Error checking ${key}:`, e.message);
+            }
+        }
+    });
+    
+    console.log('=== END DATA MISMATCH CHECK ===');
+}
+
+// Make the mismatch check function available globally
+window.checkDataMismatches = checkDataMismatches;
