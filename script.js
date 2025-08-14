@@ -125,6 +125,13 @@ function handleLogin(e) {
         localStorage.setItem('loginStatus', 'true');
         localStorage.setItem('currentUserId', authenticatedUser.id.toString());
         
+        // Update username in header immediately
+        const usernameElement = document.getElementById('username');
+        if (usernameElement) {
+            usernameElement.textContent = authenticatedUser.fullName;
+            console.log('✅ Username updated in header:', authenticatedUser.fullName);
+        }
+        
         // Create a consistent cross-browser user ID
         const crossBrowserUserId = `user_${username}_${authenticatedUser.id}`;
         localStorage.setItem('crossBrowserUserId', crossBrowserUserId);
@@ -1302,8 +1309,19 @@ function applyUserPermissions() {
     // Update current user name in header
     const usernameElement = document.getElementById('username');
     if (usernameElement) {
+        console.log('🔧 Updating username in header to:', currentUser.fullName);
         usernameElement.textContent = currentUser.fullName;
+    } else {
+        console.warn('⚠️ Username element not found in header');
     }
+    
+    // Debug current user state
+    console.log('🔧 Current user state in applyUserPermissions:', {
+        currentUser: currentUser,
+        currentUserId: currentUserId,
+        fullName: currentUser?.fullName,
+        username: currentUser?.username
+    });
 }
 
 function createUser(userData) {
