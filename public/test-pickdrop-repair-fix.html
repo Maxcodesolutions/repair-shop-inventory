@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Pick & Drop to Repair Fix</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .btn:hover {
+            background: #0056b3;
+        }
+        .btn-success { background: #28a745; }
+        .btn-warning { background: #ffc107; color: #000; }
+        .btn-danger { background: #dc3545; }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .status-success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .status-warning { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+        .status-error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+        }
+        .data-table th, .data-table td {
+            border: 1px solid #dee2e6;
+            padding: 8px;
+            text-align: left;
+        }
+        .data-table th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test Pick & Drop to Repair Fix</h1>
+    
+    <div class="test-section">
+        <h2>📊 Current Data Status</h2>
+        <button class="btn" onclick="checkDataStatus()">Check Data Status</button>
+        <button class="btn btn-warning" onclick="clearLog()">Clear Log</button>
+        <div id="data-status"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>🔧 Test Workflow</h2>
+        <button class="btn" onclick="testPickDropCreation()">Create Test Pick & Drop</button>
+        <button class="btn btn-success" onclick="testStatusUpdate()">Test Status Update to In-Repair</button>
+        <button class="btn btn-warning" onclick="testRepairCreation()">Test Repair Creation</button>
+        <button class="btn btn-danger" onclick="testPageRefresh()">Simulate Page Refresh</button>
+        <div id="test-output"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>📋 Data Tables</h2>
+        <div id="data-tables"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>📝 Console Log</h2>
+        <div id="console-log" class="log"></div>
+    </div>
+
+    <script>
+        // Override console.log to capture output
+        const originalConsoleLog = console.log;
+        const originalConsoleError = console.error;
+        const originalConsoleWarn = console.warn;
+        
+        function log(message, type = 'log') {
+            const consoleLogDiv = document.getElementById('console-log');
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = `[${timestamp}] ${type.toUpperCase()}: ${message}\n`;
+            
+            consoleLogDiv.textContent += logEntry;
+            consoleLogDiv.scrollTop = consoleLogDiv.scrollTop + 1000;
+            
+            // Also log to original console
+            switch(type) {
+                case 'error':
+                    originalConsoleError(message);
+                    break;
+                case 'warn':
+                    originalConsoleWarn(message);
+                    break;
+                default:
+                    originalConsoleLog(message);
+            }
+        }
+        
+        console.log = function(...args) {
+            log(args.join(' '), 'log');
+        };
+        
+        console.error = function(...args) {
+            log(args.join(' '), 'error');
+        };
+        
+        console.warn = function(...args) {
+            log(args.join(' '), 'warn');
+        };
+
+        // Check if the main script is loaded
+        function checkMainScript() {
+            if (typeof window.pickDrops === 'undefined') {
+                log('❌ Main script not loaded. Please load the main application first.', 'error');
+                return false;
+            }
+            return true;
+        }
+
+        function checkDataStatus() {
+            if (!checkMainScript()) return;
+            
+            const output = document.getElementById('data-status');
+            let html = '<h3>Current Data Status:</h3>';
+            
+            // Check pick & drops
+            html += `<h4>Pick & Drops (${window.pickDrops.length}):</h4>`;
+            if (window.pickDrops.length > 0) {
+                html += '<table class="data-table"><tr><th>ID</th><th>Customer</th><th>Status</th><th>Repair ID</th><th>Device</th></tr>';
+                window.pickDrops.forEach(pd => {
+                    html += `<tr>
+                        <td>PD-${pd.id}</td>
+                        <td>${pd.customer}</td>
+                        <td><span class="status status-${pd.status === 'in-repair' ? 'success' : 'warning'}">${pd.status}</span></td>
+                        <td>${pd.repairId || 'None'}</td>
+                        <td>${pd.deviceType || 'N/A'} ${pd.brand || ''} ${pd.model || ''}</td>
+                    </tr>`;
+                });
+                html += '</table>';
+            } else {
+                html += '<p>No pick & drops found</p>';
+            }
+            
+            // Check repairs
+            html += `<h4>Repairs (${window.repairs.length}):</h4>`;
+            if (window.repairs.length > 0) {
+                html += '<table class="data-table"><tr><th>ID</th><th>Customer</th><th>Status</th><th>Pick & Drop ID</th><th>Device</th></tr>';
+                window.repairs.forEach(r => {
+                    html += `<tr>
+                        <td>R-${r.id}</td>
+                        <td>${r.customer}</td>
+                        <td><span class="status status-${r.status === 'in-progress' ? 'success' : 'warning'}">${r.status}</span></td>
+                        <td>${r.pickDropId || 'None'}</td>
+                        <td>${r.deviceType || 'N/A'}</td>
+                    </tr>`;
+                });
+                html += '</table>';
+            } else {
+                html += '<p>No repairs found</p>';
+            }
+            
+            output.innerHTML = html;
+        }
+
+        function testPickDropCreation() {
+            if (!checkMainScript()) return;
+            
+            log('🧪 Testing pick & drop creation...', 'log');
+            
+            // Create a test pick & drop
+            const testPickDrop = {
+                id: Date.now(),
+                customer: 'Test Customer',
+                customerPhone: '1234567890',
+                customerEmail: 'test@example.com',
+                customerAddress: 'Test Address',
+                deviceType: 'laptop',
+                brand: 'Test Brand',
+                model: 'Test Model',
+                serial: 'TEST123',
+                issue: 'Test issue',
+                pickupAddress: 'Test Pickup Address',
+                deliveryAddress: 'Test Delivery Address',
+                pickupDate: new Date().toISOString().split('T')[0],
+                pickupTime: '10:00',
+                deliveryDate: new Date().toISOString().split('T')[0],
+                deliveryTime: '18:00',
+                fee: 100,
+                status: 'scheduled',
+                instructions: 'Test instructions',
+                notes: 'Test notes',
+                otpEnabled: true,
+                images: [],
+                createdAt: new Date().toISOString()
+            };
+            
+            window.pickDrops.push(testPickDrop);
+            log('✅ Test pick & drop created:', 'log');
+            log(`ID: ${testPickDrop.id}, Customer: ${testPickDrop.customer}, Status: ${testPickDrop.status}`, 'log');
+            
+            // Save data
+            if (typeof window.saveData === 'function') {
+                window.saveData();
+                log('💾 Data saved', 'log');
+            }
+            
+            // Refresh display
+            setTimeout(checkDataStatus, 100);
+        }
+
+        function testStatusUpdate() {
+            if (!checkMainScript()) return;
+            
+            log('🧪 Testing status update...', 'log');
+            
+            if (window.pickDrops.length > 0) {
+                const pickDrop = window.pickDrops[0];
+                log(`Updating status for pick & drop: ${pickDrop.id}`, 'log');
+                
+                if (typeof window.updatePickDropStatus === 'function') {
+                    window.updatePickDropStatus(pickDrop.id, 'in-repair');
+                    log('✅ Status update triggered', 'log');
+                } else {
+                    log('❌ updatePickDropStatus function not available', 'error');
+                }
+            } else {
+                log('❌ No pick & drops available for testing', 'error');
+            }
+            
+            // Refresh display
+            setTimeout(checkDataStatus, 2000);
+        }
+
+        function testRepairCreation() {
+            if (!checkMainScript()) return;
+            
+            log('🧪 Testing repair creation...', 'log');
+            
+            if (window.pickDrops.length > 0) {
+                const pickDrop = window.pickDrops.find(pd => pd.status === 'in-repair');
+                if (pickDrop) {
+                    log(`Found pick & drop in repair status: ${pickDrop.id}`, 'log');
+                    
+                    if (typeof window.createRepairFromPickDrop === 'function') {
+                        const repair = window.createRepairFromPickDrop(pickDrop);
+                        log('✅ Repair created:', 'log');
+                        log(`Repair ID: ${repair.id}, Customer: ${repair.customer}`, 'log');
+                        
+                        // Save data
+                        if (typeof window.saveData === 'function') {
+                            window.saveData();
+                            log('💾 Data saved', 'log');
+                        }
+                    } else {
+                        log('❌ createRepairFromPickDrop function not available', 'error');
+                    }
+                } else {
+                    log('❌ No pick & drops in repair status found', 'error');
+                }
+            } else {
+                log('❌ No pick & drops available for testing', 'error');
+            }
+            
+            // Refresh display
+            setTimeout(checkDataStatus, 2000);
+        }
+
+        function testPageRefresh() {
+            if (!checkMainScript()) return;
+            
+            log('🧪 Simulating page refresh...', 'log');
+            
+            // Store current data
+            const currentData = {
+                pickDrops: [...window.pickDrops],
+                repairs: [...window.repairs]
+            };
+            
+            log('Current data before refresh simulation:', 'log');
+            log(`Pick & Drops: ${currentData.pickDrops.length}, Repairs: ${currentData.repairs.length}`, 'log');
+            
+            // Simulate data reload (this would normally happen on page refresh)
+            if (typeof window.loadData === 'function') {
+                log('🔄 Reloading data...', 'log');
+                window.loadData();
+                
+                // Check if data is still intact
+                setTimeout(() => {
+                    log('Data after reload simulation:', 'log');
+                    log(`Pick & Drops: ${window.pickDrops.length}, Repairs: ${window.repairs.length}`, 'log');
+                    
+                    // Check for data loss
+                    if (window.pickDrops.length !== currentData.pickDrops.length) {
+                        log('⚠️ WARNING: Pick & drops data was lost during reload!', 'warn');
+                    }
+                    if (window.repairs.length !== currentData.repairs.length) {
+                        log('⚠️ WARNING: Repairs data was lost during reload!', 'warn');
+                    }
+                    
+                    // Check data consistency
+                    if (typeof window.validateAndFixDataConsistency === 'function') {
+                        log('🔧 Running data consistency validation...', 'log');
+                        const result = window.validateAndFixDataConsistency();
+                        log(`Validation result: ${result.issuesFound} issues found, ${result.fixesApplied} fixes applied`, 'log');
+                    }
+                    
+                    checkDataStatus();
+                }, 3000);
+            } else {
+                log('❌ loadData function not available', 'error');
+            }
+        }
+
+        function clearLog() {
+            document.getElementById('console-log').textContent = '';
+            log('Log cleared', 'log');
+        }
+
+        // Auto-check data when page loads
+        window.addEventListener('load', () => {
+            log('🧪 Test page loaded. Waiting for main script...', 'log');
+            
+            // Check every second if main script is loaded
+            const checkInterval = setInterval(() => {
+                if (typeof window.pickDrops !== 'undefined') {
+                    log('✅ Main script detected!', 'log');
+                    clearInterval(checkInterval);
+                    checkDataStatus();
+                }
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
