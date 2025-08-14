@@ -506,27 +506,18 @@ body {
 }
 
 /* Specific styling for repairs table to fix action column width */
+#repairs-table-container {
+    overflow-x: auto; /* Allow horizontal scroll if needed */
+}
+
 #repairs-table {
-    table-layout: fixed;
+    min-width: 1100px; /* Ensure table has enough width but not too wide */
 }
 
 #repairs-table th:last-child,
 #repairs-table td:last-child {
-    width: 200px; /* Ensure Actions column has enough width */
-    min-width: 200px;
+    min-width: 180px; /* Ensure Actions column has enough width */
 }
-
-#repairs-table th:nth-child(1) { width: 100px; } /* Repair ID */
-#repairs-table th:nth-child(2) { width: 120px; } /* Customer */
-#repairs-table th:nth-child(3) { width: 100px; } /* Device Type */
-#repairs-table th:nth-child(4) { width: 80px; }  /* Brand */
-#repairs-table th:nth-child(5) { width: 100px; } /* Model */
-#repairs-table th:nth-child(6) { width: 120px; } /* IMEI/Serial */
-#repairs-table th:nth-child(7) { width: 150px; } /* Issue */
-#repairs-table th:nth-child(8) { width: 100px; } /* Status */
-#repairs-table th:nth-child(9) { width: 100px; } /* Start Date */
-#repairs-table th:nth-child(10) { width: 140px; } /* Estimated Completion */
-#repairs-table th:nth-child(11) { width: 200px; } /* Actions */
 
 /* Ensure buttons in Actions column are properly spaced */
 #repairs-table td:last-child {
@@ -540,34 +531,6 @@ body {
 
 #repairs-table td:last-child .btn:last-child {
     margin-right: 0;
-}
-
-/* Responsive handling for smaller screens */
-@media (max-width: 1200px) {
-    #repairs-table {
-        table-layout: auto;
-    }
-    
-    #repairs-table th,
-    #repairs-table td {
-        padding: 0.75rem 0.5rem;
-    }
-    
-    #repairs-table th:last-child,
-    #repairs-table td:last-child {
-        width: auto;
-        min-width: 180px;
-    }
-}
-
-@media (max-width: 768px) {
-    #repairs-table-container {
-        overflow-x: auto;
-    }
-    
-    #repairs-table {
-        min-width: 1000px; /* Ensure table doesn't get too cramped */
-    }
 }
 
 table {
