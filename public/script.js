@@ -11449,6 +11449,73 @@ window.enableFirebaseAuth = function() {
     }
 };
 
+// Function to temporarily disable Firestore operations
+window.disableFirestore = function() {
+    console.log('🔧 Temporarily disabling Firestore operations...');
+    
+    // Store the original functions
+    if (!window.originalFirestoreFunctions) {
+        window.originalFirestoreFunctions = {
+            collection: window.collection,
+            doc: window.doc,
+            getDoc: window.getDoc,
+            setDoc: window.setDoc,
+            onSnapshot: window.onSnapshot
+        };
+    }
+    
+    // Replace with dummy functions that return successful responses
+    window.collection = function(db, path) {
+        console.log('🔧 Mock Firestore collection called:', path);
+        return { path: path, id: 'mock-collection' };
+    };
+    
+    window.doc = function(collection, path) {
+        console.log('🔧 Mock Firestore doc called:', path);
+        return { path: path, id: 'mock-doc' };
+    };
+    
+    window.getDoc = function(docRef) {
+        console.log('🔧 Mock Firestore getDoc called');
+        return Promise.resolve({ 
+            exists: () => false, 
+            data: () => ({}), 
+            id: 'mock-doc' 
+        });
+    };
+    
+    window.setDoc = function(docRef, data) {
+        console.log('🔧 Mock Firestore setDoc called with:', data);
+        return Promise.resolve();
+    };
+    
+    window.onSnapshot = function(docRef, callback) {
+        console.log('🔧 Mock Firestore onSnapshot called');
+        // Don't call callback to prevent errors
+        return () => console.log('🔧 Mock Firestore unsubscribe called');
+    };
+    
+    console.log('✅ Firestore operations temporarily disabled for testing');
+    console.log('🔧 Use enableFirestore() to restore original functions');
+};
+
+// Function to restore original Firestore operations
+window.enableFirestore = function() {
+    if (window.originalFirestoreFunctions) {
+        console.log('🔧 Restoring original Firestore operations...');
+        
+        window.collection = window.originalFirestoreFunctions.collection;
+        window.doc = window.originalFirestoreFunctions.doc;
+        window.getDoc = window.originalFirestoreFunctions.getDoc;
+        window.setDoc = window.originalFirestoreFunctions.setDoc;
+        window.onSnapshot = window.originalFirestoreFunctions.onSnapshot;
+        
+        console.log('✅ Original Firestore operations restored');
+    } else {
+        console.log('ℹ️ No original Firestore functions to restore');
+    }
+};
+
 // Function to test Firebase authentication with minimal parameters
 window.testFirebaseAuth = function() {
     console.log('🧪 Testing Firebase authentication with minimal parameters...');
@@ -11486,6 +11553,91 @@ window.testFirebaseAuth = function() {
                 console.log('🔧 The error suggests Firebase is receiving an object instead of a string');
                 console.log('🔧 This could be a Firebase SDK bug or configuration issue');
             }
+        });
+};
+
+// Function to test Firestore connection and configuration
+window.testFirestoreConnection = function() {
+    console.log('🧪 Testing Firestore connection and configuration...');
+    
+    const firestoreConfig = {
+        db: !!window.db,
+        collection: !!window.collection,
+        doc: !!window.doc,
+        getDoc: !!window.getDoc,
+        setDoc: !!window.setDoc,
+        onSnapshot: !!window.onSnapshot,
+        firebaseConfig: window.firebaseConfig ? {
+            projectId: window.firebaseConfig.projectId,
+            apiKey: window.firebaseConfig.apiKey ? '***' + window.firebaseConfig.apiKey.slice(-4) : 'Not found',
+            authDomain: window.firebaseConfig.authDomain,
+            storageBucket: window.firebaseConfig.storageBucket,
+            messagingSenderId: window.firebaseConfig.messagingSenderId,
+            appId: window.firebaseConfig.appId
+        } : 'Not found'
+    };
+    
+    console.log('🔍 Firestore Configuration:', firestoreConfig);
+    
+    if (!firestoreConfig.db) {
+        console.error('❌ Firestore database object not available');
+        console.log('🔧 Check if firebase-global.js is loaded properly');
+    }
+    
+    if (!firestoreConfig.collection || !firestoreConfig.doc) {
+        console.error('❌ Firestore functions not available');
+        console.log('🔧 Check if Firestore SDK is loaded');
+    }
+    
+    if (!firestoreConfig.firebaseConfig) {
+        console.error('❌ Firebase configuration not found');
+        console.log('🔧 Check firebase-config.js');
+    }
+    
+    // Test basic Firestore operations if available
+    if (firestoreConfig.db && firestoreConfig.collection && firestoreConfig.doc) {
+        console.log('🔄 Testing basic Firestore operations...');
+        
+        try {
+            const testCollection = window.collection(window.db, 'test');
+            const testDoc = window.doc(testCollection, 'test-doc');
+            
+            console.log('✅ Basic Firestore operations successful');
+            console.log('🔍 Test collection:', testCollection);
+            console.log('🔍 Test document:', testDoc);
+            
+        } catch (error) {
+            console.error('❌ Firestore operations failed:', error.message);
+        }
+    }
+    
+    return firestoreConfig;
+};
+
+// Function to check Firebase project status
+window.checkFirebaseProject = function() {
+    console.log('🧪 Checking Firebase project status...');
+    
+    if (!window.firebaseConfig) {
+        console.error('❌ Firebase configuration not found');
+        return;
+    }
+    
+    const projectId = window.firebaseConfig.projectId;
+    console.log('🔍 Project ID:', projectId);
+    
+    // Check if we can access the project
+    fetch(`https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents`)
+        .then(response => {
+            if (response.ok) {
+                console.log('✅ Firestore database accessible');
+            } else {
+                console.log('❌ Firestore database not accessible:', response.status, response.statusText);
+                console.log('🔧 This suggests Firestore rules or permissions issues');
+            }
+        })
+        .catch(error => {
+            console.error('❌ Error checking Firestore access:', error.message);
         });
 };
 
