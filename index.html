@@ -2104,6 +2104,86 @@
                         </table>
                     </div>
                     
+                    <!-- Warranty Detail View -->
+                    <div class="warranty-detail-view" id="warranty-detail-view" style="display: none;">
+                        <div class="warranty-detail-header">
+                            <button class="btn btn-secondary back-to-warranties-btn" onclick="backToWarrantyList()">
+                                <i class="fas fa-arrow-left"></i> Back to Warranties
+                            </button>
+                            <h3 id="warranty-detail-title">Warranty Details</h3>
+                        </div>
+                        
+                        <div class="warranty-detail-content">
+                            <div class="warranty-detail-grid">
+                                <div class="warranty-detail-section">
+                                    <h4>Warranty Information</h4>
+                                    <div class="detail-row">
+                                        <span class="detail-label">Warranty ID:</span>
+                                        <span class="detail-value" id="warranty-detail-id">-</span>
+                                    </div>
+                                    <div class="detail-row">
+                                        <span class="detail-label">Type:</span>
+                                        <span class="detail-value" id="warranty-detail-type">-</span>
+                                    </div>
+                                    <div class="detail-row">
+                                        <span class="detail-label">Duration:</span>
+                                        <span class="detail-value" id="warranty-detail-duration">-</span>
+                                    </div>
+                                    <div class="detail-row">
+                                        <span class="detail-label">Start Date:</span>
+                                        <span class="detail-value" id="warranty-detail-start-date">-</span>
+                                    </div>
+                                    <div class="detail-row">
+                                        <span class="detail-label">Expiry Date:</span>
+                                        <span class="detail-value" id="warranty-detail-expiry-date">-</span>
+                                    </div>
+                                    <div class="detail-row">
+                                        <span class="detail-label">Status:</span>
+                                        <span class="detail-value" id="warranty-detail-status">-</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="warranty-detail-section">
+                                    <h4>Customer Information</h4>
+                                    <div class="detail-row">
+                                        <span class="detail-label">Customer Name:</span>
+                                        <span class="detail-value" id="warranty-detail-customer">-</span>
+                                    </div>
+                                    <div class="detail-row">
+                                        <span class="detail-label">Customer Phone:</span>
+                                        <span class="detail-value" id="warranty-detail-customer-phone">-</span>
+                                    </div>
+                                    <div class="detail-row">
+                                        <span class="detail-label">Customer Email:</span>
+                                        <span class="detail-value" id="warranty-detail-customer-email">-</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="warranty-detail-section">
+                                    <h4>Item/Service Details</h4>
+                                    <div class="detail-row">
+                                        <span class="detail-label">Item/Service:</span>
+                                        <span class="detail-value" id="warranty-detail-item">-</span>
+                                    </div>
+                                    <div class="detail-row">
+                                        <span class="detail-label">Source:</span>
+                                        <span class="detail-value" id="warranty-detail-source">-</span>
+                                    </div>
+                                    <div class="detail-row">
+                                        <span class="detail-label">Source ID:</span>
+                                        <span class="detail-value" id="warranty-detail-source-id">-</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="warranty-detail-actions">
+                                <button class="btn btn-info" id="warranty-detail-view-source-btn" onclick="viewWarrantySource()">
+                                    <i class="fas fa-external-link-alt"></i> View Source
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
                     <!-- Warranty Summary Cards -->
                     <div class="warranty-summary-cards">
                         <div class="summary-card">

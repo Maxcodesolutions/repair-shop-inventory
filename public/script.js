@@ -1817,8 +1817,115 @@ function updateWarrantySummary(warranties) {
 }
 
 function viewWarranty(warrantyId) {
-    // This function can be expanded to show detailed warranty information
-    alert(`Warranty ${warrantyId} details will be shown here.`);
+    console.log('=== VIEWING WARRANTY DETAILS ===', warrantyId);
+    
+    // Find the warranty data
+    let warrantyData = null;
+    
+    // Check if it's a repair warranty
+    if (warrantyId.startsWith('R-')) {
+        const repairId = parseInt(warrantyId.substring(2));
+        const repair = repairs.find(r => r.id === repairId);
+        if (repair && repair.warranty && repair.warranty.enabled) {
+            warrantyData = {
+                id: warrantyId,
+                type: 'repair',
+                customer: repair.customer,
+                customerPhone: repair.customerPhone || 'N/A',
+                customerEmail: repair.customerEmail || 'N/A',
+                item: `Repair #${repair.id}`,
+                duration: `${repair.warranty.months} months`,
+                startDate: repair.startDate,
+                expiryDate: repair.warranty.expiresOn,
+                status: getWarrantyStatus(repair.warranty.expiresOn),
+                source: 'repair',
+                sourceId: repair.id
+            };
+        }
+    }
+    // Check if it's an invoice warranty
+    else if (warrantyId.startsWith('I-')) {
+        const parts = warrantyId.substring(2).split('-');
+        const invoiceId = parseInt(parts[0]);
+        const itemIndex = parseInt(parts[1]);
+        const invoice = invoices.find(inv => inv.id === invoiceId);
+        if (invoice && invoice.items[itemIndex] && invoice.items[itemIndex].warrantyMonths > 0) {
+            const item = invoice.items[itemIndex];
+            const expiryDate = addMonths(new Date(invoice.date), item.warrantyMonths).toISOString().split('T')[0];
+            warrantyData = {
+                id: warrantyId,
+                type: 'parts',
+                customer: invoice.customer,
+                customerPhone: invoice.customerPhone || 'N/A',
+                customerEmail: invoice.customerEmail || 'N/A',
+                item: item.name,
+                duration: `${item.warrantyMonths} months`,
+                startDate: invoice.date,
+                expiryDate: expiryDate,
+                status: getWarrantyStatus(expiryDate),
+                source: 'invoice',
+                sourceId: invoice.id,
+                itemIndex: itemIndex
+            };
+        }
+    }
+    
+    if (!warrantyData) {
+        alert('Warranty not found or invalid warranty ID.');
+        return;
+    }
+    
+    // Hide the table and show the detail view
+    const tableContainer = document.getElementById('warranties-table-container');
+    const summaryCards = document.querySelector('.warranty-summary-cards');
+    const detailView = document.getElementById('warranty-detail-view');
+    
+    if (tableContainer) tableContainer.style.display = 'none';
+    if (summaryCards) summaryCards.style.display = 'none';
+    if (detailView) detailView.style.display = 'block';
+    
+    // Populate the detail view
+    document.getElementById('warranty-detail-id').textContent = warrantyData.id;
+    document.getElementById('warranty-detail-type').textContent = warrantyData.type === 'repair' ? 'Repair Warranty' : 'Parts Warranty';
+    document.getElementById('warranty-detail-duration').textContent = warrantyData.duration;
+    document.getElementById('warranty-detail-start-date').textContent = warrantyData.startDate;
+    document.getElementById('warranty-detail-expiry-date').textContent = warrantyData.expiryDate;
+    document.getElementById('warranty-detail-status').textContent = warrantyData.status;
+    document.getElementById('warranty-detail-customer').textContent = warrantyData.customer;
+    document.getElementById('warranty-detail-customer-phone').textContent = warrantyData.customerPhone;
+    document.getElementById('warranty-detail-customer-email').textContent = warrantyData.customerEmail;
+    document.getElementById('warranty-detail-item').textContent = warrantyData.item;
+    document.getElementById('warranty-detail-source').textContent = warrantyData.source === 'repair' ? 'Repair' : 'Invoice';
+    document.getElementById('warranty-detail-source-id').textContent = warrantyData.source === 'repair' ? `R-${warrantyData.sourceId}` : `I-${warrantyData.sourceId}`;
+    
+    // Update the view source button
+    const viewSourceBtn = document.getElementById('warranty-detail-view-source-btn');
+    if (viewSourceBtn) {
+        viewSourceBtn.onclick = () => {
+            if (warrantyData.source === 'repair') {
+                viewJobCard(warrantyData.sourceId);
+            } else {
+                viewInvoice(warrantyData.sourceId);
+            }
+        };
+    }
+    
+    console.log('✅ Warranty details displayed:', warrantyData);
+}
+
+function backToWarrantyList() {
+    console.log('=== RETURNING TO WARRANTY LIST ===');
+    
+    // Hide the detail view and show the table and summary cards
+    const tableContainer = document.getElementById('warranties-table-container');
+    const summaryCards = document.querySelector('.warranty-summary-cards');
+    const detailView = document.getElementById('warranty-detail-view');
+    
+    if (detailView) detailView.style.display = 'none';
+    if (tableContainer) tableContainer.style.display = 'block';
+    if (summaryCards) summaryCards.style.display = 'grid';
+    
+    console.log('✅ Returned to warranty list view');
 }
 
 // Function to force update admin user permissions
