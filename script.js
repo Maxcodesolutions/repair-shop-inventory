@@ -604,6 +604,15 @@ function initializeApplication() {
     // Start connection monitoring
     startConnectionMonitoring();
     
+    // Make utility functions available globally early
+    window.logDataState = logDataState;
+    window.validateAndFixDataConsistency = validateAndFixDataConsistency;
+    
+    console.log('🔧 Utility functions made available globally:', {
+        logDataState: typeof window.logDataState,
+        validateAndFixDataConsistency: typeof window.validateAndFixDataConsistency
+    });
+    
     // Load data first
     loadData();
     
@@ -10629,13 +10638,17 @@ window.checkLocalStorageData = checkLocalStorageData;
 function validateAndFixDataConsistency() {
     console.log('=== VALIDATING DATA CONSISTENCY ===');
     
+    // Safely access global variables
+    const currentPickDrops = window.pickDrops || pickDrops || [];
+    const currentRepairs = window.repairs || repairs || [];
+    
     let issuesFound = 0;
     let fixesApplied = 0;
     
     // Check pick & drops that have repairId but the repair doesn't exist
-    pickDrops.forEach(pickDrop => {
+    currentPickDrops.forEach(pickDrop => {
         if (pickDrop.repairId) {
-            const repair = repairs.find(r => r.id === pickDrop.repairId);
+            const repair = currentRepairs.find(r => r.id === pickDrop.repairId);
             if (!repair) {
                 console.log(`⚠️ Pick & Drop ${pickDrop.id} has repairId ${pickDrop.repairId} but repair doesn't exist`);
                 issuesFound++;
@@ -10658,9 +10671,9 @@ function validateAndFixDataConsistency() {
     });
     
     // Check repairs that have pickDropId but the pick & drop doesn't exist
-    repairs.forEach(repair => {
+    currentRepairs.forEach(repair => {
         if (repair.pickDropId) {
-            const pickDrop = pickDrops.find(pd => pd.id === repair.pickDropId);
+            const pickDrop = currentPickDrops.find(pd => pd.id === repair.pickDropId);
             if (!pickDrop) {
                 console.log(`⚠️ Repair ${repair.id} has pickDropId ${repair.pickDropId} but pick & drop doesn't exist`);
                 issuesFound++;
@@ -10673,10 +10686,10 @@ function validateAndFixDataConsistency() {
     });
     
     // Check for orphaned repairs (repairs without pickDropId that should have one)
-    repairs.forEach(repair => {
+    currentRepairs.forEach(repair => {
         if (!repair.pickDropId && repair.status === 'in-progress') {
             // Look for a pick & drop that might be related by customer and device
-            const relatedPickDrop = pickDrops.find(pd => 
+            const relatedPickDrop = currentPickDrops.find(pd => 
                 pd.customer === repair.customer && 
                 pd.deviceType === repair.deviceType &&
                 !pd.repairId
@@ -10716,22 +10729,27 @@ window.validateAndFixDataConsistency = validateAndFixDataConsistency;
 // Debug function to log current data state
 function logDataState() {
     console.log('=== CURRENT DATA STATE ===');
-    console.log('Pick & Drops:', pickDrops);
-    console.log('Repairs:', repairs);
+    
+    // Safely access global variables
+    const currentPickDrops = window.pickDrops || pickDrops || [];
+    const currentRepairs = window.repairs || repairs || [];
+    
+    console.log('Pick & Drops:', currentPickDrops);
+    console.log('Repairs:', currentRepairs);
     
     // Check for linked data
-    pickDrops.forEach(pd => {
+    currentPickDrops.forEach(pd => {
         if (pd.repairId) {
-            const repair = repairs.find(r => r.id === pd.repairId);
+            const repair = currentRepairs.find(r => r.id === pd.repairId);
             console.log(`Pick & Drop ${pd.id} (${pd.status}) -> Repair ${pd.repairId} ${repair ? '(exists)' : '(MISSING!)'}`);
         } else {
             console.log(`Pick & Drop ${pd.id} (${pd.status}) -> No repair linked`);
         }
     });
     
-    repairs.forEach(r => {
+    currentRepairs.forEach(r => {
         if (r.pickDropId) {
-            const pickDrop = pickDrops.find(pd => pd.id === r.pickDropId);
+            const pickDrop = currentPickDrops.find(pd => pd.id === r.pickDropId);
             console.log(`Repair ${r.id} -> Pick & Drop ${r.pickDropId} ${pickDrop ? '(exists)' : '(MISSING!)'}`);
         } else {
             console.log(`Repair ${r.id} -> No pick & drop linked`);
