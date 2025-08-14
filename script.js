@@ -11570,6 +11570,66 @@ window.checkFirestoreEnabled = function() {
     console.log('🔧 If you\'re still getting errors, run testFirestoreConnection()');
 };
 
+// Function to diagnose Firestore SDK loading issues
+window.diagnoseFirestoreSDK = function() {
+    console.log('🔍 Diagnosing Firestore SDK loading issues...');
+    
+    // Check if Firebase is loaded
+    console.log('🔍 Firebase availability:', {
+        firebase: typeof window.firebase !== 'undefined',
+        firebaseApp: typeof window.firebase?.app !== 'undefined',
+        firebaseFirestore: typeof window.firebase?.firestore !== 'undefined'
+    });
+    
+    // Check if our global variables are set
+    console.log('🔍 Global Firestore variables:', {
+        db: typeof window.db,
+        dbValue: window.db,
+        collection: typeof window.collection,
+        doc: typeof window.doc,
+        getDoc: typeof window.getDoc,
+        setDoc: typeof window.setDoc,
+        onSnapshot: typeof window.onSnapshot
+    });
+    
+    // Check if firebase-global.js loaded properly
+    console.log('🔍 Firebase global script status:', {
+        firebaseConfig: !!window.firebaseConfig,
+        auth: !!window.auth,
+        signInWithEmailAndPassword: !!window.signInWithEmailAndPassword,
+        createUserWithEmailAndPassword: !!window.createUserWithEmailAndPassword
+    });
+    
+    // Check for common loading issues
+    if (typeof window.firebase === 'undefined') {
+        console.log('❌ Firebase SDK not loaded');
+        console.log('🔧 SOLUTION: Check if firebase-app.js and firebase-firestore.js are loaded');
+    }
+    
+    if (!window.db) {
+        console.log('❌ Firestore database object not initialized');
+        console.log('🔧 SOLUTION: Check firebase-global.js initialization');
+    }
+    
+    if (typeof window.collection !== 'function') {
+        console.log('❌ Firestore collection function not available');
+        console.log('🔧 SOLUTION: Check if firebase-firestore.js is loaded');
+    }
+    
+    // Check if we're in a mock state
+    if (window.originalFirestoreFunctions) {
+        console.log('⚠️ Firestore is currently in mock mode');
+        console.log('🔧 Use enableFirestore() to restore real functions');
+    }
+    
+    return {
+        firebaseLoaded: typeof window.firebase !== 'undefined',
+        firestoreLoaded: typeof window.firebase?.firestore !== 'undefined',
+        dbAvailable: !!window.db,
+        functionsAvailable: !!(window.collection && window.doc)
+    };
+};
+
 // Function to test Firebase authentication with minimal parameters
 window.testFirebaseAuth = function() {
     console.log('🧪 Testing Firebase authentication with minimal parameters...');
@@ -11653,15 +11713,59 @@ window.testFirestoreConnection = function() {
         console.log('🔄 Testing basic Firestore operations...');
         
         try {
-            const testCollection = window.collection(window.db, 'test');
-            const testDoc = window.doc(testCollection, 'test-doc');
-            
-            console.log('✅ Basic Firestore operations successful');
-            console.log('🔍 Test collection:', testCollection);
-            console.log('🔍 Test document:', testDoc);
+            // Check if we're using mock functions (which might cause issues)
+            if (window.originalFirestoreFunctions) {
+                console.log('⚠️ Mock Firestore functions are active - testing with mock functions');
+                console.log('🔧 Use enableFirestore() to restore original functions for real testing');
+                
+                const testCollection = window.collection(window.db, 'test');
+                const testDoc = window.doc(testCollection, 'test-doc');
+                
+                console.log('✅ Mock Firestore operations successful');
+                console.log('🔍 Test collection:', testCollection);
+                console.log('🔍 Test document:', testDoc);
+                
+            } else {
+                console.log('🔄 Testing with real Firestore functions...');
+                
+                // Validate parameters before calling
+                if (typeof window.db !== 'object' || !window.db) {
+                    throw new Error('Firestore database object is invalid');
+                }
+                
+                if (typeof window.collection !== 'function') {
+                    throw new Error('collection function is not available');
+                }
+                
+                if (typeof window.doc !== 'function') {
+                    throw new Error('doc function is not available');
+                }
+                
+                const testCollection = window.collection(window.db, 'test');
+                const testDoc = window.doc(testCollection, 'test-doc');
+                
+                console.log('✅ Basic Firestore operations successful');
+                console.log('🔍 Test collection:', testCollection);
+                console.log('🔍 Test document:', testDoc);
+            }
             
         } catch (error) {
             console.error('❌ Firestore operations failed:', error.message);
+            console.log('🔍 Error details:', {
+                errorType: error.constructor.name,
+                errorStack: error.stack,
+                dbType: typeof window.db,
+                dbValue: window.db,
+                collectionType: typeof window.collection,
+                docType: typeof window.doc
+            });
+            
+            if (error.message.includes('s.indexOf is not a function')) {
+                console.log('🔧 SOLUTION: This error suggests Firestore SDK is not properly loaded');
+                console.log('🔧 Check if firebase-global.js is loaded correctly');
+                console.log('🔧 Verify Firebase configuration in firebase-config.js');
+                console.log('🔧 Ensure Firestore is enabled in your Firebase project');
+            }
         }
     }
     
