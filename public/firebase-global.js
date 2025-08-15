@@ -68,14 +68,16 @@ async function initializeFirebase() {
         window.isInitialized = true;
 
         // Expose commonly used functions directly (not async)
-        const originalCollection = window.collection;
-        window.collection = function(db, collectionPath) {
-            if (!collectionPath || typeof collectionPath !== 'string' || collectionPath.trim().length === 0) {
-                console.error("❌ Invalid collection path (global patch):", collectionPath);
-                return null;
-            }
-            return originalCollection(db, collectionPath);
-        };
+        if (!window._originalCollection) {
+            window._originalCollection = window.collection;
+            window.collection = function(db, collectionPath) {
+                if (!collectionPath || typeof collectionPath !== 'string' || collectionPath.trim().length === 0) {
+                    console.error("❌ Invalid collection path (global patch):", collectionPath);
+                    return null;
+                }
+                return window._originalCollection(db, collectionPath);
+            };
+        }
         window.doc = (collectionRef, documentId) => firestoreDoc(collectionRef, documentId);
         window.setDoc = (docRef, data, options) => firestoreSetDoc(docRef, data, options);
         window.getDoc = (docRef) => firestoreGetDoc(docRef);

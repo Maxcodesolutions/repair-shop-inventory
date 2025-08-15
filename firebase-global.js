@@ -306,11 +306,13 @@ window.addEventListener('unhandledrejection', (event) => {
 
 console.log('🔥 Firebase Global: Script loaded, waiting for DOM...');
 
-const originalCollection = window.collection;
-window.collection = function(db, collectionPath) {
-    if (!collectionPath || typeof collectionPath !== 'string' || collectionPath.trim().length === 0) {
-        console.error("❌ Invalid collection path (global patch):", collectionPath);
-        return null;
-    }
-    return originalCollection(db, collectionPath);
-};
+if (!window._originalCollection) {
+    window._originalCollection = window.collection;
+    window.collection = function(db, collectionPath) {
+        if (!collectionPath || typeof collectionPath !== 'string' || collectionPath.trim().length === 0) {
+            console.error("❌ Invalid collection path (global patch):", collectionPath);
+            return null;
+        }
+        return window._originalCollection(db, collectionPath);
+    };
+}
