@@ -8,7 +8,7 @@ const firebaseConfig = {
     apiKey: "AIzaSyCvuJuOlhqasNbpCkyJjOH1YKJKnjvxLvk",
     authDomain: "repair-shop-inventory.firebaseapp.com",
     projectId: "repair-shop-inventory",
-    storageBucket: "repair-shop-inventory.firebasestorage.app",
+    storageBucket: "repair-shop-inventory.appspot.com",
     messagingSenderId: "91629691464",
     appId: "1:91629691464:web:d20cabddb6dcbf755dee7d",
     measurementId: "G-K78PVPW0MG"
@@ -305,3 +305,12 @@ window.addEventListener('unhandledrejection', (event) => {
 });
 
 console.log('🔥 Firebase Global: Script loaded, waiting for DOM...');
+
+const originalCollection = window.collection;
+window.collection = function(db, collectionPath) {
+    if (!collectionPath || typeof collectionPath !== 'string' || collectionPath.trim().length === 0) {
+        console.error("❌ Invalid collection path (global patch):", collectionPath);
+        return null;
+    }
+    return originalCollection(db, collectionPath);
+};
