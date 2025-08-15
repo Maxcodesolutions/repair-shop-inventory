@@ -68,6 +68,7 @@ async function initializeFirebase() {
         window.isInitialized = true;
 
         // Expose commonly used functions directly (not async)
+        window.collection = (db, collectionPath) => firestoreCollection(db, collectionPath);
         if (!window._originalCollection) {
             window._originalCollection = window.collection;
             window.collection = function(db, collectionPath) {
