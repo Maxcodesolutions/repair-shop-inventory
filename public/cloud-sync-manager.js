@@ -112,6 +112,15 @@ class CloudSyncManager {
             }
             
             // Test basic read operation
+            if (!window.db) {
+                throw new Error('Firestore database is not initialized');
+            }
+            if (!window.collection || typeof window.collection !== 'function') {
+                throw new Error('window.collection is not a function');
+            }
+            if (!'_connection_test' || typeof '_connection_test' !== 'string' || '_connection_test'.length === 0) {
+                throw new Error('Invalid collection path: _connection_test');
+            }
             const testCollection = window.collection(window.db, '_connection_test');
             const testDoc = window.doc(testCollection, 'test');
             
@@ -265,7 +274,22 @@ class CloudSyncManager {
                         if (cleanEmail !== storedEmail) {
                             console.log('🔧 Cloud Sync Manager: Email trimmed from:', JSON.stringify(storedEmail), 'to:', JSON.stringify(cleanEmail));
                         }
-                        
+                        // --- BEGIN DEBUG LOGS ---
+                        console.log('DEBUG: About to sign in with:', {
+                          auth: window.auth,
+                          email: cleanEmail,
+                          emailType: typeof cleanEmail,
+                          emailLength: cleanEmail.length,
+                          password: storedPassword,
+                          passwordType: typeof storedPassword,
+                          passwordLength: storedPassword.length
+                        });
+                        console.log('Email char codes:', Array.from(cleanEmail).map(c => c.charCodeAt(0)));
+                        console.log('Is email a string?', typeof cleanEmail === 'string');
+                        console.log('Is password a string?', typeof storedPassword === 'string');
+                        console.log('Email before trim:', JSON.stringify(storedEmail));
+                        console.log('Email after trim:', JSON.stringify(cleanEmail));
+                        // --- END DEBUG LOGS ---
                         await window.signInWithEmailAndPassword(window.auth, cleanEmail, storedPassword);
                         console.log('☁️ Cloud Sync Manager: Automatic sign-in successful');
                     } catch (signInError) {

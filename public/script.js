@@ -791,7 +791,6 @@ document.addEventListener('DOMContentLoaded', function() {
         initializeApplication();
     }
 });
-
 function initializeApplication() {
     // Setup Firebase auth listener for automatic cloud sync
     setupFirebaseAuthListener();
@@ -1043,19 +1042,19 @@ async function loadDataFromCloud() {
         const user = window.auth.currentUser;
         
         // Check if Firebase functions are available
-        if (!window.getDoc || !window.doc || !window.collection || !window.db) {
+        if (!window.getDoc || !window.doc || !window.safeCollection || !window.db) {
             console.log('Firebase functions not available, falling back to localStorage');
             console.log('Available functions:', {
                 getDoc: !!window.getDoc,
                 doc: !!window.doc,
-                collection: !!window.collection,
+                safeCollection: !!window.safeCollection,
                 db: !!window.db
             });
             loadDataFromLocal();
             return;
         }
         
-        const docRef = window.doc(window.collection('users'), user.uid);
+        const docRef = window.doc(window.safeCollection(window.db, 'users'), user.uid);
         const docSnap = await window.getDoc(docRef);
         
         if (docSnap.exists()) {
@@ -1098,7 +1097,7 @@ async function loadDataFromCloud() {
             
             // Check sync timestamp
             try {
-                const syncRef = window.doc(window.collection('sync'), user.uid);
+                const syncRef = window.doc(window.safeCollection(window.db, 'sync'), user.uid);
                 const syncSnap = await window.getDoc(syncRef);
                 if (syncSnap.exists()) {
                     const syncData = syncSnap.data();
@@ -1189,12 +1188,12 @@ async function saveDataToCloud() {
     }
     
     // Check if Firebase functions are available
-    if (!window.setDoc || !window.doc || !window.collection || !window.db) {
+    if (!window.setDoc || !window.doc || !window.safeCollection || !window.db) {
         console.log('Firebase functions not available for cloud save');
         console.log('Available functions:', {
             setDoc: !!window.setDoc,
             doc: !!window.doc,
-            collection: !!window.collection,
+            safeCollection: !!window.safeCollection,
             db: !!window.db
         });
         return;
@@ -1271,12 +1270,12 @@ async function saveDataToCloud() {
             // Fallback to direct Firebase calls
             while (retryCount < maxRetries) {
                 try {
-                    await window.setDoc(window.doc(window.collection('users'), user.uid), data);
+                    await window.setDoc(window.doc(window.safeCollection(window.db, 'users'), user.uid), data);
                     console.log('✅ Data saved successfully to cloud using direct Firebase calls');
                     
                     // Also save a timestamp to verify sync
                     try {
-                        await window.setDoc(window.doc(window.collection('sync'), user.uid), {
+                        await window.setDoc(window.doc(window.safeCollection(window.db, 'sync'), user.uid), {
                             lastSync: new Date().toISOString(),
                             userAgent: navigator.userAgent,
                             dataCount: {
@@ -1578,7 +1577,6 @@ function deleteUser(userId) {
     }
     return false;
 }
-
 function renderUsers() {
     const tbody = document.getElementById('users-tbody');
     if (!tbody) return;
@@ -2354,7 +2352,6 @@ function populatePaymentModal() {
         referenceInput.value = `REF-${Date.now()}`;
     }
 }
-
 function closeModal(modalId) {
     document.getElementById(modalId).style.display = 'none';
     
@@ -3139,7 +3136,6 @@ function handleAddUser(e) {
     // Reset the form and close modal
     resetUserModal();
 }
-
 function resetUserModal() {
     // Reset form
     document.getElementById('add-user-form').reset();
@@ -3927,7 +3923,6 @@ function renderOutsource() {
         tbody.innerHTML += row;
     });
 }
-
 function renderInvoices() {
     const tbody = document.getElementById('invoices-tbody');
     tbody.innerHTML = '';
@@ -4696,7 +4691,6 @@ function editInvoice() {
     // Switch to edit mode
     enableInvoiceEditMode(invoice);
 }
-
 function enableInvoiceEditMode(invoice) {
     // Change the edit button to save/cancel buttons
     const editBtn = document.querySelector('.edit-invoice-btn');
@@ -5485,7 +5479,6 @@ function convertToRepair(id) {
         alert('Quotation not found!');
     }
 }
-
 function createInvoiceFromRepair(repairId) {
     console.log('createInvoiceFromRepair called with repairId:', repairId);
     const repair = repairs.find(r => r.id === repairId);
@@ -6281,7 +6274,6 @@ function searchCustomersForOutsource() {
         hideCustomerSuggestions();
     }
 }
-
 function showCustomerSuggestions(customers) {
     const suggestionsContainer = document.getElementById('customer-suggestions');
     suggestionsContainer.innerHTML = '';
@@ -6920,7 +6912,6 @@ function updateJobCardActionButtons(status) {
             break;
     }
 }
-
 function printJobCard() {
     if (!window.currentJobCardId) {
         alert('No job card selected for printing');
@@ -7714,7 +7705,6 @@ function editJobCard() {
     // Initialize parts selection
     initializeJobCardPartsSelection();
 }
-
 // Parts selection functionality for edit job card
 function searchInventoryForJobCard(inputElement) {
     const searchTerm = inputElement.value.toLowerCase().trim();
@@ -8515,7 +8505,6 @@ function handleAddDelivery(e) {
     
     alert('Delivery created successfully!');
 }
-
 function renderDeliveries() {
     const tbody = document.getElementById('delivery-tbody');
     tbody.innerHTML = '';
@@ -9195,7 +9184,6 @@ function searchAllData(searchTerm) {
 
     return results;
 }
-
 function displayGlobalSearchResults(results, searchTerm) {
     // Remove existing search results
     hideGlobalSearchResults();
@@ -9556,13 +9544,13 @@ function checkSyncStatus() {
     console.log('User type:', user.isAnonymous ? 'Anonymous' : 'Email/Password');
     
     // Check if Firebase functions are available
-    if (!window.getDoc || !window.doc || !window.collection || !window.db) {
+    if (!window.getDoc || !window.doc || !window.safeCollection || !window.db) {
         console.log('❌ Firebase functions not available');
         return;
     }
     
     // Check if data exists in cloud
-            const docRef = window.doc(window.collection('users'), user.uid);
+            const docRef = window.doc(window.safeCollection(window.db, 'users'), user.uid);
     window.getDoc(docRef).then((docSnap) => {
         if (docSnap.exists()) {
             const data = docSnap.data();
@@ -9702,12 +9690,12 @@ function handleFirebaseConnectionIssues() {
             userUid: currentUser.uid
         };
         
-        if (window.setDoc && window.doc && window.collection) {
-            window.setDoc(window.doc(window.collection('connection-test'), currentUser.uid), testData)
+        if (window.setDoc && window.doc && window.safeCollection) {
+            window.setDoc(window.doc(window.safeCollection(window.db, 'connection-test'), currentUser.uid), testData)
                 .then(() => {
                     console.log('✅ Firebase connection test successful');
                     // Remove test data
-                    window.setDoc(window.doc(window.collection('connection-test'), currentUser.uid), {});
+                    window.setDoc(window.doc(window.safeCollection(window.db, 'connection-test'), currentUser.uid), {});
                 })
                 .catch((error) => {
                     console.log('❌ Firebase connection test failed:', error.message);
@@ -9727,13 +9715,13 @@ function checkFirebaseConnection() {
         setDoc: !!window.setDoc,
         getDoc: !!window.getDoc,
         doc: !!window.doc,
-        collection: !!window.collection,
+        safeCollection: !!window.safeCollection,
         currentUser: window.auth?.currentUser ? 'authenticated' : 'not authenticated'
     };
     
     console.log('Firebase status:', status);
     
-    if (status.auth && status.db && status.setDoc && status.getDoc && status.doc && status.collection) {
+    if (status.auth && status.db && status.setDoc && status.getDoc && status.doc && status.safeCollection) {
         console.log('✅ All Firebase functions available');
     } else {
         console.log('❌ Some Firebase functions missing');
@@ -9963,7 +9951,6 @@ function forceConsistentAuth() {
             }
         });
 }
-
 // Make cross-browser sync functions available globally
 window.checkCrossBrowserSyncStatus = checkCrossBrowserSyncStatus;
 window.forceConsistentAuth = forceConsistentAuth;
@@ -10110,7 +10097,7 @@ function checkFirebasePermissions() {
         return;
     }
     
-    if (!window.setDoc || !window.doc || !window.collection || !window.db) {
+    if (!window.setDoc || !window.doc || !window.safeCollection || !window.db) {
         console.error('❌ Firebase functions not available');
         return;
     }
@@ -10124,12 +10111,12 @@ function checkFirebasePermissions() {
         message: 'Permission test'
     };
     
-            window.setDoc(window.doc(window.collection('testData'), window.auth.currentUser.uid), testData)
+            window.setDoc(window.doc(window.safeCollection(window.db, 'testData'), window.auth.currentUser.uid), testData)
         .then(() => {
             console.log('✅ Write permission: OK');
             
             // Test read permission
-            return window.getDoc(window.doc(window.collection('testData'), window.auth.currentUser.uid));
+            return window.getDoc(window.doc(window.safeCollection(window.db, 'testData'), window.auth.currentUser.uid));
         })
         .then((doc) => {
             if (doc.exists()) {
@@ -10196,7 +10183,7 @@ function testCloudWrite() {
         return;
     }
     
-    if (!window.setDoc || !window.doc || !window.collection) {
+    if (!window.setDoc || !window.doc || !window.safeCollection) {
         console.log('❌ Firebase write functions not available');
         return;
     }
@@ -10208,7 +10195,7 @@ function testCloudWrite() {
     };
     
     try {
-        window.setDoc(window.doc(window.collection('testData'), window.auth.currentUser.uid), testData)
+        window.setDoc(window.doc(window.safeCollection(window.db, 'testData'), window.auth.currentUser.uid), testData)
             .then(() => {
                 console.log('✅ Cloud write successful!');
             })
@@ -10228,13 +10215,13 @@ function testCloudRead() {
         return;
     }
     
-    if (!window.getDoc || !window.doc || !window.collection) {
+    if (!window.getDoc || !window.doc || !window.safeCollection) {
         console.log('❌ Firebase read functions not available');
         return;
     }
     
     try {
-        window.getDoc(window.doc(window.collection('testData'), window.auth.currentUser.uid))
+        window.getDoc(window.doc(window.safeCollection(window.db, 'testData'), window.auth.currentUser.uid))
             .then((doc) => {
                 if (doc.exists()) {
                     console.log('✅ Cloud read successful!');
@@ -10270,13 +10257,13 @@ function clearTestData() {
         return;
     }
     
-    if (!window.setDoc || !window.doc || !window.collection) {
+    if (!window.setDoc || !window.doc || !window.safeCollection) {
         console.log('❌ Firebase functions not available');
         return;
     }
     
     try {
-        window.setDoc(window.doc(window.collection('testData'), window.auth.currentUser.uid), {})
+        window.setDoc(window.doc(window.safeCollection(window.db, 'testData'), window.auth.currentUser.uid), {})
             .then(() => {
                 console.log('✅ Test data cleared!');
             })
@@ -10620,7 +10607,6 @@ function testCurrentUserCredentials() {
     
     testSpecificCredentials(email, password);
 }
-
 // Make the test functions available globally
 window.testSpecificCredentials = testSpecificCredentials;
 window.testSpecificCredentialsNoSignOut = testSpecificCredentialsNoSignOut;
@@ -11400,7 +11386,6 @@ window.testFirebaseConfig = function() {
     
     return config;
 };
-
 // Function to temporarily disable Firebase authentication for testing
 window.disableFirebaseAuth = function() {
     console.log('🔧 Temporarily disabling Firebase authentication...');
@@ -12189,7 +12174,6 @@ window.testFirestoreConnection = function() {
     
     return firestoreConfig;
 };
-
 // Function to check Firebase project status
 window.checkFirebaseProject = function() {
     console.log('🧪 Checking Firebase project status...');
@@ -12203,11 +12187,11 @@ window.checkFirebaseProject = function() {
     console.log('🔍 Project ID:', projectId);
     
     // Check if we can access the project using Firebase SDK instead of direct API
-    if (window.db && window.collection && window.doc && window.getDoc) {
+    if (window.db && window.safeCollection && window.doc && window.getDoc) {
         console.log('🔄 Testing Firestore access through Firebase SDK...');
         
         try {
-            const testCollection = window.collection(window.db, 'test-connection');
+            const testCollection = window.safeCollection(window.db, 'test-connection');
             const testDoc = window.doc(testCollection, 'connection-test');
             
             console.log('🔍 Test collection created:', testCollection);
