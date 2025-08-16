@@ -677,13 +677,13 @@ function initializeApplication() {
     window.logDataState = logDataState;
     window.validateAndFixDataConsistency = validateAndFixDataConsistency;
     window.checkDataVariablesState = checkDataVariablesState;
-    window.checkDataMismatches = checkDataMismatches;
+    // window.checkDataMismatches = checkDataMismatches; // Removed, function no longer exists
     
     console.log('🔧 Utility functions made available globally:', {
         logDataState: typeof window.logDataState,
         validateAndFixDataConsistency: typeof window.validateAndFixDataConsistency,
-        checkDataVariablesState: typeof window.checkDataVariablesState,
-        checkDataMismatches: typeof window.checkDataMismatches
+        checkDataVariablesState: typeof window.checkDataVariablesState
+        // checkDataMismatches: typeof window.checkDataMismatches // Removed
     });
     
     // Load data first
