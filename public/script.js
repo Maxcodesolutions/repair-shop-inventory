@@ -727,57 +727,57 @@ async function loadDataFromCloud() {
         return;
     }
     try {
-        console.log('Loading data from Firebase cloud...');
+        console.log('Loading data from Firebase cloud (real-time)...');
         const user = window.auth.currentUser;
-        // Check if Firebase functions are available
-        if (!window.getDoc || !window.doc || !window.safeCollection || !window.db) {
-            console.error('Firebase functions not available, cannot load data from cloud.');
+        if (!window.onSnapshot || !window.doc || !window.safeCollection || !window.db) {
+            console.error('Firestore onSnapshot not available, cannot load data from cloud.');
             return;
         }
         const docRef = window.doc(window.safeCollection(window.db, 'users'), user.uid);
-        console.log('[Firestore Read] getDoc', { docRef, path: docRef.path || docRef.id || docRef });
-        try {
-        const docSnap = await window.getDoc(docRef);
-            console.log('[Firestore Read Result]', { docRef, path: docRef.path || docRef.id || docRef, exists: docSnap.exists(), data: docSnap.data && docSnap.data() });
-        if (docSnap.exists()) {
-            const data = docSnap.data();
-            console.log('Cloud data found, loading...');
-            console.log('Cloud data keys:', Object.keys(data));
-            console.log('Cloud data timestamp:', data.lastUpdated);
-            // Load data from cloud with safer validation - only use defaults if data is completely missing
-            inventory = Array.isArray(data.inventory) ? data.inventory : (data.inventory || getDefaultInventory());
-            vendors = Array.isArray(data.vendors) ? data.vendors : (data.vendors || getDefaultVendors());
-            customers = Array.isArray(data.customers) ? data.customers : (data.customers || getDefaultCustomers());
-            purchases = Array.isArray(data.purchases) ? data.purchases : (data.purchases || []);
-            repairs = Array.isArray(data.repairs) ? data.repairs : (data.repairs || []);
-            outsourceRepairs = Array.isArray(data.outsourceRepairs) ? data.outsourceRepairs : (data.outsourceRepairs || []);
-            invoices = Array.isArray(data.invoices) ? data.invoices : (data.invoices || []);
-            quotations = Array.isArray(data.quotations) ? data.quotations : (data.quotations || []);
-            pickDrops = Array.isArray(data.pickDrops) ? data.pickDrops : (data.pickDrops || []);
-            payments = Array.isArray(data.payments) ? data.payments : (data.payments || []);
-            deliveries = Array.isArray(data.deliveries) ? data.deliveries : (data.deliveries || getDefaultDeliveries());
-            users = Array.isArray(data.users) ? data.users : (data.users || getDefaultUsers());
-            console.log('✅ Data loaded successfully from cloud:', {
-                inventory: inventory.length,
-                vendors: vendors.length,
-                customers: customers.length,
-                repairs: repairs.length,
-                invoices: invoices.length,
-                quotations: quotations.length,
+        window.onSnapshot(docRef, (docSnap) => {
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                console.log('✅ Real-time data loaded from cloud:', data);
+                // Load data from cloud with safer validation - only use defaults if data is completely missing
+                inventory = Array.isArray(data.inventory) ? data.inventory : (data.inventory || getDefaultInventory());
+                vendors = Array.isArray(data.vendors) ? data.vendors : (data.vendors || getDefaultVendors());
+                customers = Array.isArray(data.customers) ? data.customers : (data.customers || getDefaultCustomers());
+                purchases = Array.isArray(data.purchases) ? data.purchases : (data.purchases || []);
+                repairs = Array.isArray(data.repairs) ? data.repairs : (data.repairs || []);
+                outsourceRepairs = Array.isArray(data.outsourceRepairs) ? data.outsourceRepairs : (data.outsourceRepairs || []);
+                invoices = Array.isArray(data.invoices) ? data.invoices : (data.invoices || []);
+                quotations = Array.isArray(data.quotations) ? data.quotations : (data.quotations || []);
+                pickDrops = Array.isArray(data.pickDrops) ? data.pickDrops : (data.pickDrops || []);
+                payments = Array.isArray(data.payments) ? data.payments : (data.payments || []);
+                deliveries = Array.isArray(data.deliveries) ? data.deliveries : (data.deliveries || getDefaultDeliveries());
+                users = Array.isArray(data.users) ? data.users : (data.users || getDefaultUsers());
+                console.log('✅ Data loaded successfully from cloud:', {
+                    inventory: inventory.length,
+                    vendors: vendors.length,
+                    customers: customers.length,
+                    repairs: repairs.length,
+                    invoices: invoices.length,
+                    quotations: quotations.length,
                     pickDrops: pickDrops.length,
                     payments: payments.length,
                     deliveries: deliveries.length,
                     users: users.length
                 });
-        } else {
+                // Validate and fix data consistency issues - delay to ensure data is loaded
+                setTimeout(() => {
+                    validateAndFixDataConsistency();
+                }, 100);
+                // Update username in header after cloud data is loaded
+                updateUsernameInHeader();
+            } else {
                 console.warn('❌ No cloud data found for this user.');
-        }
+            }
+        }, (error) => {
+            console.error('[Firestore Real-Time Error]', { docRef, error });
+        });
     } catch (error) {
-            console.error('[Firestore Read Error]', { docRef, path: docRef.path || docRef.id || docRef, error });
+        console.error('Error setting up real-time listener from Firebase cloud:', error);
     }
-    } catch (error) {
-        console.error('Error loading data from Firebase cloud:', error);
-}
 }
 function saveData() {
     console.log('=== SAVING DATA ===');
