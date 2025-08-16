@@ -760,6 +760,19 @@ async function loadDataFromCloud() {
                 const uid = window.auth.currentUser.uid;
                 // Try to match by UID if available, else by currentUserId
                 currentUser = users.find(u => u.uid === uid || u.id === currentUserId) || null;
+                console.log('[DEBUG] Setting currentUser after Firestore sync:', {
+                    uid,
+                    currentUserId,
+                    users,
+                    matched: currentUser
+                });
+            } else {
+                console.log('[DEBUG] Could not set currentUser:', {
+                    auth: window.auth,
+                    firebaseUser: window.auth && window.auth.currentUser,
+                    users,
+                    currentUserId
+                });
             }
             console.log('✅ Data loaded successfully from cloud:', {
                 inventory: inventory.length,
