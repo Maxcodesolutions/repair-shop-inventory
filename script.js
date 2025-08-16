@@ -811,6 +811,17 @@ async function saveDataToCloud() {
     
     try {
         const user = window.auth.currentUser;
+        // Ensure every user in users array has a uid property if it matches the current Firebase user
+        if (user && Array.isArray(users)) {
+            const emailPrefix = user.email && user.email.split('@')[0];
+            users = users.map(u => {
+                // If username matches email prefix and uid is missing or incorrect, set it
+                if (u.username === emailPrefix && u.uid !== user.uid) {
+                    return { ...u, uid: user.uid };
+                }
+                return u;
+            });
+        }
         // Ensure arrays are defined and avoid undefined anywhere
         const outsourceArray = (typeof outsource !== 'undefined' && Array.isArray(outsource)) 
             ? outsource 
