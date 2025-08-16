@@ -70,7 +70,7 @@ class DataManager {
             const docId = documentId || 'default';
             
             // Create proper document reference
-            const collectionRef = window.collection(collectionName);
+            const collectionRef = window.collection(window.db, collectionName);
             const docRef = window.doc(collectionRef, docId);
             
             // Add metadata to the data
@@ -106,7 +106,7 @@ class DataManager {
             const docId = documentId || 'default';
             
             // Create proper document reference
-            const collectionRef = window.collection(collectionName);
+            const collectionRef = window.collection(window.db, collectionName);
             const docRef = window.doc(collectionRef, docId);
             
             const docSnap = await window.getDoc(docRef);
@@ -156,7 +156,7 @@ class DataManager {
         }
 
         try {
-            const userDocRef = window.doc(window.collection('users'), user.uid);
+            const userDocRef = window.doc(window.collection(window.db, 'users'), user.uid);
             const dataWithMetadata = {
                 ...appData,
                 lastUpdated: new Date().toISOString(),
@@ -182,7 +182,7 @@ class DataManager {
         }
 
         try {
-            const userDocRef = window.doc(window.collection('users'), user.uid);
+            const userDocRef = window.doc(window.collection(window.db, 'users'), user.uid);
             const docSnap = await window.getDoc(userDocRef);
             
             if (docSnap.exists()) {
