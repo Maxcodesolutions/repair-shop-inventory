@@ -929,61 +929,79 @@ async function loadDataFromCloud() {
         }
         
         const docRef = window.doc(window.safeCollection(window.db, 'users'), user.uid);
-        const docSnap = await window.getDoc(docRef);
-        
-        if (docSnap.exists()) {
-            const data = docSnap.data();
-            console.log('Cloud data found, loading...');
-            console.log('Cloud data keys:', Object.keys(data));
-            console.log('Cloud data timestamp:', data.lastUpdated);
+        console.log('[Firestore Read] getDoc', { docRef, path: docRef.path || docRef.id || docRef });
+        try {
+            const docSnap = await window.getDoc(docRef);
+            console.log('[Firestore Read Result]', { docRef, path: docRef.path || docRef.id || docRef, exists: docSnap.exists(), data: docSnap.data && docSnap.data() });
             
-            // Load data from cloud with safer validation - only use defaults if data is completely missing
-            inventory = Array.isArray(data.inventory) ? data.inventory : (data.inventory || getDefaultInventory());
-            vendors = Array.isArray(data.vendors) ? data.vendors : (data.vendors || getDefaultVendors());
-            customers = Array.isArray(data.customers) ? data.customers : (data.customers || getDefaultCustomers());
-            purchases = Array.isArray(data.purchases) ? data.purchases : (data.purchases || []);
-            repairs = Array.isArray(data.repairs) ? data.repairs : (data.repairs || []);
-            outsourceRepairs = Array.isArray(data.outsourceRepairs) ? data.outsourceRepairs : (data.outsourceRepairs || []);
-            invoices = Array.isArray(data.invoices) ? data.invoices : (data.invoices || []);
-            quotations = Array.isArray(data.quotations) ? data.quotations : (data.quotations || []);
-            pickDrops = Array.isArray(data.pickDrops) ? data.pickDrops : (data.pickDrops || []);
-            payments = Array.isArray(data.payments) ? data.payments : (data.payments || []);
-            deliveries = Array.isArray(data.deliveries) ? data.deliveries : (data.deliveries || getDefaultDeliveries());
-            users = Array.isArray(data.users) ? data.users : (data.users || getDefaultUsers());
-            
-            console.log('✅ Data loaded successfully from cloud:', {
-                inventory: inventory.length,
-                vendors: vendors.length,
-                customers: customers.length,
-                repairs: repairs.length,
-                invoices: invoices.length,
-                quotations: quotations.length,
-                pickDrops: pickDrops.length
-            });
-            
-            // Validate and fix data consistency issues - delay to ensure data is loaded
-            setTimeout(() => {
-                validateAndFixDataConsistency();
-            }, 100);
-            
-            // Update username in header after cloud data is loaded
-            updateUsernameInHeader();
-            
-            // Check sync timestamp
-            try {
-                const syncRef = window.doc(window.safeCollection(window.db, 'sync'), user.uid);
-                const syncSnap = await window.getDoc(syncRef);
-                if (syncSnap.exists()) {
-                    const syncData = syncSnap.data();
-                    console.log('✅ Last sync info:', syncData);
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                console.log('Cloud data found, loading...');
+                console.log('Cloud data keys:', Object.keys(data));
+                console.log('Cloud data timestamp:', data.lastUpdated);
+                
+                // Load data from cloud with safer validation - only use defaults if data is completely missing
+                inventory = Array.isArray(data.inventory) ? data.inventory : (data.inventory || getDefaultInventory());
+                vendors = Array.isArray(data.vendors) ? data.vendors : (data.vendors || getDefaultVendors());
+                customers = Array.isArray(data.customers) ? data.customers : (data.customers || getDefaultCustomers());
+                purchases = Array.isArray(data.purchases) ? data.purchases : (data.purchases || []);
+                repairs = Array.isArray(data.repairs) ? data.repairs : (data.repairs || []);
+                outsourceRepairs = Array.isArray(data.outsourceRepairs) ? data.outsourceRepairs : (data.outsourceRepairs || []);
+                invoices = Array.isArray(data.invoices) ? data.invoices : (data.invoices || []);
+                quotations = Array.isArray(data.quotations) ? data.quotations : (data.quotations || []);
+                pickDrops = Array.isArray(data.pickDrops) ? data.pickDrops : (data.pickDrops || []);
+                payments = Array.isArray(data.payments) ? data.payments : (data.payments || []);
+                deliveries = Array.isArray(data.deliveries) ? data.deliveries : (data.deliveries || getDefaultDeliveries());
+                users = Array.isArray(data.users) ? data.users : (data.users || getDefaultUsers());
+                
+                console.log('✅ Data loaded successfully from cloud:', {
+                    inventory: inventory.length,
+                    vendors: vendors.length,
+                    customers: customers.length,
+                    repairs: repairs.length,
+                    invoices: invoices.length,
+                    quotations: quotations.length,
+                    pickDrops: pickDrops.length
+                });
+                
+                // Validate and fix data consistency issues - delay to ensure data is loaded
+                setTimeout(() => {
+                    validateAndFixDataConsistency();
+                }, 100);
+                
+                // Update username in header after cloud data is loaded
+                updateUsernameInHeader();
+                
+                // Check sync timestamp
+                try {
+                    const syncRef = window.doc(window.safeCollection(window.db, 'sync'), user.uid);
+                    console.log('[Firestore Read] getDoc', { docRef: syncRef, path: syncRef.path || syncRef.id || syncRef });
+                    try {
+                        const syncSnap = await window.getDoc(syncRef);
+                        console.log('[Firestore Read Result]', { docRef: syncRef, path: syncRef.path || syncRef.id || syncRef, exists: syncSnap.exists(), data: syncSnap.data && syncSnap.data() });
+                        if (syncSnap.exists()) {
+                            const syncData = syncSnap.data();
+                            console.log('✅ Last sync info:', syncData);
+                        }
+                    } catch (error) {
+                        console.error('[Firestore Read Error]', { docRef: syncRef, path: syncRef.path || syncRef.id || syncRef, error });
+                        throw error;
+                    }
+                } catch (syncError) {
+                    console.log('No sync timestamp found');
                 }
-            } catch (syncError) {
-                console.log('No sync timestamp found');
+                
+                // Only render UI after data is loaded
+                if (typeof renderAll === 'function') {
+                    renderAll();
+                }
+            } else {
+                console.log('No cloud data found, loading from localStorage');
+                loadDataFromLocal();
             }
-            
-        } else {
-            console.log('No cloud data found, loading from localStorage');
-            loadDataFromLocal();
+        } catch (error) {
+            console.error('[Firestore Read Error]', { docRef, path: docRef.path || docRef.id || docRef, error });
+            throw error;
         }
     } catch (error) {
         console.error('Error loading from cloud:', error);
@@ -1144,12 +1162,20 @@ async function saveDataToCloud() {
             // Fallback to direct Firebase calls
             while (retryCount < maxRetries) {
                 try {
-                    await window.setDoc(window.doc(window.safeCollection(window.db, 'users'), user.uid), data);
+                    const docRef = window.doc(window.safeCollection(window.db, 'users'), user.uid);
+                    console.log('[Firestore Write] setDoc', { docRef, path: docRef.path || docRef.id || docRef, data, options: {} });
+                    try {
+                        await window.setDoc(docRef, data);
+                    } catch (error) {
+                        console.error('[Firestore Write Error]', { docRef, path: docRef.path || docRef.id || docRef, data, options: {}, error });
+                        throw error;
+                    }
                     console.log('✅ Data saved successfully to cloud using direct Firebase calls');
                     
                     // Also save a timestamp to verify sync
                     try {
-                        await window.setDoc(window.doc(window.safeCollection(window.db, 'sync'), user.uid), {
+                        const syncRef = window.doc(window.safeCollection(window.db, 'sync'), user.uid);
+                        console.log('[Firestore Write] setDoc', { docRef: syncRef, path: syncRef.path || syncRef.id || syncRef, data: {
                             lastSync: new Date().toISOString(),
                             userAgent: navigator.userAgent,
                             dataCount: {
@@ -1157,7 +1183,29 @@ async function saveDataToCloud() {
                                 customers: customers.length,
                                 repairs: repairs.length
                             }
-                        });
+                        }, options: {} });
+                        try {
+                            await window.setDoc(syncRef, {
+                                lastSync: new Date().toISOString(),
+                                userAgent: navigator.userAgent,
+                                dataCount: {
+                                    inventory: inventory.length,
+                                    customers: customers.length,
+                                    repairs: repairs.length
+                                }
+                            });
+                        } catch (error) {
+                            console.error('[Firestore Write Error]', { docRef: syncRef, path: syncRef.path || syncRef.id || syncRef, data: {
+                                lastSync: new Date().toISOString(),
+                                userAgent: navigator.userAgent,
+                                dataCount: {
+                                    inventory: inventory.length,
+                                    customers: customers.length,
+                                    repairs: repairs.length
+                                }
+                            }, options: {}, error });
+                            throw error;
+                        }
                         console.log('✅ Sync timestamp saved to cloud');
                     } catch (syncError) {
                         console.log('Warning: Could not save sync timestamp:', syncError.message);
@@ -1484,7 +1532,6 @@ function renderUsers() {
         tbody.appendChild(row);
     });
 }
-
 // Global variable to track which user is being edited
 let editingUserId = null;
 
@@ -2273,7 +2320,6 @@ function populatePurchaseModal() {
     // Populate item dropdowns
     populatePurchaseItemDropdowns();
 }
-
 function populatePurchaseItemDropdowns() {
     const itemDropdowns = document.querySelectorAll('.purchase-item-select');
     itemDropdowns.forEach(dropdown => {
@@ -3032,7 +3078,6 @@ function resetUserModal() {
     // Close modal
     closeModal('add-user-modal');
 }
-
 function showSuccessMessage(message) {
     // Create success message element
     const successDiv = document.createElement('div');
@@ -3831,7 +3876,6 @@ function renderInvoices() {
         tbody.innerHTML += row;
     });
 }
-
 // CRUD operations
 function editItem(id) {
     const item = inventory.find(i => i.id === id);
@@ -4617,7 +4661,6 @@ function enableInvoiceEditMode(invoice) {
     // Store original invoice data for cancel functionality
     document.getElementById('invoice-detail-view').setAttribute('data-original-invoice', JSON.stringify(invoice));
 }
-
 function makeInvoiceItemsEditable(invoice) {
     const tbody = document.getElementById('invoice-items-detail-tbody');
     tbody.innerHTML = '';
@@ -5376,7 +5419,6 @@ function createInvoiceFromRepair(repairId) {
     // Show the invoice modal
     showModal('add-invoice-modal');
 }
-
 function viewQuotation(id) {
     const quotation = quotations.find(q => q.id === id);
     if (quotation) {
@@ -6143,7 +6185,6 @@ function searchCustomersForOutsource() {
         hideCustomerSuggestions();
     }
 }
-
 function showCustomerSuggestions(customers) {
     const suggestionsContainer = document.getElementById('customer-suggestions');
     suggestionsContainer.innerHTML = '';
@@ -6175,7 +6216,6 @@ function selectCustomerForOutsource(customer) {
     document.getElementById('outsource-customer').value = customer.name;
     hideCustomerSuggestions();
 }
-
 // Global functions
 window.showModal = showModal;
 window.closeModal = closeModal;
@@ -9370,7 +9410,10 @@ function checkSyncStatus() {
     
     // Check if data exists in cloud
             const docRef = window.doc(window.safeCollection(window.db, 'users'), user.uid);
-    window.getDoc(docRef).then((docSnap) => {
+    console.log('[Firestore Read] getDoc', { docRef, path: docRef.path || docRef.id || docRef });
+    try {
+        const docSnap = await window.getDoc(docRef);
+        console.log('[Firestore Read Result]', { docRef, path: docRef.path || docRef.id || docRef, exists: docSnap.exists(), data: docSnap.data && docSnap.data() });
         if (docSnap.exists()) {
             const data = docSnap.data();
             console.log('✅ Cloud data found:', Object.keys(data));
@@ -9386,9 +9429,9 @@ function checkSyncStatus() {
         } else {
             console.log('❌ No cloud data found');
         }
-    }).catch((error) => {
-        console.log('❌ Error checking cloud data:', error);
-    });
+    } catch (error) {
+        console.error('[Firestore Read Error]', { docRef, path: docRef.path || docRef.id || docRef, error });
+    }
 }
 
 // Make sync functions available globally
@@ -9541,62 +9584,6 @@ function diagnoseFirebaseAuth() {
 function fixFirebaseAuth() {
     console.log('=== FIXING FIREBASE AUTHENTICATION ===');
     
-    // Check current authentication status
-    const currentUser = window.auth?.currentUser;
-    if (currentUser) {
-        console.log('✅ User is already authenticated:', currentUser.uid);
-        return;
-    }
-    
-    console.log('No authenticated user, attempting to sign in...');
-    
-    // Try anonymous authentication first
-    if (window.signInAnonymously) {
-        window.signInAnonymously(window.auth)
-            .then((userCredential) => {
-                console.log('✅ Successfully signed in anonymously:', userCredential.user.uid);
-                console.log('Data sync should now work properly');
-            })
-            .catch((error) => {
-                console.error('❌ Anonymous authentication failed:', error.message);
-                console.log('Please enable authentication in Firebase Console');
-            });
-    } else {
-        console.error('❌ Anonymous authentication not available');
-    }
-}
-
-// Make auth functions available globally
-window.diagnoseFirebaseAuth = diagnoseFirebaseAuth;
-window.fixFirebaseAuth = fixFirebaseAuth;
-
-// Function to check cross-browser sync status
-function checkCrossBrowserSyncStatus() {
-    console.log('=== CROSS-BROWSER SYNC STATUS ===');
-    
-    const currentUser = window.auth?.currentUser;
-    
-    console.log('Authentication method:', currentUser?.isAnonymous ? 'Anonymous' : 'Email/Password');
-    
-    if (currentUser?.isAnonymous) {
-        console.log('⚠️ WARNING: Using anonymous authentication');
-        console.log('This will create different UIDs per browser session');
-        console.log('For consistent cross-browser sync, use email/password authentication');
-    } else if (currentUser && !currentUser.isAnonymous) {
-        console.log('✅ Using email/password authentication');
-        console.log('This should provide consistent cross-browser sync');
-    }
-    
-    return {
-        isAnonymous: currentUser?.isAnonymous,
-        currentUserId: currentUser?.uid
-    };
-}
-
-// Function to force consistent cross-browser authentication
-function forceConsistentAuth() {
-    console.log('=== FORCING CONSISTENT AUTHENTICATION ===');
-    
     // Set up consistent credentials with stronger password
     const username = 'admin';
     const email = `${username}@repairshop.local`;
@@ -9658,62 +9645,10 @@ function forceConsistentAuth() {
         });
     }
 }
-// Make cross-browser sync functions available globally
-window.checkCrossBrowserSyncStatus = checkCrossBrowserSyncStatus;
-window.forceConsistentAuth = forceConsistentAuth;
-// Function to test authentication and provide detailed feedback
-function testAuthentication() {
-    console.log('=== TESTING AUTHENTICATION ===');
-    
-    const email = 'admin@repairshop.local';
-    const password = 'admin123456';
-    
-    console.log('Testing with credentials:', { email, password });
-    
-    if (!window.createUserWithEmailAndPassword) {
-        console.error('❌ Firebase authentication not available');
-        return;
-    }
-    
-    // Test account creation
-    console.log('Testing account creation...');
-    window.createUserWithEmailAndPassword(window.auth, email, password)
-        .then((userCredential) => {
-            console.log('✅ Account creation successful:', userCredential.user.uid);
-            console.log('Cross-browser sync should work with this UID');
-            
-            // Sign out after test
-            if (window.signOut) {
-                window.signOut(window.auth);
-            }
-        })
-        .catch((error) => {
-            console.log('Account creation failed:', error.message);
-            
-            // Test sign in
-            console.log('Testing sign in...');
-            if (window.signInWithEmailAndPassword) {
-                window.signInWithEmailAndPassword(window.auth, email, password)
-                    .then((userCredential) => {
-                        console.log('✅ Sign in successful:', userCredential.user.uid);
-                        console.log('Cross-browser sync should work with this UID');
-                        
-                        // Sign out after test
-                        if (window.signOut) {
-                            window.signOut(window.auth);
-                        }
-                    })
-                    .catch((signInError) => {
-                        console.error('❌ Sign in failed:', signInError.message);
-                        console.log('Both account creation and sign in failed');
-                        console.log('This might be due to Firebase Console settings');
-                    });
-            }
-        });
-}
 
-// Make test function available globally
-window.testAuthentication = testAuthentication;
+// Make auth functions available globally
+window.diagnoseFirebaseAuth = diagnoseFirebaseAuth;
+window.fixFirebaseAuth = fixFirebaseAuth;
 
 // Function to check and fix Firebase permissions issue
 function checkFirebasePermissions() {
@@ -9947,11 +9882,9 @@ function showAvailableFunctions() {
     console.log('  fixCrossBrowserSync() - Fix cross-browser sync');
     console.log('  checkCrossBrowserSync() - Check cross-browser sync');
 }
-
 // Make the help function available globally
 window.showAvailableFunctions = showAvailableFunctions;
 window.help = showAvailableFunctions; // Short alias
-
 // Function to force consistent authentication and clear anonymous sessions
 function forceConsistentAuthAndClear() {
     console.log('=== FORCING CONSISTENT AUTHENTICATION AND CLEARING ANONYMOUS ===');
@@ -10605,7 +10538,6 @@ function checkLocalStorageData() {
 }
 // Make localStorage check function available globally
 window.checkLocalStorageData = checkLocalStorageData;
-
 // Function to validate and fix data consistency between pick & drops and repairs
 function validateAndFixDataConsistency() {
     console.log('=== VALIDATING DATA CONSISTENCY ===');
@@ -10727,10 +10659,8 @@ function validateAndFixDataConsistency() {
     
     return { issuesFound, fixesApplied };
 }
-
 // Make the validation function available globally
 window.validateAndFixDataConsistency = validateAndFixDataConsistency;
-
 // Debug function to log current data state
 function logDataState() {
     console.log('=== CURRENT DATA STATE ===');
@@ -10777,72 +10707,6 @@ function logDataState() {
 // Make debug function available globally
 window.logDataState = logDataState;
 
-// Emergency data recovery function
-function emergencyDataRecovery() {
-    console.log('🚨 EMERGENCY DATA RECOVERY STARTED ===');
-    
-    // Check if we can recover from localStorage
-    const localStorageKeys = ['inventory', 'vendors', 'customers', 'purchases', 'repairs', 'outsource', 'invoices', 'quotations', 'pickDrops', 'payments', 'deliveries', 'users'];
-    
-    let recoveredData = {};
-    let totalRecovered = 0;
-    
-    localStorageKeys.forEach(key => {
-        const stored = localStorage.getItem(key);
-        if (stored) {
-            try {
-                const parsed = JSON.parse(stored);
-                if (Array.isArray(parsed) && parsed.length > 0) {
-                    recoveredData[key] = parsed;
-                    totalRecovered += parsed.length;
-                    console.log(`✅ Recovered ${key}: ${parsed.length} items`);
-                }
-            } catch (e) {
-                console.log(`❌ Failed to parse ${key}:`, e.message);
-            }
-        }
-    });
-    
-    if (totalRecovered > 0) {
-        console.log(`🎉 RECOVERY SUCCESSFUL: Found ${totalRecovered} total items in localStorage`);
-        
-        // Restore the data
-        if (recoveredData.inventory) inventory = recoveredData.inventory;
-        if (recoveredData.vendors) vendors = recoveredData.vendors;
-        if (recoveredData.customers) customers = recoveredData.customers;
-        if (recoveredData.purchases) purchases = recoveredData.purchases;
-        if (recoveredData.repairs) repairs = recoveredData.repairs;
-        if (recoveredData.outsource) outsource = recoveredData.outsource;
-        if (recoveredData.invoices) invoices = recoveredData.invoices;
-        if (recoveredData.quotations) quotations = recoveredData.quotations;
-        if (recoveredData.pickDrops) pickDrops = recoveredData.pickDrops;
-        if (recoveredData.payments) payments = recoveredData.payments;
-        if (recoveredData.deliveries) deliveries = recoveredData.deliveries;
-        if (recoveredData.users) users = recoveredData.users;
-        
-        // Save the recovered data immediately
-        console.log('💾 Saving recovered data...');
-        saveData();
-        
-        // Re-render everything
-        if (typeof renderAll === 'function') {
-            renderAll();
-        }
-        if (typeof updateDashboard === 'function') {
-            updateDashboard();
-        }
-        
-        console.log('✅ Data recovery complete! Your data should now be visible.');
-        return true;
-    } else {
-        console.log('❌ No data found in localStorage to recover');
-        return false;
-    }
-}
-
-// Make recovery function available globally
-window.emergencyDataRecovery = emergencyDataRecovery;
-
 // Function to check the current state of all data variables
 function checkDataVariablesState() {
     console.log('=== CHECKING DATA VARIABLES STATE ===');
@@ -10883,42 +10747,6 @@ function checkDataVariablesState() {
 // Make the check function available globally
 window.checkDataVariablesState = checkDataVariablesState;
 
-// Function to check for data mismatches between localStorage and current variables
-function checkDataMismatches() {
-    console.log('🔍 CHECKING FOR DATA MISMATCHES ===');
-    
-    const localStorageKeys = ['inventory', 'vendors', 'customers', 'purchases', 'repairs', 'outsource', 'invoices', 'quotations', 'pickDrops', 'payments', 'deliveries', 'users'];
-    
-    localStorageKeys.forEach(key => {
-        const stored = localStorage.getItem(key);
-        if (stored) {
-            try {
-                const parsed = JSON.parse(stored);
-                const currentValue = eval(key); // Get current variable value
-                
-                if (Array.isArray(parsed) && Array.isArray(currentValue)) {
-                    if (parsed.length !== currentValue.length) {
-                        console.log(`⚠️ MISMATCH in ${key}: localStorage has ${parsed.length} items, current variable has ${currentValue.length} items`);
-                        
-                        // Show details for pickDrops and repairs
-                        if (key === 'pickDrops' || key === 'repairs') {
-                            console.log(`localStorage ${key}:`, parsed);
-                            console.log(`Current ${key}:`, currentValue);
-                        }
-                    }
-                }
-            } catch (e) {
-                console.log(`❌ Error checking ${key}:`, e.message);
-            }
-        }
-    });
-    
-    console.log('=== END DATA MISMATCH CHECK ===');
-}
-
-// Make the mismatch check function available globally
-window.checkDataMismatches = checkDataMismatches;
-
 // Function to update username in header after data is loaded
 function updateUsernameInHeader() {
     console.log('🔄 Updating username in header...');
@@ -10934,26 +10762,6 @@ function updateUsernameInHeader() {
         }
     } else {
         console.log('ℹ️ No current user available for username update');
-        
-        // Try to get user from localStorage if currentUser is not set
-        const loginStatus = localStorage.getItem('loginStatus');
-        const storedUserId = localStorage.getItem('currentUserId');
-        
-        if (loginStatus === 'true' && storedUserId) {
-            const userId = parseInt(storedUserId);
-            const user = users.find(u => u.id === userId);
-            
-            if (user && user.status === 'active') {
-                currentUser = user;
-                currentUserId = userId;
-                
-                const usernameElement = document.getElementById('username');
-                if (usernameElement) {
-                    usernameElement.textContent = user.fullName;
-                    console.log('✅ Username updated in header from localStorage to:', user.fullName);
-                }
-            }
-        }
     }
 }
 
@@ -11469,7 +11277,6 @@ window.testFirebaseAuth = function() {
             }
         });
 };
-
 // Function to test Firestore connection and configuration
 window.testFirestoreConnection = function() {
     console.log('🧪 Testing Firestore connection and configuration...');
