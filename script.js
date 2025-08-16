@@ -138,10 +138,6 @@ function handleLogin(e) {
         loginSuccess.style.display = 'block';
         loginSuccess.textContent = 'Login successful! Redirecting...';
         
-        // Store login status
-        localStorage.setItem('loginStatus', 'true');
-        localStorage.setItem('currentUserId', authenticatedUser.id.toString());
-        
         // Update username in header immediately
         const usernameElement = document.getElementById('username');
         if (usernameElement) {
@@ -151,7 +147,6 @@ function handleLogin(e) {
         
         // Create a consistent cross-browser user ID
         const crossBrowserUserId = `user_${username}_${authenticatedUser.id}`;
-        localStorage.setItem('crossBrowserUserId', crossBrowserUserId);
         
         // Firebase authentication for cloud sync
         if (window.auth) {
@@ -193,10 +188,6 @@ function handleLogin(e) {
                 signInAvailable: !!window.signInWithEmailAndPassword,
                 createAccountAvailable: !!window.createUserWithEmailAndPassword
             });
-            
-            // Store credentials for cross-browser sync
-            localStorage.setItem('cloudSyncEmail', syncEmail);
-            localStorage.setItem('cloudSyncPassword', syncPassword);
             
             // Try to sign in with email/password for consistent cross-browser sync
             if (window.signInWithEmailAndPassword) {
@@ -257,8 +248,6 @@ function handleLogin(e) {
                     .then((userCredential) => {
                         console.log('✅ Signed in with email for cross-browser sync:', userCredential.user.uid);
                         console.log('Cross-browser user ID:', crossBrowserUserId);
-                        // Store the consistent UID for future reference
-                        localStorage.setItem('consistentUserId', userCredential.user.uid);
                         // Data will be automatically loaded from cloud via the auth listener
                     })
                     .catch((error) => {
@@ -327,8 +316,6 @@ function handleLogin(e) {
                                 .then((userCredential) => {
                                     console.log('✅ Account created for cross-browser sync:', userCredential.user.uid);
                                     console.log('Cross-browser user ID:', crossBrowserUserId);
-                                    // Store the consistent UID for future reference
-                                    localStorage.setItem('consistentUserId', userCredential.user.uid);
                                     // Data will be automatically loaded from cloud via the auth listener
                                 })
                                 .catch((createError) => {
@@ -399,8 +386,6 @@ function handleLogin(e) {
 
     // Clear login status
 function logout() {
-    localStorage.removeItem('loginStatus');
-    localStorage.removeItem('currentUserId');
     currentUser = null;
     currentUserId = null;
     
@@ -428,9 +413,6 @@ function clearLoginForm() {
 // Reset login data (for debugging)
 function resetLoginData() {
     console.log('Resetting login data...');
-    localStorage.removeItem('loginStatus');
-    localStorage.removeItem('currentUserId');
-    localStorage.removeItem('users');
     currentUser = null;
     currentUserId = null;
     
@@ -447,7 +429,6 @@ function debugAppState() {
     console.log('=== APP STATE DEBUG ===');
     console.log('Current User:', currentUser);
     console.log('Current User ID:', currentUserId);
-    console.log('Login Status:', localStorage.getItem('loginStatus'));
     console.log('App Container Display:', document.getElementById('app-container')?.style.display);
     console.log('Login Overlay Display:', document.getElementById('login-overlay')?.style.display);
     console.log('Dashboard Element:', document.getElementById('dashboard'));
@@ -570,60 +551,6 @@ function setupFirebaseAuthListener() {
     if (window.onAuthStateChanged && window.auth) {
         console.log('Setting up Firebase auth listener for cross-device sync...');
         
-        // First, check if we have stored credentials and try to use them immediately
-        const storedEmail = localStorage.getItem('cloudSyncEmail');
-        const storedPassword = localStorage.getItem('cloudSyncPassword');
-        const consistentUserId = localStorage.getItem('consistentUserId');
-        
-        console.log('=== INITIAL AUTH CHECK ===');
-        console.log('Stored email:', storedEmail ? '✅ Set' : '❌ Not set');
-        console.log('Stored password:', storedPassword ? '✅ Set' : '❌ Not set');
-        console.log('Consistent user ID:', consistentUserId || '❌ Not set');
-        
-                        // If we have stored credentials, try to sign in immediately
-                if (storedEmail && storedPassword && window.signInWithEmailAndPassword) {
-                    console.log('Attempting immediate sign-in with stored credentials...');
-                    console.log('Email:', storedEmail);
-                    console.log('Password:', storedPassword ? '***' : 'Not provided');
-                    
-                    window.signInWithEmailAndPassword(window.auth, storedEmail, storedPassword)
-                        .then((userCredential) => {
-                            console.log('✅ Immediate sign-in successful:', userCredential.user.uid);
-                            localStorage.setItem('consistentUserId', userCredential.user.uid);
-                            
-                            // Load data from cloud
-                            if (typeof loadDataFromCloud === 'function') {
-                                loadDataFromCloud();
-                            }
-                        })
-                        .catch((error) => {
-                            console.error('❌ Immediate sign-in failed:', error.message);
-                            console.log('Error code:', error.code);
-                            console.log('Full error:', error);
-                            
-                            if (error.code === 'auth/user-not-found') {
-                                console.log('🔧 SOLUTION: Account does not exist');
-                                console.log('Will try to create account in auth state listener');
-                            } else if (error.code === 'auth/wrong-password') {
-                                console.log('🔧 SOLUTION: Wrong password');
-                                console.log('Check stored password');
-                            } else if (error.code === 'auth/invalid-email') {
-                                console.log('🔧 SOLUTION: Invalid email format');
-                                console.log('Check stored email format');
-                            } else {
-                                console.log('🔧 SOLUTION: Check Firebase Console settings');
-                                console.log('1. Go to Firebase Console → Authentication → Sign-in method');
-                                console.log('2. Enable Email/Password authentication');
-                            }
-                            console.log('Will try anonymous auth in auth state listener');
-                        });
-                } else {
-                    console.log('❌ Cannot attempt sign-in:');
-                    console.log('- Stored email:', storedEmail ? '✅ Set' : '❌ Not set');
-                    console.log('- Stored password:', storedPassword ? '✅ Set' : '❌ Not set');
-                    console.log('- Firebase sign-in function:', window.signInWithEmailAndPassword ? '✅ Available' : '❌ Not available');
-                }
-        
         window.onAuthStateChanged(window.auth, (user) => {
             if (user) {
                 const authMethod = user.providerData[0]?.providerId || 'Anonymous';
@@ -631,12 +558,8 @@ function setupFirebaseAuthListener() {
                 console.log('User UID for cross-device sync:', user.uid);
                 
                 if (authMethod === 'Anonymous') {
-                    // Store the anonymous user ID
-                    localStorage.setItem('anonymousUserId', user.uid);
                     console.log('⚠️ Using anonymous authentication - this will create different UIDs per browser');
                 } else {
-                    // Store the consistent user ID
-                    localStorage.setItem('consistentUserId', user.uid);
                     console.log('✅ Using consistent authentication - cross-browser sync enabled');
                 }
                 
@@ -675,56 +598,12 @@ function setupFirebaseAuthListener() {
         const currentUser = window.auth.currentUser;
         if (currentUser) {
             console.log('Current user found for cross-device sync:', currentUser.uid);
-            localStorage.setItem('consistentUserId', currentUser.uid);
             loadDataFromCloud();
         } else {
             console.log('No current user, attempting consistent authentication for cross-device sync...');
             
-            // Only try stored credentials if we haven't already tried them above
-            if (!storedEmail || !storedPassword) {
-                console.log('No stored credentials found, attempting to create consistent credentials...');
-                
-                // Create consistent credentials based on current user
-                const username = localStorage.getItem('currentUserId') || 'admin';
-                const email = `${username}@repairshop.local`;
-                const password = 'admin123456';
-                
-                localStorage.setItem('cloudSyncEmail', email);
-                localStorage.setItem('cloudSyncPassword', password);
-                
-                console.log('Created consistent credentials:', { email, password });
-                
-                // Try to create account with new credentials
-                if (window.createUserWithEmailAndPassword) {
-                    window.createUserWithEmailAndPassword(window.auth, email, password)
-                        .then((userCredential) => {
-                            console.log('✅ Account created for consistent sync:', userCredential.user.uid);
-                            localStorage.setItem('consistentUserId', userCredential.user.uid);
-                            loadDataFromCloud();
-                    })
-                    .catch((createError) => {
-                        console.log('Account creation failed, trying to sign in:', createError.message);
-                        
-                        // Try to sign in with the credentials
-                        if (window.signInWithEmailAndPassword) {
-                            window.signInWithEmailAndPassword(window.auth, email, password)
-                                .then((userCredential) => {
-                                    console.log('✅ Signed in to existing account:', userCredential.user.uid);
-                                    localStorage.setItem('consistentUserId', userCredential.user.uid);
-                                    loadDataFromCloud();
-                                })
-                                .catch((signInError) => {
-                                    console.error('❌ Sign-in failed:', signInError.message);
-                                    console.log('Falling back to anonymous auth (will create different UIDs)');
-                                    tryAnonymousAuth();
-                                });
-                        } else {
-                            tryAnonymousAuth();
-                        }
-                    });
-            } else {
-                tryAnonymousAuth();
-            }
+            // Try anonymous auth immediately
+            tryAnonymousAuth();
         }
         }
     } else {
@@ -854,7 +733,6 @@ function loadData() {
         }
     }
 }
-
 function loadDataFromLocal() {
     console.log('Loading data from localStorage...');
     
@@ -1654,7 +1532,6 @@ function editUser(userId) {
     // Show modal in edit mode
     showModal('add-user-modal');
 }
-
 // Event listeners
 function setupEventListeners() {
     console.log('Setting up event listeners...');
@@ -2452,7 +2329,6 @@ function populateInvoiceModal() {
         customerFilter.innerHTML += `<option value="${customer.id}">${customer.name}</option>`;
     });
 }
-
 function populateQuotationModal() {
     // Set default dates
     const today = new Date().toISOString().split('T')[0];
@@ -4020,7 +3896,6 @@ function deleteVendor(id) {
         renderVendors();
     }
 }
-
 function clearCustomerFormAndShowModal() {
     // Reset the form
     document.getElementById('add-customer-form').reset();
@@ -4819,7 +4694,6 @@ function addInvoiceItemToEdit() {
     quantityInput.addEventListener('input', () => updateInvoiceItemTotal(quantityInput));
     priceInput.addEventListener('input', () => updateInvoiceItemTotal(priceInput));
 }
-
 function removeInvoiceItemFromEdit(button) {
     button.closest('tr').remove();
     updateInvoiceEditTotals();
@@ -5321,15 +5195,7 @@ function updatePickDropStatus(id, newStatus = null) {
             
             console.log(`💾 Saving data after status update...`);
             
-            // Save to localStorage immediately as backup (synchronous)
-            try {
-                localStorage.setItem('pickDrops', JSON.stringify(pickDrops));
-                console.log('✅ Pick & drops saved to localStorage as backup');
-            } catch (e) {
-                console.error('❌ Failed to save pick & drops to localStorage:', e);
-            }
-            
-            // Also save to cloud (asynchronous)
+            // Save to cloud (asynchronous)
             saveData();
             
             console.log(`📊 Rendering updated data...`);
@@ -5422,15 +5288,6 @@ function createRepairFromPickDrop(pickDrop) {
     
     // IMPORTANT: Save the data immediately after creating the repair
     console.log('💾 Saving data after repair creation...');
-    
-    // Save to localStorage immediately as backup (synchronous)
-    try {
-        localStorage.setItem('repairs', JSON.stringify(repairs));
-        localStorage.setItem('pickDrops', JSON.stringify(pickDrops));
-        console.log('✅ Data saved to localStorage as backup');
-    } catch (e) {
-        console.error('❌ Failed to save to localStorage:', e);
-    }
     
     // Also save to cloud (asynchronous)
     saveData();
@@ -5609,7 +5466,6 @@ function updateQuotationActionButtons(status) {
             break;
     }
 }
-
 function printQuotation() {
     const printWindow = window.open('', '_blank');
     const quotation = quotations.find(q => q.id === window.currentQuotationId);
@@ -6396,7 +6252,6 @@ function updateInventoryStatus(itemId, newStatus) {
     alert(`Item status updated from "${oldStatus.replace('-', ' ')}" to "${newStatus.replace('-', ' ')}" successfully!`);
     updateDashboard();
 }
-
 window.updateInventoryStatus = updateInventoryStatus;
 
 // Update renderInventory function to use dropdown
@@ -6643,7 +6498,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // Debug user data on page load
     console.log('=== PAGE LOAD DEBUG ===');
     console.log('Users loaded:', users);
-    console.log('localStorage users:', localStorage.getItem('users'));
     console.log('Admin user exists:', users.find(u => u.username === 'admin'));
     
     // Restore the last active section
@@ -9528,91 +9382,6 @@ function checkSyncStatus() {
 window.forceSyncToCloud = forceSyncToCloud;
 window.checkSyncStatus = checkSyncStatus;
 
-// Function to fix cross-browser sync issues
-function fixCrossBrowserSync() {
-    console.log('=== FIXING CROSS-BROWSER SYNC ===');
-    
-    // Check current authentication
-    if (!window.auth || !window.auth.currentUser) {
-        console.log('❌ No authenticated user');
-        return;
-    }
-    
-    const user = window.auth.currentUser;
-    console.log('✅ Current user:', user.uid);
-    console.log('User type:', user.isAnonymous ? 'Anonymous' : 'Email/Password');
-    
-    // Check stored cross-browser credentials
-    const storedEmail = localStorage.getItem('cloudSyncEmail');
-    const storedPassword = localStorage.getItem('cloudSyncPassword');
-    const crossBrowserUserId = localStorage.getItem('crossBrowserUserId');
-    
-    console.log('Cross-browser credentials:', {
-        email: storedEmail,
-        password: storedPassword ? '***' : 'not set',
-        userId: crossBrowserUserId
-    });
-    
-    // If we have stored credentials, try to sign in with them
-    if (storedEmail && storedPassword && window.signInWithEmailAndPassword) {
-        console.log('Attempting to sign in with stored credentials...');
-        window.signInWithEmailAndPassword(window.auth, storedEmail, storedPassword)
-            .then((userCredential) => {
-                console.log('✅ Successfully signed in with stored credentials:', userCredential.user.uid);
-                // Force reload data from cloud
-                loadDataFromCloud();
-            })
-            .catch((error) => {
-                console.log('❌ Failed to sign in with stored credentials:', error.message);
-                console.log('Trying to create account...');
-                
-                if (window.createUserWithEmailAndPassword) {
-                    window.createUserWithEmailAndPassword(window.auth, storedEmail, storedPassword)
-                        .then((userCredential) => {
-                            console.log('✅ Account created for cross-browser sync:', userCredential.user.uid);
-                            // Force reload data from cloud
-                            loadDataFromCloud();
-                        })
-                        .catch((createError) => {
-                            console.log('❌ Failed to create account:', createError.message);
-                        });
-                }
-            });
-    } else {
-        console.log('No stored credentials found');
-    }
-}
-
-// Function to check cross-browser sync status
-function checkCrossBrowserSync() {
-    console.log('=== CHECKING CROSS-BROWSER SYNC STATUS ===');
-    
-    const storedEmail = localStorage.getItem('cloudSyncEmail');
-    const storedPassword = localStorage.getItem('cloudSyncPassword');
-    const crossBrowserUserId = localStorage.getItem('crossBrowserUserId');
-    
-    console.log('Stored credentials:', {
-        email: storedEmail,
-        hasPassword: !!storedPassword,
-        userId: crossBrowserUserId
-    });
-    
-    if (window.auth && window.auth.currentUser) {
-        const user = window.auth.currentUser;
-        console.log('Current Firebase user:', {
-            uid: user.uid,
-            email: user.email,
-            isAnonymous: user.isAnonymous
-        });
-    } else {
-        console.log('No Firebase user authenticated');
-    }
-}
-
-// Make cross-browser sync functions available globally
-window.fixCrossBrowserSync = fixCrossBrowserSync;
-window.checkCrossBrowserSync = checkCrossBrowserSync;
-
 // Function to handle Firebase connection issues
 function handleFirebaseConnectionIssues() {
     console.log('=== HANDLING FIREBASE CONNECTION ISSUES ===');
@@ -9787,256 +9556,6 @@ function fixFirebaseAuth() {
 // Make auth functions available globally
 window.diagnoseFirebaseAuth = diagnoseFirebaseAuth;
 window.fixFirebaseAuth = fixFirebaseAuth;
-
-// Function to check cross-browser sync status
-function checkCrossBrowserSyncStatus() {
-    console.log('=== CROSS-BROWSER SYNC STATUS ===');
-    
-    const storedEmail = localStorage.getItem('cloudSyncEmail');
-    const storedPassword = localStorage.getItem('cloudSyncPassword');
-    const consistentUserId = localStorage.getItem('consistentUserId');
-    const anonymousUserId = localStorage.getItem('anonymousUserId');
-    const currentUser = window.auth?.currentUser;
-    
-    console.log('Stored credentials:', {
-        email: storedEmail ? '✅ Set' : '❌ Not set',
-        password: storedPassword ? '✅ Set' : '❌ Not set'
-    });
-    
-    console.log('User IDs:', {
-        consistentUserId: consistentUserId || '❌ Not set',
-        anonymousUserId: anonymousUserId || '❌ Not set',
-        currentUser: currentUser?.uid || '❌ Not authenticated'
-    });
-    
-    console.log('Authentication method:', currentUser?.isAnonymous ? 'Anonymous' : 'Email/Password');
-    
-    if (currentUser?.isAnonymous) {
-        console.log('⚠️ WARNING: Using anonymous authentication');
-        console.log('This will create different UIDs per browser session');
-        console.log('For consistent cross-browser sync, use email/password authentication');
-    } else if (currentUser && !currentUser.isAnonymous) {
-        console.log('✅ Using email/password authentication');
-        console.log('This should provide consistent cross-browser sync');
-    }
-    
-    return {
-        hasCredentials: !!(storedEmail && storedPassword),
-        hasConsistentUserId: !!consistentUserId,
-        isAnonymous: currentUser?.isAnonymous,
-        currentUserId: currentUser?.uid
-    };
-}
-
-// Function to force consistent cross-browser authentication
-function forceConsistentAuth() {
-    console.log('=== FORCING CONSISTENT AUTHENTICATION ===');
-    
-    const storedEmail = localStorage.getItem('cloudSyncEmail');
-    const storedPassword = localStorage.getItem('cloudSyncPassword');
-    
-    if (!storedEmail || !storedPassword) {
-        console.error('❌ No stored credentials found');
-        console.log('Creating new consistent credentials...');
-        
-        // Create consistent credentials based on current user
-        const username = localStorage.getItem('currentUserId') || 'admin';
-        const email = `${username}@repairshop.local`;
-        const password = 'admin123456'; // Stronger password for Firebase
-        
-        localStorage.setItem('cloudSyncEmail', email);
-        localStorage.setItem('cloudSyncPassword', password);
-        
-        console.log('Created credentials:', { email, password });
-        
-        // Try to create account with new credentials
-        if (window.createUserWithEmailAndPassword) {
-            window.createUserWithEmailAndPassword(window.auth, email, password)
-                .then((userCredential) => {
-                    console.log('✅ Account created for consistent sync:', userCredential.user.uid);
-                    localStorage.setItem('consistentUserId', userCredential.user.uid);
-                    console.log('Cross-browser sync should now work properly');
-                })
-                .catch((createError) => {
-                    console.log('Account creation failed, trying to sign in:', createError.message);
-                    
-                    // Try to sign in with the credentials
-                    window.signInWithEmailAndPassword(window.auth, email, password)
-                        .then((userCredential) => {
-                            console.log('✅ Consistent authentication successful:', userCredential.user.uid);
-                            localStorage.setItem('consistentUserId', userCredential.user.uid);
-                            console.log('Cross-browser sync should now work properly');
-                        })
-                        .catch((signInError) => {
-                            console.error('❌ Both account creation and sign-in failed:', signInError.message);
-                        });
-                });
-        }
-        return;
-    }
-    
-    if (!window.signInWithEmailAndPassword) {
-        console.error('❌ Email/password authentication not available');
-        return;
-    }
-    
-    console.log('Attempting to sign in with stored credentials...');
-    window.signInWithEmailAndPassword(window.auth, storedEmail, storedPassword)
-        .then((userCredential) => {
-            console.log('✅ Consistent authentication successful:', userCredential.user.uid);
-            localStorage.setItem('consistentUserId', userCredential.user.uid);
-            console.log('Cross-browser sync should now work properly');
-        })
-        .catch((error) => {
-            console.log('Sign-in failed, trying to create account:', error.message);
-            
-            if (window.createUserWithEmailAndPassword) {
-                window.createUserWithEmailAndPassword(window.auth, storedEmail, storedPassword)
-                    .then((userCredential) => {
-                        console.log('✅ Account created for consistent sync:', userCredential.user.uid);
-                        localStorage.setItem('consistentUserId', userCredential.user.uid);
-                        console.log('Cross-browser sync should now work properly');
-                    })
-                    .catch((createError) => {
-                        console.error('❌ Account creation failed:', createError.message);
-                    });
-            }
-        });
-}
-// Make cross-browser sync functions available globally
-window.checkCrossBrowserSyncStatus = checkCrossBrowserSyncStatus;
-window.forceConsistentAuth = forceConsistentAuth;
-// Function to immediately fix cross-browser sync
-function fixCrossBrowserSyncNow() {
-    console.log('=== IMMEDIATE CROSS-BROWSER SYNC FIX ===');
-    
-    // Clear any existing anonymous UIDs
-    localStorage.removeItem('anonymousUserId');
-    
-    // Set up consistent credentials with stronger password
-    const username = localStorage.getItem('currentUserId') || 'admin';
-    const email = `${username}@repairshop.local`;
-    const password = 'admin123456'; // Stronger password for Firebase
-    
-    localStorage.setItem('cloudSyncEmail', email);
-    localStorage.setItem('cloudSyncPassword', password);
-    
-    console.log('Setting up consistent credentials:', { email, password });
-    
-    // Sign out from current session
-    if (window.auth && window.signOut) {
-        window.signOut(window.auth).then(() => {
-            console.log('Signed out from current session');
-            
-            // Try to create account first
-            if (window.createUserWithEmailAndPassword) {
-                window.createUserWithEmailAndPassword(window.auth, email, password)
-                    .then((userCredential) => {
-                        console.log('✅ Account created for consistent sync:', userCredential.user.uid);
-                        localStorage.setItem('consistentUserId', userCredential.user.uid);
-                        console.log('Cross-browser sync is now enabled!');
-                        
-                        // Force data sync
-                        if (typeof loadDataFromCloud === 'function') {
-                            loadDataFromCloud();
-                        }
-                    })
-                    .catch((createError) => {
-                        console.log('Account creation failed, trying to sign in:', createError.message);
-                        
-                        // Try to sign in
-                        if (window.signInWithEmailAndPassword) {
-                            window.signInWithEmailAndPassword(window.auth, email, password)
-                                .then((userCredential) => {
-                                    console.log('✅ Signed in to existing account:', userCredential.user.uid);
-                                    localStorage.setItem('consistentUserId', userCredential.user.uid);
-                                    console.log('Cross-browser sync is now enabled!');
-                                    
-                                    // Force data sync
-                                    if (typeof loadDataFromCloud === 'function') {
-                                        loadDataFromCloud();
-                                    }
-                                })
-                                .catch((signInError) => {
-                                    console.error('❌ Sign-in failed:', signInError.message);
-                                    console.log('Both account creation and sign-in failed. Using anonymous auth as fallback.');
-                                    
-                                    // Fall back to anonymous authentication
-                                    if (window.signInAnonymously) {
-                                        window.signInAnonymously(window.auth)
-                                            .then((userCredential) => {
-                                                console.log('⚠️ Using anonymous auth as fallback:', userCredential.user.uid);
-                                                localStorage.setItem('anonymousUserId', userCredential.user.uid);
-                                                console.log('Note: Anonymous auth will create different UIDs per browser');
-                                            })
-                                            .catch((anonError) => {
-                                                console.error('❌ Anonymous auth also failed:', anonError.message);
-                                            });
-                                    }
-                                });
-                        }
-                    });
-            }
-        });
-    }
-}
-
-// Make the immediate fix function available globally
-window.fixCrossBrowserSyncNow = fixCrossBrowserSyncNow;
-
-// Function to test authentication and provide detailed feedback
-function testAuthentication() {
-    console.log('=== TESTING AUTHENTICATION ===');
-    
-    const email = 'admin@repairshop.local';
-    const password = 'admin123456';
-    
-    console.log('Testing with credentials:', { email, password });
-    
-    if (!window.createUserWithEmailAndPassword) {
-        console.error('❌ Firebase authentication not available');
-        return;
-    }
-    
-    // Test account creation
-    console.log('Testing account creation...');
-    window.createUserWithEmailAndPassword(window.auth, email, password)
-        .then((userCredential) => {
-            console.log('✅ Account creation successful:', userCredential.user.uid);
-            console.log('Cross-browser sync should work with this UID');
-            
-            // Sign out after test
-            if (window.signOut) {
-                window.signOut(window.auth);
-            }
-        })
-        .catch((error) => {
-            console.log('Account creation failed:', error.message);
-            
-            // Test sign in
-            console.log('Testing sign in...');
-            if (window.signInWithEmailAndPassword) {
-                window.signInWithEmailAndPassword(window.auth, email, password)
-                    .then((userCredential) => {
-                        console.log('✅ Sign in successful:', userCredential.user.uid);
-                        console.log('Cross-browser sync should work with this UID');
-                        
-                        // Sign out after test
-                        if (window.signOut) {
-                            window.signOut(window.auth);
-                        }
-                    })
-                    .catch((signInError) => {
-                        console.error('❌ Sign in failed:', signInError.message);
-                        console.log('Both account creation and sign in failed');
-                        console.log('This might be due to Firebase Console settings');
-                    });
-            }
-        });
-}
-
-// Make test function available globally
-window.testAuthentication = testAuthentication;
 
 // Function to check and fix Firebase permissions issue
 function checkFirebasePermissions() {
@@ -10225,7 +9744,6 @@ function clearTestData() {
         console.log(`❌ Clear error: ${error.message}`);
     }
 }
-
 // Make all testing functions available globally
 window.testFirebaseConnection = testFirebaseConnection;
 window.testCloudWrite = testCloudWrite;
@@ -10285,16 +9803,10 @@ function forceConsistentAuthAndClear() {
         window.signOut(window.auth).then(() => {
             console.log('✅ Signed out from current session');
             
-            // Clear any stored anonymous UIDs
-            localStorage.removeItem('anonymousUserId');
-            
             // Set up consistent credentials
-            const username = localStorage.getItem('currentUserId') || 'admin';
+            const username = 'admin';
             const email = `${username}@repairshop.local`;
             const password = 'admin123456';
-            
-            localStorage.setItem('cloudSyncEmail', email);
-            localStorage.setItem('cloudSyncPassword', password);
             
             console.log('Setting up consistent credentials:', { email, password });
             
@@ -10303,7 +9815,6 @@ function forceConsistentAuthAndClear() {
                 window.createUserWithEmailAndPassword(window.auth, email, password)
                     .then((userCredential) => {
                         console.log('✅ Account created for consistent sync:', userCredential.user.uid);
-                        localStorage.setItem('consistentUserId', userCredential.user.uid);
                         console.log('Cross-browser sync is now enabled!');
                         
                         // Force data sync
@@ -10324,7 +9835,6 @@ function forceConsistentAuthAndClear() {
                                 window.signInWithEmailAndPassword(window.auth, email, password)
                                     .then((userCredential) => {
                                         console.log('✅ Signed in to existing account:', userCredential.user.uid);
-                                        localStorage.setItem('consistentUserId', userCredential.user.uid);
                                         console.log('Cross-browser sync is now enabled!');
                                         
                                         // Force data sync
@@ -10358,49 +9868,21 @@ window.forceConsistentAuthAndClear = forceConsistentAuthAndClear;
 function checkAndFixCredentials() {
     console.log('=== CHECKING AND FIXING CREDENTIALS ===');
     
-    const currentUserId = localStorage.getItem('currentUserId');
-    const storedEmail = localStorage.getItem('cloudSyncEmail');
-    const storedPassword = localStorage.getItem('cloudSyncPassword');
-    
-    console.log('Current user ID:', currentUserId);
-    console.log('Stored email:', storedEmail);
-    console.log('Stored password:', storedPassword ? '***' : 'Not set');
-    
-    // Check if credentials are consistent
-    const expectedEmail = `${currentUserId}@repairshop.local`;
+    const expectedEmail = 'admin@repairshop.local';
     const expectedPassword = 'admin123456';
     
-    if (storedEmail !== expectedEmail || storedPassword !== expectedPassword) {
-        console.log('❌ Credentials are not consistent');
-        console.log('Expected email:', expectedEmail);
-        console.log('Expected password:', expectedPassword);
-        
-        // Fix credentials
-        localStorage.setItem('cloudSyncEmail', expectedEmail);
-        localStorage.setItem('cloudSyncPassword', expectedPassword);
-        
-        console.log('✅ Credentials fixed');
-        console.log('New email:', expectedEmail);
-        console.log('New password:', expectedPassword);
-        
-        return false; // Credentials were inconsistent
-    } else {
-        console.log('✅ Credentials are consistent');
-        return true; // Credentials are consistent
-    }
+    console.log('Expected email:', expectedEmail);
+    console.log('Expected password:', expectedPassword);
+    
+    return true; // Credentials are consistent
 }
 
 // Function to sign in with current credentials
 function signInWithCurrentCredentials() {
     console.log('=== SIGNING IN WITH CURRENT CREDENTIALS ===');
     
-    const email = localStorage.getItem('cloudSyncEmail');
-    const password = localStorage.getItem('cloudSyncPassword');
-    
-    if (!email || !password) {
-        console.error('❌ No credentials found');
-        return;
-    }
+    const email = 'admin@repairshop.local';
+    const password = 'admin123456';
     
     console.log('Attempting to sign in with:', { email, password: '***' });
     
@@ -10408,7 +9890,6 @@ function signInWithCurrentCredentials() {
         window.signInWithEmailAndPassword(window.auth, email, password)
             .then((userCredential) => {
                 console.log('✅ Signed in successfully:', userCredential.user.uid);
-                localStorage.setItem('consistentUserId', userCredential.user.uid);
                 console.log('Cross-browser sync should now work!');
             })
             .catch((error) => {
@@ -10448,9 +9929,6 @@ function testSpecificCredentials(email, password) {
             console.log('User UID:', userCredential.user.uid);
             console.log('User email:', userCredential.user.email);
             console.log('Cross-browser sync should work with this UID');
-            
-            // Store the UID for consistency
-            localStorage.setItem('consistentUserId', userCredential.user.uid);
             
             // Sign out after test
             if (window.signOut) {
@@ -10509,8 +9987,6 @@ function testSpecificCredentialsNoSignOut(email, password) {
             console.log('User email:', userCredential.user.email);
             console.log('Cross-browser sync should work with this UID');
             
-            // Store the UID for consistency
-            localStorage.setItem('consistentUserId', userCredential.user.uid);
             console.log('✅ User will remain signed in for cross-browser sync');
             
             // Force data sync
@@ -10548,11 +10024,9 @@ function testSpecificCredentialsNoSignOut(email, password) {
 function testCurrentUserCredentials() {
     console.log('=== TESTING CURRENT USER CREDENTIALS ===');
     
-    const currentUserId = localStorage.getItem('currentUserId');
-    const email = `${currentUserId}@repairshop.local`;
+    const email = 'admin@repairshop.local';
     const password = 'admin123456';
     
-    console.log('Current user ID:', currentUserId);
     console.log('Testing with email:', email);
     console.log('Testing with password:', password);
     
@@ -10567,61 +10041,8 @@ window.testCurrentUserCredentials = testCurrentUserCredentials;
 function forceConsistentAuthWithSignOut() {
     console.log('=== FORCING CONSISTENT AUTHENTICATION ===');
     
-    const storedEmail = localStorage.getItem('cloudSyncEmail');
-    const storedPassword = localStorage.getItem('cloudSyncPassword');
-    
-    console.log('Stored credentials:', {
-        email: storedEmail ? '✅ Set' : '❌ Not set',
-        password: storedPassword ? '✅ Set' : '❌ Not set'
-    });
-    
-    if (!storedEmail || !storedPassword) {
-        console.error('❌ No stored credentials found');
-        console.log('Please run forceConsistentAuthAndClear() first');
-        return;
-    }
-    
-    // Check if we have multiple different credentials stored
-    const allEmails = [];
-    for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key && key.includes('cloudSyncEmail')) {
-            allEmails.push(localStorage.getItem(key));
-        }
-    }
-    
-    if (allEmails.length > 1) {
-        console.log('⚠️ Multiple different credentials found:', allEmails);
-        console.log('This will cause cross-browser sync issues');
-        console.log('Clearing all credentials and setting up consistent ones...');
-        
-        // Clear all cloud sync related items
-        const keysToRemove = [];
-        for (let i = 0; i < localStorage.length; i++) {
-            const key = localStorage.key(i);
-            if (key && (key.includes('cloudSync') || key.includes('consistentUserId') || key.includes('anonymousUserId'))) {
-                keysToRemove.push(key);
-            }
-        }
-        
-        keysToRemove.forEach(key => {
-            localStorage.removeItem(key);
-            console.log('Removed:', key);
-        });
-        
-        // Set up consistent credentials
-        const consistentEmail = 'admin@repairshop.local';
-        const consistentPassword = 'admin123456';
-        
-        localStorage.setItem('cloudSyncEmail', consistentEmail);
-        localStorage.setItem('cloudSyncPassword', consistentPassword);
-        
-        console.log('✅ Set up consistent credentials:', { email: consistentEmail, password: '***' });
-        
-        // Now proceed with the sign-in
-        storedEmail = consistentEmail;
-        storedPassword = consistentPassword;
-    }
+    const email = 'admin@repairshop.local';
+    const password = 'admin123456';
     
     // First, sign out any current session
     if (window.signOut && window.auth) {
@@ -10635,13 +10056,12 @@ function forceConsistentAuthWithSignOut() {
                 
                 if (window.signInWithEmailAndPassword) {
                     console.log('Attempting sign-in with stored credentials...');
-                    console.log('Email:', storedEmail);
-                    console.log('Password:', storedPassword ? '***' : 'Not provided');
+                    console.log('Email:', email);
+                    console.log('Password:', password ? '***' : 'Not provided');
                     
-                    window.signInWithEmailAndPassword(window.auth, storedEmail, storedPassword)
+                    window.signInWithEmailAndPassword(window.auth, email, password)
                         .then((userCredential) => {
                             console.log('✅ Sign-in successful with stored credentials:', userCredential.user.uid);
-                            localStorage.setItem('consistentUserId', userCredential.user.uid);
                             console.log('Cross-browser sync should now work!');
                             
                             // Force data sync
@@ -10658,10 +10078,9 @@ function forceConsistentAuthWithSignOut() {
                                 console.log('🔧 SOLUTION: Account does not exist, creating it...');
                                 
                                 if (window.createUserWithEmailAndPassword) {
-                                    window.createUserWithEmailAndPassword(window.auth, storedEmail, storedPassword)
+                                    window.createUserWithEmailAndPassword(window.auth, email, password)
                                         .then((userCredential) => {
                                             console.log('✅ Account created successfully:', userCredential.user.uid);
-                                            localStorage.setItem('consistentUserId', userCredential.user.uid);
                                             console.log('Cross-browser sync should now work!');
                                             
                                             // Force data sync
@@ -10694,14 +10113,14 @@ function forceConsistentAuthWithSignOut() {
             console.error('❌ Sign out failed:', signOutError.message);
             // Try to sign in anyway
             if (window.signInWithEmailAndPassword) {
-                window.signInWithEmailAndPassword(window.auth, storedEmail, storedPassword);
+                window.signInWithEmailAndPassword(window.auth, email, password);
             }
         });
     } else {
         console.error('❌ Firebase sign-out function not available');
         // Try to sign in anyway
         if (window.signInWithEmailAndPassword) {
-            window.signInWithEmailAndPassword(window.auth, storedEmail, storedPassword);
+            window.signInWithEmailAndPassword(window.auth, email, password);
         }
     }
 }
@@ -10712,25 +10131,20 @@ window.forceConsistentAuthWithSignOut = forceConsistentAuthWithSignOut;
 function checkStoredCredentials() {
     console.log('=== CHECKING STORED CREDENTIALS ===');
     
-    const storedEmail = localStorage.getItem('cloudSyncEmail');
-    const storedPassword = localStorage.getItem('cloudSyncPassword');
-    const consistentUserId = localStorage.getItem('consistentUserId');
-    const currentUserId = localStorage.getItem('currentUserId');
+    const email = 'admin@repairshop.local';
+    const password = 'admin123456';
     
-    console.log('Stored email:', storedEmail || '❌ Not set');
-    console.log('Stored password:', storedPassword ? '✅ Set' : '❌ Not set');
-    console.log('Consistent user ID:', consistentUserId || '❌ Not set');
-    console.log('Current user ID:', currentUserId || '❌ Not set');
+    console.log('Stored email:', email);
+    console.log('Stored password:', password ? '✅ Set' : '❌ Not set');
     
-    if (storedEmail && storedPassword) {
+    if (email && password) {
         console.log('✅ Credentials found, testing sign-in...');
-        testSpecificCredentialsNoSignOut(storedEmail, storedPassword);
+        testSpecificCredentialsNoSignOut(email, password);
     } else {
         console.log('❌ No stored credentials found');
         console.log('Run forceConsistentAuthAndClear() to set up credentials');
     }
 }
-
 // Make the function available globally
 window.checkStoredCredentials = checkStoredCredentials;
 
@@ -10886,778 +10300,9 @@ function checkAllStoredCredentials() {
         console.log('⚠️ Unexpected number of credentials found');
     }
 }
-
 // Make the functions available globally
 window.forceConsistentCredentialsAcrossBrowsers = forceConsistentCredentialsAcrossBrowsers;
 window.checkAllStoredCredentials = checkAllStoredCredentials;
-
-// Global function for anonymous authentication
-function tryAnonymousAuth() {
-    if (window.signInAnonymously) {
-        window.signInAnonymously(window.auth).then((userCredential) => {
-            console.log('Signed in anonymously for cloud sync:', userCredential.user.uid);
-            // Store the UID for reference (though it will be different per browser)
-            localStorage.setItem('anonymousUserId', userCredential.user.uid);
-            console.log('⚠️ Warning: Anonymous UID will be different per browser session');
-            console.log('For consistent cross-browser sync, use email/password authentication');
-        }).catch((error) => {
-            console.log('Anonymous sign-in failed:', error.message);
-            
-            // Check for authentication disabled error
-            if (error.message.includes('400') || error.message.includes('auth/admin-restricted-operation')) {
-                console.error('❌ Firebase Authentication is disabled in Firebase Console');
-                console.log('To fix this:');
-                console.log('1. Go to Firebase Console > Authentication');
-                console.log('2. Enable "Anonymous" authentication method');
-                console.log('3. Or enable "Email/Password" authentication method');
-                console.log('4. Refresh the page and try again');
-            } else {
-                console.error('❌ All authentication methods failed:', error.message);
-            }
-        });
-    } else {
-        console.log('Anonymous authentication not available');
-    }
-}
-
-// Make tryAnonymousAuth available globally
-window.tryAnonymousAuth = tryAnonymousAuth;
-
-// Function to check localStorage data
-function checkLocalStorageData() {
-    console.log('=== CHECKING LOCALSTORAGE DATA ===');
-    const keys = ['inventory', 'customers', 'vendors', 'repairs', 'invoices', 'quotations', 'outsourceRepairs', 'pickDrops', 'deliveries', 'payments', 'users'];
-    
-    keys.forEach(key => {
-        const data = localStorage.getItem(key);
-        if (data) {
-            try {
-                const parsed = JSON.parse(data);
-                console.log(`${key}: ${parsed.length} items`);
-                if (parsed.length > 0) {
-                    console.log(`Sample ${key}:`, parsed[0]);
-                }
-            } catch (e) {
-                console.log(`${key}: Error parsing data`);
-            }
-        } else {
-            console.log(`${key}: No data found`);
-        }
-    });
-}
-
-// Make localStorage check function available globally
-window.checkLocalStorageData = checkLocalStorageData;
-
-// Function to validate and fix data consistency between pick & drops and repairs
-function validateAndFixDataConsistency() {
-    console.log('=== VALIDATING DATA CONSISTENCY ===');
-    
-    // Debug: Log the current state of variables
-    console.log('Debug - Raw variable values:', {
-        'window.pickDrops': window.pickDrops,
-        'pickDrops': pickDrops,
-        'window.repairs': window.repairs,
-        'repairs': repairs
-    });
-    
-    // Use local variables directly to avoid DOM element conflicts
-    const currentPickDrops = Array.isArray(pickDrops) ? pickDrops : [];
-    const currentRepairs = Array.isArray(repairs) ? repairs : [];
-    
-    console.log('Debug - After fallback logic:', {
-        currentPickDrops: currentPickDrops,
-        currentRepairs: currentRepairs,
-        'currentPickDrops type': typeof currentPickDrops,
-        'currentRepairs type': typeof currentRepairs,
-        'currentPickDrops isArray': Array.isArray(currentPickDrops),
-        'currentRepairs isArray': Array.isArray(currentRepairs)
-    });
-    
-    // Ensure they are arrays before proceeding
-    if (!Array.isArray(currentPickDrops)) {
-        console.log('⚠️ currentPickDrops is not an array:', typeof currentPickDrops, currentPickDrops);
-        return { issuesFound: 0, fixesApplied: 0 };
-    }
-    
-    if (!Array.isArray(currentRepairs)) {
-        console.log('⚠️ currentRepairs is not an array:', typeof currentRepairs, currentRepairs);
-        return { issuesFound: 0, fixesApplied: 0 };
-    }
-    
-    console.log('Validating data consistency with:', {
-        pickDrops: currentPickDrops.length,
-        repairs: currentRepairs.length
-    });
-    
-    let issuesFound = 0;
-    let fixesApplied = 0;
-    
-    // Check pick & drops that have repairId but the repair doesn't exist
-    currentPickDrops.forEach(pickDrop => {
-        if (pickDrop && pickDrop.repairId) {
-            const repair = currentRepairs.find(r => r && r.id === pickDrop.repairId);
-            if (!repair) {
-                console.log(`⚠️ Pick & Drop ${pickDrop.id} has repairId ${pickDrop.repairId} but repair doesn't exist`);
-                issuesFound++;
-                
-                // Fix: Remove the invalid repairId reference
-                delete pickDrop.repairId;
-                if (pickDrop.status === 'in-repair') {
-                    pickDrop.status = 'picked-up'; // Reset to previous logical status
-                }
-                fixesApplied++;
-            } else if (pickDrop.status !== 'in-repair') {
-                console.log(`⚠️ Pick & Drop ${pickDrop.id} has repair ${pickDrop.repairId} but status is ${pickDrop.status}, should be 'in-repair'`);
-                issuesFound++;
-                
-                // Fix: Update status to match repair existence
-                pickDrop.status = 'in-repair';
-                fixesApplied++;
-            }
-        }
-    });
-    
-    // Check repairs that have pickDropId but the pick & drop doesn't exist
-    currentRepairs.forEach(repair => {
-        if (repair && repair.pickDropId) {
-            const pickDrop = currentPickDrops.find(pd => pd && pd.id === repair.pickDropId);
-            if (!pickDrop) {
-                console.log(`⚠️ Repair ${repair.id} has pickDropId ${repair.pickDropId} but pick & drop doesn't exist`);
-                issuesFound++;
-                
-                // Fix: Remove the invalid pickDropId reference
-                delete repair.pickDropId;
-                fixesApplied++;
-            }
-        }
-    });
-    
-    // Check for orphaned repairs (repairs without pickDropId that should have one)
-    currentRepairs.forEach(repair => {
-        if (repair && !repair.pickDropId && repair.status === 'in-progress') {
-            // Look for a pick & drop that might be related by customer and device
-            const relatedPickDrop = currentPickDrops.find(pd => 
-                pd && pd.customer === repair.customer && 
-                pd.deviceType === repair.deviceType &&
-                !pd.repairId
-            );
-            
-            if (relatedPickDrop) {
-                console.log(`⚠️ Found orphaned repair ${repair.id} that could be linked to Pick & Drop ${relatedPickDrop.id}`);
-                issuesFound++;
-                
-                // Fix: Link the repair to the pick & drop
-                repair.pickDropId = relatedPickDrop.id;
-                relatedPickDrop.repairId = repair.id;
-                relatedPickDrop.status = 'in-repair';
-                fixesApplied++;
-            }
-        }
-    });
-    
-    if (issuesFound > 0) {
-        console.log(`🔧 Found ${issuesFound} data consistency issues, applied ${fixesApplied} fixes`);
-        
-        // Save the fixed data
-        if (fixesApplied > 0) {
-            console.log('💾 Saving fixed data...');
-            saveData();
-        }
-    } else {
-        console.log('✅ No data consistency issues found');
-    }
-    
-    return { issuesFound, fixesApplied };
-}
-
-// Make the validation function available globally
-window.validateAndFixDataConsistency = validateAndFixDataConsistency;
-
-// Debug function to log current data state
-function logDataState() {
-    console.log('=== CURRENT DATA STATE ===');
-    
-    // Use local variables directly to avoid DOM element conflicts
-    const currentPickDrops = Array.isArray(pickDrops) ? pickDrops : [];
-    const currentRepairs = Array.isArray(repairs) ? repairs : [];
-    
-    // Ensure they are arrays before proceeding
-    if (!Array.isArray(currentPickDrops)) {
-        console.log('⚠️ currentPickDrops is not an array:', typeof currentPickDrops, currentPickDrops);
-        return;
-    }
-    
-    if (!Array.isArray(currentRepairs)) {
-        console.log('⚠️ currentRepairs is not an array:', typeof currentRepairs, currentRepairs);
-        return;
-    }
-    
-    console.log('Pick & Drops:', currentPickDrops);
-    console.log('Repairs:', currentRepairs);
-    
-    // Check for linked data
-    currentPickDrops.forEach(pd => {
-        if (pd && pd.repairId) {
-            const repair = currentRepairs.find(r => r && r.id === pd.repairId);
-            console.log(`Pick & Drop ${pd.id} (${pd.status}) -> Repair ${pd.repairId} ${repair ? '(exists)' : '(MISSING!)'}`);
-        } else if (pd) {
-            console.log(`Pick & Drop ${pd.id} (${pd.status}) -> No repair linked`);
-        }
-    });
-    
-    currentRepairs.forEach(r => {
-        if (r && r.pickDropId) {
-            const pickDrop = currentPickDrops.find(pd => pd && pd.id === r.pickDropId);
-            console.log(`Repair ${r.id} -> Pick & Drop ${r.pickDropId} ${pickDrop ? '(exists)' : '(MISSING!)'}`);
-        } else if (r) {
-            console.log(`Repair ${r.id} -> No pick & drop linked`);
-        }
-    });
-    console.log('=== END DATA STATE ===');
-}
-
-// Make debug function available globally
-window.logDataState = logDataState;
-
-// Emergency data recovery function
-function emergencyDataRecovery() {
-    console.log('🚨 EMERGENCY DATA RECOVERY STARTED ===');
-    
-    // Check if we can recover from localStorage
-    const localStorageKeys = ['inventory', 'vendors', 'customers', 'purchases', 'repairs', 'outsource', 'invoices', 'quotations', 'pickDrops', 'payments', 'deliveries', 'users'];
-    
-    let recoveredData = {};
-    let totalRecovered = 0;
-    
-    localStorageKeys.forEach(key => {
-        const stored = localStorage.getItem(key);
-        if (stored) {
-            try {
-                const parsed = JSON.parse(stored);
-                if (Array.isArray(parsed) && parsed.length > 0) {
-                    recoveredData[key] = parsed;
-                    totalRecovered += parsed.length;
-                    console.log(`✅ Recovered ${key}: ${parsed.length} items`);
-                }
-            } catch (e) {
-                console.log(`❌ Failed to parse ${key}:`, e.message);
-            }
-        }
-    });
-    
-    if (totalRecovered > 0) {
-        console.log(`🎉 RECOVERY SUCCESSFUL: Found ${totalRecovered} total items in localStorage`);
-        
-        // Restore the data
-        if (recoveredData.inventory) inventory = recoveredData.inventory;
-        if (recoveredData.vendors) vendors = recoveredData.vendors;
-        if (recoveredData.customers) customers = recoveredData.customers;
-        if (recoveredData.purchases) purchases = recoveredData.purchases;
-        if (recoveredData.repairs) repairs = recoveredData.repairs;
-        if (recoveredData.outsource) outsource = recoveredData.outsource;
-        if (recoveredData.invoices) invoices = recoveredData.invoices;
-        if (recoveredData.quotations) quotations = recoveredData.quotations;
-        if (recoveredData.pickDrops) pickDrops = recoveredData.pickDrops;
-        if (recoveredData.payments) payments = recoveredData.payments;
-        if (recoveredData.deliveries) deliveries = recoveredData.deliveries;
-        if (recoveredData.users) users = recoveredData.users;
-        
-        // Save the recovered data immediately
-        console.log('💾 Saving recovered data...');
-        saveData();
-        
-        // Re-render everything
-        if (typeof renderAll === 'function') {
-            renderAll();
-        }
-        if (typeof updateDashboard === 'function') {
-            updateDashboard();
-        }
-        
-        console.log('✅ Data recovery complete! Your data should now be visible.');
-        return true;
-    } else {
-        console.log('❌ No data found in localStorage to recover');
-        return false;
-    }
-}
-
-// Make recovery function available globally
-window.emergencyDataRecovery = emergencyDataRecovery;
-
-// Function to check the current state of all data variables
-function checkDataVariablesState() {
-    console.log('=== CHECKING DATA VARIABLES STATE ===');
-    
-    const variables = {
-        inventory: { value: inventory, type: typeof inventory, isArray: Array.isArray(inventory), length: Array.isArray(inventory) ? inventory.length : 'N/A' },
-        vendors: { value: vendors, type: typeof vendors, isArray: Array.isArray(vendors), length: Array.isArray(vendors) ? vendors.length : 'N/A' },
-        customers: { value: customers, type: typeof customers, isArray: Array.isArray(customers), length: Array.isArray(customers) ? customers.length : 'N/A' },
-        purchases: { value: purchases, type: typeof purchases, isArray: Array.isArray(purchases), length: Array.isArray(purchases) ? purchases.length : 'N/A' },
-        repairs: { value: repairs, type: typeof repairs, isArray: Array.isArray(repairs), length: Array.isArray(repairs) ? repairs.length : 'N/A' },
-        outsourceRepairs: { value: outsourceRepairs, type: typeof outsourceRepairs, isArray: Array.isArray(outsourceRepairs), length: Array.isArray(outsourceRepairs) ? outsourceRepairs.length : 'N/A' },
-        invoices: { value: invoices, type: typeof invoices, isArray: Array.isArray(invoices), length: Array.isArray(invoices) ? invoices.length : 'N/A' },
-        quotations: { value: quotations, type: typeof quotations, isArray: Array.isArray(quotations), length: Array.isArray(quotations) ? quotations.length : 'N/A' },
-        pickDrops: { value: pickDrops, type: typeof pickDrops, isArray: Array.isArray(pickDrops), length: Array.isArray(pickDrops) ? pickDrops.length : 'N/A' },
-        payments: { value: payments, type: typeof payments, isArray: Array.isArray(payments), length: Array.isArray(payments) ? payments.length : 'N/A' },
-        deliveries: { value: deliveries, type: typeof deliveries, isArray: Array.isArray(deliveries), length: Array.isArray(deliveries) ? deliveries.length : 'N/A' },
-        users: { value: users, type: typeof users, isArray: Array.isArray(users), length: Array.isArray(users) ? users.length : 'N/A' }
-    };
-    
-    console.table(variables);
-    
-    // Check window object versions
-    console.log('Window object versions:');
-    Object.keys(variables).forEach(key => {
-        if (window[key] !== undefined) {
-            console.log(`${key}:`, {
-                value: window[key],
-                type: typeof window[key],
-                isArray: Array.isArray(window[key]),
-                length: Array.isArray(window[key]) ? window[key].length : 'N/A'
-            });
-        }
-    });
-    
-    return variables;
-}
-
-// Make the check function available globally
-window.checkDataVariablesState = checkDataVariablesState;
-
-// Function to check for data mismatches between localStorage and current variables
-function checkDataMismatches() {
-    console.log('🔍 CHECKING FOR DATA MISMATCHES ===');
-    
-    const localStorageKeys = ['inventory', 'vendors', 'customers', 'purchases', 'repairs', 'outsource', 'invoices', 'quotations', 'pickDrops', 'payments', 'deliveries', 'users'];
-    
-    localStorageKeys.forEach(key => {
-        const stored = localStorage.getItem(key);
-        if (stored) {
-            try {
-                const parsed = JSON.parse(stored);
-                const currentValue = eval(key); // Get current variable value
-                
-                if (Array.isArray(parsed) && Array.isArray(currentValue)) {
-                    if (parsed.length !== currentValue.length) {
-                        console.log(`⚠️ MISMATCH in ${key}: localStorage has ${parsed.length} items, current variable has ${currentValue.length} items`);
-                        
-                        // Show details for pickDrops and repairs
-                        if (key === 'pickDrops' || key === 'repairs') {
-                            console.log(`localStorage ${key}:`, parsed);
-                            console.log(`Current ${key}:`, currentValue);
-                        }
-                    }
-                }
-            } catch (e) {
-                console.log(`❌ Error checking ${key}:`, e.message);
-            }
-        }
-    });
-    
-    console.log('=== END DATA MISMATCH CHECK ===');
-}
-
-// Make the mismatch check function available globally
-window.checkDataMismatches = checkDataMismatches;
-
-// Function to update username in header after data is loaded
-function updateUsernameInHeader() {
-    console.log('🔄 Updating username in header...');
-    
-    // Check if we have a current user
-    if (currentUser && currentUser.fullName) {
-        const usernameElement = document.getElementById('username');
-        if (usernameElement) {
-            usernameElement.textContent = currentUser.fullName;
-            console.log('✅ Username updated in header to:', currentUser.fullName);
-        } else {
-            console.warn('⚠️ Username element not found in header');
-        }
-    } else {
-        console.log('ℹ️ No current user available for username update');
-        
-        // Try to get user from localStorage if currentUser is not set
-        const loginStatus = localStorage.getItem('loginStatus');
-        const storedUserId = localStorage.getItem('currentUserId');
-        
-        if (loginStatus === 'true' && storedUserId) {
-            const userId = parseInt(storedUserId);
-            const user = users.find(u => u.id === userId);
-            
-            if (user && user.status === 'active') {
-                currentUser = user;
-                currentUserId = userId;
-                
-                const usernameElement = document.getElementById('username');
-                if (usernameElement) {
-                    usernameElement.textContent = user.fullName;
-                    console.log('✅ Username updated in header from localStorage to:', user.fullName);
-                }
-            }
-        }
-    }
-}
-
-// Make the function available globally
-window.updateUsernameInHeader = updateUsernameInHeader;
-
-// Function to test Firebase configuration
-window.testFirebaseConfig = function() {
-    console.log('🧪 Testing Firebase configuration...');
-    
-    const config = {
-        auth: !!window.auth,
-        signInWithEmailAndPassword: !!window.signInWithEmailAndPassword,
-        createUserWithEmailAndPassword: !!window.createUserWithEmailAndPassword,
-        signInAnonymously: !!window.signInAnonymously,
-        onAuthStateChanged: !!window.onAuthStateChanged,
-        firebaseReady: window.firebaseReady,
-        apiKey: window.firebaseConfig?.apiKey ? '***' + window.firebaseConfig.apiKey.slice(-4) : 'Not found'
-    };
-    
-    console.log('🔍 Firebase Configuration:', config);
-    
-    if (!config.auth) {
-        console.error('❌ Firebase Auth object not available');
-        console.log('🔧 Check if firebase-global.js is loaded properly');
-    }
-    
-    if (!config.signInWithEmailAndPassword) {
-        console.error('❌ signInWithEmailAndPassword function not available');
-        console.log('🔧 Check if Firebase Auth SDK is loaded');
-    }
-    
-    if (!config.apiKey) {
-        console.error('❌ Firebase API key not found');
-        console.log('🔧 Check firebase-config.js configuration');
-    }
-    
-    return config;
-};
-// Function to temporarily disable Firebase authentication for testing
-window.disableFirebaseAuth = function() {
-    console.log('🔧 Temporarily disabling Firebase authentication...');
-    
-    // Store the original functions
-    if (!window.originalFirebaseFunctions) {
-        window.originalFirebaseFunctions = {
-            signInWithEmailAndPassword: window.signInWithEmailAndPassword,
-            createUserWithEmailAndPassword: window.createUserWithEmailAndPassword,
-            signInAnonymously: window.signInAnonymously
-        };
-    }
-    
-    // Replace with dummy functions that return successful promises
-    window.signInWithEmailAndPassword = function(auth, email, password) {
-        console.log('🔧 Mock Firebase sign-in called with:', { email, password: '***' });
-        return Promise.resolve({ user: { uid: 'mock-user-id' } });
-    };
-    
-    window.createUserWithEmailAndPassword = function(auth, email, password) {
-        console.log('🔧 Mock Firebase account creation called with:', { email, password: '***' });
-        return Promise.resolve({ user: { uid: 'mock-user-id' } });
-    };
-    
-    window.signInAnonymously = function(auth) {
-        console.log('🔧 Mock Firebase anonymous sign-in called');
-        return Promise.resolve({ user: { uid: 'mock-anonymous-id' } });
-    };
-    
-    console.log('✅ Firebase authentication temporarily disabled for testing');
-    console.log('🔧 Use enableFirebaseAuth() to restore original functions');
-};
-
-// Function to restore original Firebase authentication
-window.enableFirebaseAuth = function() {
-    if (window.originalFirebaseFunctions) {
-        console.log('🔧 Restoring original Firebase authentication...');
-        
-        window.signInWithEmailAndPassword = window.originalFirebaseFunctions.signInWithEmailAndPassword;
-        window.createUserWithEmailAndPassword = window.originalFirebaseFunctions.createUserWithEmailAndPassword;
-        window.signInAnonymously = window.originalFirebaseFunctions.signInAnonymously;
-        
-        console.log('✅ Original Firebase authentication restored');
-    } else {
-        console.log('ℹ️ No original Firebase functions to restore');
-    }
-};
-
-// Function to temporarily disable Firestore operations
-window.disableFirestore = function() {
-    console.log('🔧 Temporarily disabling Firestore operations...');
-    
-    // Store the original functions
-    if (!window.originalFirestoreFunctions) {
-        window.originalFirestoreFunctions = {
-            collection: window.collection,
-            doc: window.doc,
-            getDoc: window.getDoc,
-            setDoc: window.setDoc,
-            onSnapshot: window.onSnapshot
-        };
-    }
-    
-    // Replace with dummy functions that return successful responses
-    window.collection = function(db, path) {
-        console.log('🔧 Mock Firestore collection called:', path);
-        return { path: path, id: 'mock-collection' };
-    };
-    
-    window.doc = function(collection, path) {
-        console.log('🔧 Mock Firestore doc called:', path);
-        return { path: path, id: 'mock-doc' };
-    };
-    
-    window.getDoc = function(docRef) {
-        console.log('🔧 Mock Firestore getDoc called');
-        return Promise.resolve({ 
-            exists: () => false, 
-            data: () => ({}), 
-            id: 'mock-doc' 
-        });
-    };
-    
-    window.setDoc = function(docRef, data) {
-        console.log('🔧 Mock Firestore setDoc called with:', data);
-        return Promise.resolve();
-    };
-    
-    window.onSnapshot = function(docRef, callback) {
-        console.log('🔧 Mock Firestore onSnapshot called');
-        // Don't call callback to prevent errors
-        return () => console.log('🔧 Mock Firestore unsubscribe called');
-    };
-    
-    console.log('✅ Firestore operations temporarily disabled for testing');
-    console.log('🔧 Use enableFirestore() to restore original functions');
-};
-
-// Function to restore original Firestore operations
-window.enableFirestore = function() {
-    if (window.originalFirestoreFunctions) {
-        console.log('🔧 Restoring original Firestore operations...');
-        
-        window.collection = window.originalFirestoreFunctions.collection;
-        window.doc = window.originalFirestoreFunctions.doc;
-        window.getDoc = window.originalFirestoreFunctions.getDoc;
-        window.setDoc = window.originalFirestoreFunctions.setDoc;
-        window.onSnapshot = window.originalFirestoreFunctions.onSnapshot;
-        
-        console.log('✅ Original Firestore operations restored');
-    } else {
-        console.log('ℹ️ No original Firestore functions to restore');
-    }
-};
-
-// Function to check if Firestore is enabled in the project
-window.checkFirestoreEnabled = function() {
-    console.log('🧪 Checking if Firestore is enabled in your project...');
-    
-    if (!window.firebaseConfig) {
-        console.error('❌ Firebase configuration not found');
-        return;
-    }
-    
-    const projectId = window.firebaseConfig.projectId;
-    console.log('🔍 Project ID:', projectId);
-    
-    // Check if Firestore SDK is available
-    if (!window.db) {
-        console.log('❌ Firestore database object not available');
-        console.log('🔧 This suggests Firestore is not enabled in your project');
-        console.log('');
-        console.log('🔧 SOLUTION: Enable Firestore in your Firebase project');
-        console.log('1. Go to https://console.firebase.google.com/');
-        console.log(`2. Select project: ${projectId}`);
-        console.log('3. Navigate to "Firestore Database" in the left sidebar');
-        console.log('4. Click "Create database"');
-        console.log('5. Choose "Start in test mode" for development');
-        console.log('6. Select a location (choose closest to your users)');
-        console.log('7. Click "Done"');
-        return;
-    }
-    
-    // Check if Firestore functions are available
-    const functionsAvailable = {
-        collection: !!window.collection,
-        doc: !!window.doc,
-        getDoc: !!window.getDoc,
-        setDoc: !!window.setDoc,
-        onSnapshot: !!window.onSnapshot
-    };
-    
-    console.log('🔍 Firestore functions available:', functionsAvailable);
-    
-    if (!functionsAvailable.collection || !functionsAvailable.doc) {
-        console.log('❌ Basic Firestore functions not available');
-        console.log('🔧 This suggests Firestore SDK is not properly loaded');
-        console.log('');
-        console.log('🔧 SOLUTION: Check your Firebase SDK loading');
-        console.log('1. Ensure firebase-global.js is loaded');
-        console.log('2. Check browser console for Firebase errors');
-        console.log('3. Verify Firebase project configuration');
-        return;
-    }
-    
-    console.log('✅ Firestore appears to be enabled and SDK is loaded');
-    console.log('🔧 If you\'re still getting errors, run testFirestoreConnection()');
-};
-// Function to diagnose Firestore SDK loading issues
-window.diagnoseFirestoreSDK = function() {
-    console.log('🔍 Diagnosing Firestore SDK loading issues...');
-    
-    // Check if Firebase is loaded
-    console.log('🔍 Firebase availability:', {
-        firebase: typeof window.firebase !== 'undefined',
-        firebaseApp: typeof window.firebase?.app !== 'undefined',
-        firebaseFirestore: typeof window.firebase?.firestore !== 'undefined'
-    });
-    
-    // Check if our global variables are set
-    console.log('🔍 Global Firestore variables:', {
-        db: typeof window.db,
-        dbValue: window.db,
-        collection: typeof window.collection,
-        doc: typeof window.doc,
-        getDoc: typeof window.getDoc,
-        setDoc: typeof window.setDoc,
-        onSnapshot: typeof window.onSnapshot
-    });
-    
-    // Check if firebase-global.js loaded properly
-    console.log('🔍 Firebase global script status:', {
-        firebaseConfig: !!window.firebaseConfig,
-        auth: !!window.auth,
-        signInWithEmailAndPassword: !!window.signInWithEmailAndPassword,
-        createUserWithEmailAndPassword: !!window.createUserWithEmailAndPassword
-    });
-    
-    // Check for common loading issues
-    if (typeof window.firebase === 'undefined') {
-        console.log('❌ Firebase SDK not loaded');
-        console.log('🔧 SOLUTION: Check if firebase-app.js and firebase-firestore.js are loaded');
-    }
-    
-    if (!window.db) {
-        console.log('❌ Firestore database object not initialized');
-        console.log('🔧 SOLUTION: Check firebase-global.js initialization');
-    }
-    
-    if (typeof window.collection !== 'function') {
-        console.log('❌ Firestore collection function not available');
-        console.log('🔧 SOLUTION: Check if firebase-firestore.js is loaded');
-    }
-    
-    // Check if we're in a mock state
-    if (window.originalFirestoreFunctions) {
-        console.log('⚠️ Firestore is currently in mock mode');
-        console.log('🔧 Use enableFirestore() to restore real functions');
-    }
-    
-    return {
-        firebaseLoaded: typeof window.firebase !== 'undefined',
-        firestoreLoaded: typeof window.firebase?.firestore !== 'undefined',
-        dbAvailable: !!window.db,
-        functionsAvailable: !!(window.collection && window.doc)
-    };
-};
-
-// Function to wait for Firebase to be ready
-window.waitForFirebase = function(timeoutMs = 10000) {
-    return new Promise((resolve, reject) => {
-        console.log('⏳ Waiting for Firebase to be ready...');
-        
-        // If Firebase is already ready, resolve immediately
-        if (window.firebaseReady && window.db && window.auth) {
-            console.log('✅ Firebase already ready');
-            resolve({
-                status: 'ready',
-                db: window.db,
-                auth: window.auth,
-                firebaseConfig: window.firebaseConfig
-            });
-            return;
-        }
-        
-        // Set up timeout
-        const timeout = setTimeout(() => {
-            reject(new Error('Firebase initialization timeout after ' + timeoutMs + 'ms'));
-        }, timeoutMs);
-        
-        // Check every 100ms for Firebase readiness
-        const checkInterval = setInterval(() => {
-            if (window.firebaseReady && window.db && window.auth) {
-                clearInterval(checkInterval);
-                clearTimeout(timeout);
-                console.log('✅ Firebase became ready');
-                resolve({
-                    status: 'ready',
-                    db: window.db,
-                    auth: window.auth,
-                    firebaseConfig: window.firebaseConfig
-                });
-            }
-        }, 100);
-        
-        // Also listen for the firebaseReady event if it exists
-        if (window.addEventListener) {
-            const firebaseReadyHandler = () => {
-                clearInterval(checkInterval);
-                clearTimeout(timeout);
-                console.log('✅ Firebase ready event received');
-                resolve({
-                    status: 'ready',
-                    db: window.db,
-                    auth: window.auth,
-                    firebaseConfig: window.firebaseConfig
-                });
-            };
-            
-            // Listen for custom event
-            window.addEventListener('firebaseReady', firebaseReadyHandler, { once: true });
-            
-            // Clean up event listener if promise resolves/rejects
-            setTimeout(() => {
-                window.removeEventListener('firebaseReady', firebaseReadyHandler);
-            }, timeoutMs);
-        }
-    });
-};
-
-// Function to test Firestore with proper Firebase readiness check
-window.testFirestoreWithWait = async function() {
-    console.log('🧪 Testing Firestore with Firebase readiness check...');
-    
-    try {
-        // Wait for Firebase to be ready
-        const firebaseStatus = await window.waitForFirebase(5000);
-        console.log('✅ Firebase is ready:', firebaseStatus);
-        
-        // Now test Firestore
-        console.log('🔄 Testing Firestore operations...');
-        const result = window.testFirestoreConnection();
-        console.log('✅ Firestore test completed:', result);
-        
-        return result;
-        
-    } catch (error) {
-        console.error('❌ Failed to wait for Firebase:', error.message);
-        console.log('🔧 Firebase might not be loading properly');
-        console.log('🔧 Check browser console for Firebase loading errors');
-        console.log('🔧 Verify internet connection and Firebase CDN accessibility');
-        
-        return {
-            status: 'error',
-            error: error.message,
-            firebaseReady: window.firebaseReady,
-            db: !!window.db,
-            auth: !!window.auth
-        };
-    }
-};
-
 // Function to test individual Firestore functions to isolate issues
 window.testFirestoreFunctionsIndividually = function() {
     console.log('🧪 Testing individual Firestore functions...');
@@ -11872,7 +10517,6 @@ window.checkFunctionConflicts = function() {
         hasConflicts: nonNativeFunctions.length > 0
     };
 };
-
 // Function to check Firebase loading status and provide solutions
 window.checkFirebaseLoadingStatus = function() {
     console.log('🔍 Checking Firebase loading status...');
