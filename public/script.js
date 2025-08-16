@@ -2,7 +2,7 @@
 let currentUser = null;
 let currentUserId = null;
 
-function checkLoginStatus() {
+async function checkLoginStatus() {
     const loginStatus = localStorage.getItem('loginStatus');
     const storedUserId = localStorage.getItem('currentUserId');
     
@@ -9390,7 +9390,7 @@ function forceSyncToCloud() {
 }
 
 // Function to check sync status
-function checkSyncStatus() {
+async function checkSyncStatus() {
     console.log('=== CHECKING SYNC STATUS ===');
     
     if (!window.auth || !window.auth.currentUser) {
