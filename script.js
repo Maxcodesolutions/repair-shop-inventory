@@ -167,7 +167,7 @@ function handleLogin(e) {
             
             // Create a valid email for cross-browser sync
             const syncEmail = `${username.trim()}@repairshop.com`; // Fixed email format
-            const syncPassword = 'admin123456'; // Use stronger password for Firebase
+        const syncPassword = 'admin123456'; // Use stronger password for Firebase
             
             // Validate email format
             console.log('🔍 Email validation:', {
@@ -186,8 +186,8 @@ function handleLogin(e) {
                 createAccountAvailable: !!window.createUserWithEmailAndPassword
             });
             
-            // Try to sign in with email/password for consistent cross-browser sync
-            if (window.signInWithEmailAndPassword) {
+                    // Try to sign in with email/password for consistent cross-browser sync
+        if (window.signInWithEmailAndPassword) {
                 // Final validation before Firebase call
                 console.log('🔍 Final validation before Firebase sign-in:', {
                     auth: !!window.auth,
@@ -241,17 +241,17 @@ function handleLogin(e) {
                 }
                 
                 console.log('🔄 Attempting Firebase sign-in...');
-                window.signInWithEmailAndPassword(window.auth, syncEmail, syncPassword)
-                    .then((userCredential) => {
-                        console.log('✅ Signed in with email for cross-browser sync:', userCredential.user.uid);
-                        console.log('Cross-browser user ID:', crossBrowserUserId);
-                        // Data will be automatically loaded from cloud via the auth listener
-                    })
-                    .catch((error) => {
+            window.signInWithEmailAndPassword(window.auth, syncEmail, syncPassword)
+                .then((userCredential) => {
+                    console.log('✅ Signed in with email for cross-browser sync:', userCredential.user.uid);
+                    console.log('Cross-browser user ID:', crossBrowserUserId);
+                    // Data will be automatically loaded from cloud via the auth listener
+                })
+                .catch((error) => {
                         console.log('❌ Email sign-in failed:', error.message);
                         console.log('Error code:', error.code);
-                        
-                        // Check for 400 error (authentication disabled)
+                    
+                    // Check for 400 error (authentication disabled)
                         if (error.code === 'auth/admin-restricted-operation' || error.message.includes('400') || error.code === 'auth/invalid-value-(email),-starting-an-object-on-a-scalar-field') {
                             console.log('🔧 SOLUTION: Firebase Authentication is disabled or misconfigured');
                             console.log('This error typically means:');
@@ -268,9 +268,9 @@ function handleLogin(e) {
                             console.log('5. Check Google Cloud Console for API key restrictions');
                             console.log('');
                             console.log('Falling back to anonymous auth...');
-                            tryAnonymousAuth();
-                            return;
-                        }
+                        tryAnonymousAuth();
+                        return;
+                    }
                         
                         // Check for other common errors
                         if (error.code === 'auth/user-not-found') {
@@ -282,9 +282,9 @@ function handleLogin(e) {
                         } else {
                             console.log('🔧 Unknown error, trying to create account...');
                         }
-                        
-                        // Try to create account if sign-in fails
-                        if (window.createUserWithEmailAndPassword) {
+                    
+                    // Try to create account if sign-in fails
+                    if (window.createUserWithEmailAndPassword) {
                             // Final validation before Firebase account creation
                             console.log('🔍 Final validation before Firebase account creation:', {
                                 auth: !!window.auth,
@@ -309,17 +309,17 @@ function handleLogin(e) {
                             }
                             
                             console.log('🔄 Attempting to create Firebase account...');
-                            window.createUserWithEmailAndPassword(window.auth, syncEmail, syncPassword)
-                                .then((userCredential) => {
-                                    console.log('✅ Account created for cross-browser sync:', userCredential.user.uid);
-                                    console.log('Cross-browser user ID:', crossBrowserUserId);
-                                    // Data will be automatically loaded from cloud via the auth listener
-                                })
-                                .catch((createError) => {
+                        window.createUserWithEmailAndPassword(window.auth, syncEmail, syncPassword)
+                            .then((userCredential) => {
+                                console.log('✅ Account created for cross-browser sync:', userCredential.user.uid);
+                                console.log('Cross-browser user ID:', crossBrowserUserId);
+                                // Data will be automatically loaded from cloud via the auth listener
+                            })
+                            .catch((createError) => {
                                     console.log('❌ Account creation failed:', createError.message);
                                     console.log('Error code:', createError.code);
-                                    
-                                    // Check for 400 error (authentication disabled)
+                                
+                                // Check for 400 error (authentication disabled)
                                     if (createError.code === 'auth/admin-restricted-operation' || createError.message.includes('400') || createError.code === 'auth/invalid-value-(email),-starting-an-object-on-a-scalar-field') {
                                         console.log('🔧 SOLUTION: Firebase Authentication is disabled or misconfigured');
                                         console.log('This error typically means:');
@@ -336,9 +336,9 @@ function handleLogin(e) {
                                         console.log('5. Check Google Cloud Console for API key restrictions');
                                         console.log('');
                                         console.log('Falling back to anonymous auth...');
-                                        tryAnonymousAuth();
-                                        return;
-                                    }
+                                    tryAnonymousAuth();
+                                    return;
+                                }
                                     
                                     // Check for other common errors
                                     if (createError.code === 'auth/email-already-in-use') {
@@ -350,19 +350,19 @@ function handleLogin(e) {
                                     } else {
                                         console.log('🔧 Unknown error, trying anonymous auth...');
                                     }
-                                    
-                                    // Fallback to anonymous auth
-                                    tryAnonymousAuth();
-                                });
-                        } else {
+                                
+                                // Fallback to anonymous auth
+                                tryAnonymousAuth();
+                            });
+                    } else {
                             console.log('🔧 createUserWithEmailAndPassword not available, trying anonymous auth...');
-                            tryAnonymousAuth();
-                        }
-                    });
-            } else {
+                        tryAnonymousAuth();
+                    }
+                });
+        } else {
                 console.log('🔧 signInWithEmailAndPassword not available, trying anonymous auth...');
-                tryAnonymousAuth();
-            }
+            tryAnonymousAuth();
+        }
         } else {
             console.log('🔧 Firebase auth not available, cloud sync disabled');
         }
@@ -586,7 +586,7 @@ function setupFirebaseAuthListener() {
             console.log('No current user, attempting consistent authentication for cross-device sync...');
             
             // Try anonymous auth immediately
-            tryAnonymousAuth();
+                            tryAnonymousAuth();
         }
         }
     } else {
@@ -729,8 +729,8 @@ async function loadDataFromCloud() {
         }
         const docRef = window.doc(window.safeCollection(window.db, 'users'), user.uid);
         window.onSnapshot(docRef, (docSnap) => {
-            if (docSnap.exists()) {
-                const data = docSnap.data();
+        if (docSnap.exists()) {
+            const data = docSnap.data();
                 console.log('✅ Real-time data loaded from cloud:', data);
                 // Load data from cloud with safer validation - only use defaults if data is completely missing
                 inventory = Array.isArray(data.inventory) ? data.inventory : (data.inventory || getDefaultInventory());
@@ -745,12 +745,12 @@ async function loadDataFromCloud() {
                 payments = Array.isArray(data.payments) ? data.payments : (data.payments || []);
                 deliveries = Array.isArray(data.deliveries) ? data.deliveries : (data.deliveries || getDefaultDeliveries());
                 users = Array.isArray(data.users) ? data.users : (data.users || getDefaultUsers());
-                console.log('✅ Data loaded successfully from cloud:', {
-                    inventory: inventory.length,
-                    vendors: vendors.length,
-                    customers: customers.length,
-                    repairs: repairs.length,
-                    invoices: invoices.length,
+            console.log('✅ Data loaded successfully from cloud:', {
+                inventory: inventory.length,
+                vendors: vendors.length,
+                customers: customers.length,
+                repairs: repairs.length,
+                invoices: invoices.length,
                     quotations: quotations.length,
                     pickDrops: pickDrops.length,
                     payments: payments.length,
@@ -763,9 +763,9 @@ async function loadDataFromCloud() {
                 }, 100);
                 // Update username in header after cloud data is loaded
                 updateUsernameInHeader();
-            } else {
+        } else {
                 console.warn('❌ No cloud data found for this user.');
-            }
+        }
         }, (error) => {
             console.error('[Firestore Real-Time Error]', { docRef, error });
         });
@@ -6352,7 +6352,7 @@ function populateJobCardPartsList(partsData) {
             // Check if it's valid JSON first
             if (partsData.trim().startsWith('[') || partsData.trim().startsWith('{')) {
                 try {
-                    parts = JSON.parse(partsData);
+            parts = JSON.parse(partsData);
                 } catch (jsonError) {
                     console.warn('JSON parsing failed, treating as plain text:', jsonError);
                     // If JSON parsing fails, treat as plain text
@@ -9555,7 +9555,7 @@ window.testFirestoreFunctionsIndividually = function() {
         if (window.db && typeof window.db === 'object') {
             results.dbValid = true;
             console.log('✅ Database object is valid');
-        } else {
+    } else {
             results.dbValid = false;
             console.log('❌ Database object is invalid');
         }
@@ -9617,7 +9617,7 @@ window.testFirestoreFunctionsIndividually = function() {
                         errorStack: docError.stack
                     });
                 }
-            } else {
+    } else {
                 results.docWorking = false;
                 console.log('❌ Cannot test doc - collection not working');
             }
@@ -9850,12 +9850,12 @@ window.testFirebaseAuth = function() {
     console.log('🔄 Testing Firebase sign-in with hardcoded values...');
     
     window.signInWithEmailAndPassword(window.auth, testEmail, testPassword)
-        .then((userCredential) => {
+                        .then((userCredential) => {
             console.log('✅ Test sign-in successful:', userCredential.user.uid);
-        })
-        .catch((error) => {
+                        })
+                        .catch((error) => {
             console.log('❌ Test sign-in failed:', error.message);
-            console.log('Error code:', error.code);
+                            console.log('Error code:', error.code);
             
             if (error.code === 'auth/invalid-value-(email),-starting-an-object-on-a-scalar-field') {
                 console.log('🔍 This confirms the issue is with Firebase configuration, not the email parameter');
@@ -9919,7 +9919,7 @@ window.testFirestoreConnection = function() {
                 console.log('🔍 Test collection:', testCollection);
                 console.log('🔍 Test document:', testDoc);
                 
-            } else {
+    } else {
                 console.log('🔄 Testing with real Firestore functions...');
                 
                 // Validate parameters before calling
