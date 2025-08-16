@@ -37,7 +37,7 @@ async function initializeFirebase() {
         
         // Import Firebase modules
         const { initializeApp } = await import("https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js");
-        const { getFirestore, collection: firestoreCollection, doc: firestoreDoc, setDoc: firestoreSetDoc, getDoc: firestoreGetDoc, connectFirestoreEmulator } = await import("https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js");
+        const { getFirestore, collection: firestoreCollection, doc: firestoreDoc, setDoc: firestoreSetDoc, getDoc: firestoreGetDoc, onSnapshot, connectFirestoreEmulator } = await import("https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js");
         const { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, connectAuthEmulator } = await import("https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js");
         const { getAnalytics } = await import("https://www.gstatic.com/firebasejs/12.0.0/firebase-analytics.js");
 
@@ -82,7 +82,7 @@ async function initializeFirebase() {
         window.doc = (collectionRef, documentId) => firestoreDoc(collectionRef, documentId);
         window.setDoc = (docRef, data, options) => firestoreSetDoc(docRef, data, options);
         window.getDoc = (docRef) => firestoreGetDoc(docRef);
-        window.onSnapshot = (...args) => (await import("https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js")).then(m => m.onSnapshot(...args));
+        window.onSnapshot = onSnapshot;
         
         // Expose auth functions properly bound to the auth object
         window.onAuthStateChanged = (callback) => onAuthStateChanged(auth, callback);
