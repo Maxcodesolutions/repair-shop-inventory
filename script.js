@@ -18,11 +18,7 @@ function checkLoginStatus() {
             console.log('User found and active:', currentUser);
             
             // Update username in header immediately
-            const usernameElement = document.getElementById('username');
-            if (usernameElement) {
-                usernameElement.textContent = currentUser.fullName;
-                console.log('✅ Username updated in header during login check:', currentUser.fullName);
-            }
+            updateUsernameInHeader();
             
             showApp();
             // Note: applyUserPermissions() is now called in showApp()
@@ -65,13 +61,7 @@ function showApp() {
     showSection('dashboard');
     
     // Update username in header
-    if (currentUser) {
-        const usernameElement = document.getElementById('username');
-        if (usernameElement) {
-            usernameElement.textContent = currentUser.fullName;
-            console.log('✅ Username updated in header during showApp:', currentUser.fullName);
-        }
-    }
+    updateUsernameInHeader();
     
     // Apply user permissions
     applyUserPermissions();
@@ -139,11 +129,7 @@ function handleLogin(e) {
         loginSuccess.textContent = 'Login successful! Redirecting...';
         
         // Update username in header immediately
-        const usernameElement = document.getElementById('username');
-        if (usernameElement) {
-            usernameElement.textContent = authenticatedUser.fullName;
-            console.log('✅ Username updated in header:', authenticatedUser.fullName);
-        }
+        updateUsernameInHeader();
         
         // Create a consistent cross-browser user ID
         const crossBrowserUserId = `user_${username}_${authenticatedUser.id}`;
@@ -1106,13 +1092,7 @@ function applyUserPermissions() {
     }
     
     // Update current user name in header
-    const usernameElement = document.getElementById('username');
-    if (usernameElement) {
-        console.log('🔧 Updating username in header to:', currentUser.fullName);
-        usernameElement.textContent = currentUser.fullName;
-    } else {
-        console.warn('⚠️ Username element not found in header');
-    }
+    updateUsernameInHeader();
     
     // Debug current user state
     console.log('🔧 Current user state in applyUserPermissions:', {
