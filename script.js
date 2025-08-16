@@ -733,182 +733,7 @@ function loadData() {
         }
     }
 }
-function loadDataFromLocal() {
-    console.log('Loading data from localStorage...');
-    
-    // Check if data already exists to prevent overwriting
-    const existingInventory = localStorage.getItem('inventory');
-    const existingVendors = localStorage.getItem('vendors');
-    const existingCustomers = localStorage.getItem('customers');
-    const existingRepairs = localStorage.getItem('repairs');
-    const existingInvoices = localStorage.getItem('invoices');
-    const existingQuotations = localStorage.getItem('quotations');
-    const existingPurchases = localStorage.getItem('purchases');
-    const existingOutsource = localStorage.getItem('outsource');
-    const existingPickDrops = localStorage.getItem('pickDrops');
-    const existingPayments = localStorage.getItem('payments');
-    const existingDeliveries = localStorage.getItem('deliveries');
-    const existingUsers = localStorage.getItem('users');
-    
-    console.log('Existing data check:', {
-        inventory: existingInventory ? 'exists' : 'missing',
-        vendors: existingVendors ? 'exists' : 'missing',
-        customers: existingCustomers ? 'exists' : 'missing',
-        repairs: existingRepairs ? 'exists' : 'missing',
-        invoices: existingInvoices ? 'exists' : 'missing',
-        quotations: existingQuotations ? 'exists' : 'missing',
-        purchases: existingPurchases ? 'exists' : 'missing',
-        outsource: existingOutsource ? 'exists' : 'missing',
-        pickDrops: existingPickDrops ? 'exists' : 'missing',
-        payments: existingPayments ? 'exists' : 'missing',
-        deliveries: existingDeliveries ? 'exists' : 'missing',
-        users: existingUsers ? 'exists' : 'missing'
-    });
-    
-    // Load data with proper error handling
-    try {
-        // Only load default data if no existing data exists
-        if (existingInventory) {
-            inventory = JSON.parse(existingInventory);
-        } else {
-            inventory = getDefaultInventory();
-        }
-        
-        if (existingVendors) {
-            vendors = JSON.parse(existingVendors);
-        } else {
-            vendors = getDefaultVendors();
-        }
-        
-        if (existingCustomers) {
-            customers = JSON.parse(existingCustomers);
-        } else {
-            customers = getDefaultCustomers();
-        }
-        
-        if (existingPurchases) {
-            purchases = JSON.parse(existingPurchases);
-        } else {
-            purchases = [];
-        }
-        
-        if (existingRepairs) {
-            repairs = JSON.parse(existingRepairs);
-        } else {
-            repairs = [];
-        }
-        
-        if (existingOutsource) {
-            outsource = JSON.parse(existingOutsource);
-        } else {
-            outsource = [];
-        }
-        
-        if (existingInvoices) {
-            invoices = JSON.parse(existingInvoices);
-        } else {
-            invoices = [];
-        }
-        
-        if (existingQuotations) {
-            quotations = JSON.parse(existingQuotations);
-        } else {
-            quotations = [];
-        }
-        
-        if (existingPickDrops) {
-            pickDrops = JSON.parse(existingPickDrops);
-        } else {
-            pickDrops = [];
-        }
-        
-        if (existingPayments) {
-            payments = JSON.parse(existingPayments);
-        } else {
-            payments = [];
-        }
-        
-        if (existingDeliveries) {
-            deliveries = JSON.parse(existingDeliveries);
-        } else {
-            deliveries = getDefaultDeliveries();
-        }
-        
-        // Load users with error handling
-        if (existingUsers) {
-            users = JSON.parse(existingUsers);
-        } else {
-            users = getDefaultUsers();
-        }
-        
-        // Migrate existing items to include units if they don't have them
-        inventory.forEach(item => {
-            if (!item.unit) {
-                item.unit = 'pcs'; // Default to pieces for existing items
-                console.log('Migrated item:', item.name, 'to have unit:', item.unit);
-            }
-        });
-        
-        // Migrate existing users to include delivery and payment permissions
-        users.forEach(user => {
-            if (user.permissions && !user.permissions.includes('delivery')) {
-                user.permissions.push('delivery');
-                console.log('Added delivery permission to user:', user.username);
-            }
-            if (user.permissions && !user.permissions.includes('payments')) {
-                user.permissions.push('payments');
-                console.log('Added payments permission to user:', user.username);
-            }
-        });
-        
-        console.log('Data loaded successfully from localStorage:', {
-            inventory: inventory.length,
-            vendors: vendors.length,
-            customers: customers.length,
-            purchases: purchases.length,
-            repairs: repairs.length,
-            outsource: outsource.length,
-            invoices: invoices.length,
-            quotations: quotations.length,
-            pickDrops: pickDrops.length,
-            payments: payments.length,
-            deliveries: deliveries.length,
-            users: users.length
-        });
-        
-        // Validate and fix data consistency issues - delay to ensure data is loaded
-        setTimeout(() => {
-            validateAndFixDataConsistency();
-        }, 100);
-        
-        // Only save if we loaded new data to prevent overwriting
-        console.log('Data loaded from localStorage successfully');
-        
-        // Update username in header after data is loaded
-        updateUsernameInHeader();
-        
-    } catch (error) {
-        console.error('Error loading data from localStorage:', error);
-        // Load default data if there's an error
-        inventory = getDefaultInventory();
-        vendors = getDefaultVendors();
-        customers = getDefaultCustomers();
-        purchases = [];
-        repairs = [];
-        outsource = [];
-        invoices = [];
-        quotations = [];
-        pickDrops = [];
-        payments = [];
-        deliveries = getDefaultDeliveries();
-        users = getDefaultUsers();
-        
-        console.log('Loaded default data due to error');
-        // Don't save default data as it could overwrite existing data
-    }
-}
-
-async function loadDataFromCloud() {
+function loadDataFromCloud() {
     if (!window.auth || !window.auth.currentUser) {
         console.log('No authenticated user, falling back to localStorage');
         loadDataFromLocal();
@@ -6253,7 +6078,6 @@ function updateInventoryStatus(itemId, newStatus) {
     updateDashboard();
 }
 window.updateInventoryStatus = updateInventoryStatus;
-
 // Update renderInventory function to use dropdown
 function renderInventoryWithDropdown() {
     const tbody = document.getElementById('inventory-tbody');
@@ -9789,7 +9613,6 @@ function showAvailableFunctions() {
     console.log('  fixCrossBrowserSync() - Fix cross-browser sync');
     console.log('  checkCrossBrowserSync() - Check cross-browser sync');
 }
-
 // Make the help function available globally
 window.showAvailableFunctions = showAvailableFunctions;
 window.help = showAvailableFunctions; // Short alias
@@ -10585,7 +10408,6 @@ window.checkFirebaseLoadingStatus = function() {
     
     return status;
 };
-
 // Function to test Firebase authentication with minimal parameters
 window.testFirebaseAuth = function() {
     console.log('🧪 Testing Firebase authentication with minimal parameters...');
