@@ -600,7 +600,7 @@ function setupFirebaseAuthListener() {
             console.log('No current user, attempting consistent authentication for cross-device sync...');
             
             // Try anonymous auth immediately
-            tryAnonymousAuth();
+                            tryAnonymousAuth();
         }
     } else {
         console.log('Firebase auth not available, using local storage only');
@@ -729,182 +729,7 @@ function loadData() {
         }
     }
 }
-function loadDataFromLocal() {
-    console.log('Loading data from localStorage...');
-    
-    // Check if data already exists to prevent overwriting
-    const existingInventory = localStorage.getItem('inventory');
-    const existingVendors = localStorage.getItem('vendors');
-    const existingCustomers = localStorage.getItem('customers');
-    const existingRepairs = localStorage.getItem('repairs');
-    const existingInvoices = localStorage.getItem('invoices');
-    const existingQuotations = localStorage.getItem('quotations');
-    const existingPurchases = localStorage.getItem('purchases');
-    const existingOutsource = localStorage.getItem('outsource');
-    const existingPickDrops = localStorage.getItem('pickDrops');
-    const existingPayments = localStorage.getItem('payments');
-    const existingDeliveries = localStorage.getItem('deliveries');
-    const existingUsers = localStorage.getItem('users');
-    
-    console.log('Existing data check:', {
-        inventory: existingInventory ? 'exists' : 'missing',
-        vendors: existingVendors ? 'exists' : 'missing',
-        customers: existingCustomers ? 'exists' : 'missing',
-        repairs: existingRepairs ? 'exists' : 'missing',
-        invoices: existingInvoices ? 'exists' : 'missing',
-        quotations: existingQuotations ? 'exists' : 'missing',
-        purchases: existingPurchases ? 'exists' : 'missing',
-        outsource: existingOutsource ? 'exists' : 'missing',
-        pickDrops: existingPickDrops ? 'exists' : 'missing',
-        payments: existingPayments ? 'exists' : 'missing',
-        deliveries: existingDeliveries ? 'exists' : 'missing',
-        users: existingUsers ? 'exists' : 'missing'
-    });
-    
-    // Load data with proper error handling
-    try {
-        // Only load default data if no existing data exists
-        if (existingInventory) {
-            inventory = JSON.parse(existingInventory);
-        } else {
-            inventory = getDefaultInventory();
-        }
-        
-        if (existingVendors) {
-            vendors = JSON.parse(existingVendors);
-        } else {
-            vendors = getDefaultVendors();
-        }
-        
-        if (existingCustomers) {
-            customers = JSON.parse(existingCustomers);
-        } else {
-            customers = getDefaultCustomers();
-        }
-        
-        if (existingPurchases) {
-            purchases = JSON.parse(existingPurchases);
-        } else {
-            purchases = [];
-        }
-        
-        if (existingRepairs) {
-            repairs = JSON.parse(existingRepairs);
-        } else {
-            repairs = [];
-        }
-        
-        if (existingOutsource) {
-            outsource = JSON.parse(existingOutsource);
-        } else {
-            outsource = [];
-        }
-        
-        if (existingInvoices) {
-            invoices = JSON.parse(existingInvoices);
-        } else {
-            invoices = [];
-        }
-        
-        if (existingQuotations) {
-            quotations = JSON.parse(existingQuotations);
-        } else {
-            quotations = [];
-        }
-        
-        if (existingPickDrops) {
-            pickDrops = JSON.parse(existingPickDrops);
-        } else {
-            pickDrops = [];
-        }
-        
-        if (existingPayments) {
-            payments = JSON.parse(existingPayments);
-        } else {
-            payments = [];
-        }
-        
-        if (existingDeliveries) {
-            deliveries = JSON.parse(existingDeliveries);
-        } else {
-            deliveries = getDefaultDeliveries();
-        }
-        
-        // Load users with error handling
-        if (existingUsers) {
-            users = JSON.parse(existingUsers);
-        } else {
-            users = getDefaultUsers();
-        }
-        
-        // Migrate existing items to include units if they don't have them
-        inventory.forEach(item => {
-            if (!item.unit) {
-                item.unit = 'pcs'; // Default to pieces for existing items
-                console.log('Migrated item:', item.name, 'to have unit:', item.unit);
-            }
-        });
-        
-        // Migrate existing users to include delivery and payment permissions
-        users.forEach(user => {
-            if (user.permissions && !user.permissions.includes('delivery')) {
-                user.permissions.push('delivery');
-                console.log('Added delivery permission to user:', user.username);
-            }
-            if (user.permissions && !user.permissions.includes('payments')) {
-                user.permissions.push('payments');
-                console.log('Added payments permission to user:', user.username);
-            }
-        });
-        
-        console.log('Data loaded successfully from localStorage:', {
-            inventory: inventory.length,
-            vendors: vendors.length,
-            customers: customers.length,
-            purchases: purchases.length,
-            repairs: repairs.length,
-            outsource: outsource.length,
-            invoices: invoices.length,
-            quotations: quotations.length,
-            pickDrops: pickDrops.length,
-            payments: payments.length,
-            deliveries: deliveries.length,
-            users: users.length
-        });
-        
-        // Validate and fix data consistency issues - delay to ensure data is loaded
-        setTimeout(() => {
-            validateAndFixDataConsistency();
-        }, 100);
-        
-        // Only save if we loaded new data to prevent overwriting
-        console.log('Data loaded from localStorage successfully');
-        
-        // Update username in header after data is loaded
-        updateUsernameInHeader();
-        
-    } catch (error) {
-        console.error('Error loading data from localStorage:', error);
-        // Load default data if there's an error
-        inventory = getDefaultInventory();
-        vendors = getDefaultVendors();
-        customers = getDefaultCustomers();
-        purchases = [];
-        repairs = [];
-        outsource = [];
-        invoices = [];
-        quotations = [];
-        pickDrops = [];
-        payments = [];
-        deliveries = getDefaultDeliveries();
-        users = getDefaultUsers();
-        
-        console.log('Loaded default data due to error');
-        // Don't save default data as it could overwrite existing data
-    }
-}
-
-async function loadDataFromCloud() {
+function loadDataFromCloud() {
     if (!window.auth || !window.auth.currentUser) {
         console.log('No authenticated user, falling back to localStorage');
         loadDataFromLocal();
@@ -931,73 +756,73 @@ async function loadDataFromCloud() {
         const docRef = window.doc(window.safeCollection(window.db, 'users'), user.uid);
         console.log('[Firestore Read] getDoc', { docRef, path: docRef.path || docRef.id || docRef });
         try {
-            const docSnap = await window.getDoc(docRef);
+        const docSnap = await window.getDoc(docRef);
             console.log('[Firestore Read Result]', { docRef, path: docRef.path || docRef.id || docRef, exists: docSnap.exists(), data: docSnap.data && docSnap.data() });
+        
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            console.log('Cloud data found, loading...');
+            console.log('Cloud data keys:', Object.keys(data));
+            console.log('Cloud data timestamp:', data.lastUpdated);
             
-            if (docSnap.exists()) {
-                const data = docSnap.data();
-                console.log('Cloud data found, loading...');
-                console.log('Cloud data keys:', Object.keys(data));
-                console.log('Cloud data timestamp:', data.lastUpdated);
-                
-                // Load data from cloud with safer validation - only use defaults if data is completely missing
-                inventory = Array.isArray(data.inventory) ? data.inventory : (data.inventory || getDefaultInventory());
-                vendors = Array.isArray(data.vendors) ? data.vendors : (data.vendors || getDefaultVendors());
-                customers = Array.isArray(data.customers) ? data.customers : (data.customers || getDefaultCustomers());
-                purchases = Array.isArray(data.purchases) ? data.purchases : (data.purchases || []);
-                repairs = Array.isArray(data.repairs) ? data.repairs : (data.repairs || []);
-                outsourceRepairs = Array.isArray(data.outsourceRepairs) ? data.outsourceRepairs : (data.outsourceRepairs || []);
-                invoices = Array.isArray(data.invoices) ? data.invoices : (data.invoices || []);
-                quotations = Array.isArray(data.quotations) ? data.quotations : (data.quotations || []);
-                pickDrops = Array.isArray(data.pickDrops) ? data.pickDrops : (data.pickDrops || []);
-                payments = Array.isArray(data.payments) ? data.payments : (data.payments || []);
-                deliveries = Array.isArray(data.deliveries) ? data.deliveries : (data.deliveries || getDefaultDeliveries());
-                users = Array.isArray(data.users) ? data.users : (data.users || getDefaultUsers());
-                
-                console.log('✅ Data loaded successfully from cloud:', {
-                    inventory: inventory.length,
-                    vendors: vendors.length,
-                    customers: customers.length,
-                    repairs: repairs.length,
-                    invoices: invoices.length,
-                    quotations: quotations.length,
-                    pickDrops: pickDrops.length
-                });
-                
-                // Validate and fix data consistency issues - delay to ensure data is loaded
-                setTimeout(() => {
-                    validateAndFixDataConsistency();
-                }, 100);
-                
-                // Update username in header after cloud data is loaded
-                updateUsernameInHeader();
-                
-                // Check sync timestamp
-                try {
+            // Load data from cloud with safer validation - only use defaults if data is completely missing
+            inventory = Array.isArray(data.inventory) ? data.inventory : (data.inventory || getDefaultInventory());
+            vendors = Array.isArray(data.vendors) ? data.vendors : (data.vendors || getDefaultVendors());
+            customers = Array.isArray(data.customers) ? data.customers : (data.customers || getDefaultCustomers());
+            purchases = Array.isArray(data.purchases) ? data.purchases : (data.purchases || []);
+            repairs = Array.isArray(data.repairs) ? data.repairs : (data.repairs || []);
+            outsourceRepairs = Array.isArray(data.outsourceRepairs) ? data.outsourceRepairs : (data.outsourceRepairs || []);
+            invoices = Array.isArray(data.invoices) ? data.invoices : (data.invoices || []);
+            quotations = Array.isArray(data.quotations) ? data.quotations : (data.quotations || []);
+            pickDrops = Array.isArray(data.pickDrops) ? data.pickDrops : (data.pickDrops || []);
+            payments = Array.isArray(data.payments) ? data.payments : (data.payments || []);
+            deliveries = Array.isArray(data.deliveries) ? data.deliveries : (data.deliveries || getDefaultDeliveries());
+            users = Array.isArray(data.users) ? data.users : (data.users || getDefaultUsers());
+            
+            console.log('✅ Data loaded successfully from cloud:', {
+                inventory: inventory.length,
+                vendors: vendors.length,
+                customers: customers.length,
+                repairs: repairs.length,
+                invoices: invoices.length,
+                quotations: quotations.length,
+                pickDrops: pickDrops.length
+            });
+            
+            // Validate and fix data consistency issues - delay to ensure data is loaded
+            setTimeout(() => {
+                validateAndFixDataConsistency();
+            }, 100);
+            
+            // Update username in header after cloud data is loaded
+            updateUsernameInHeader();
+            
+            // Check sync timestamp
+            try {
                     const syncRef = window.doc(window.safeCollection(window.db, 'sync'), user.uid);
                     console.log('[Firestore Read] getDoc', { docRef: syncRef, path: syncRef.path || syncRef.id || syncRef });
                     try {
-                        const syncSnap = await window.getDoc(syncRef);
+                const syncSnap = await window.getDoc(syncRef);
                         console.log('[Firestore Read Result]', { docRef: syncRef, path: syncRef.path || syncRef.id || syncRef, exists: syncSnap.exists(), data: syncSnap.data && syncSnap.data() });
-                        if (syncSnap.exists()) {
-                            const syncData = syncSnap.data();
-                            console.log('✅ Last sync info:', syncData);
+                if (syncSnap.exists()) {
+                    const syncData = syncSnap.data();
+                    console.log('✅ Last sync info:', syncData);
                         }
                     } catch (error) {
                         console.error('[Firestore Read Error]', { docRef: syncRef, path: syncRef.path || syncRef.id || syncRef, error });
                         throw error;
-                    }
-                } catch (syncError) {
-                    console.log('No sync timestamp found');
                 }
-                
+            } catch (syncError) {
+                console.log('No sync timestamp found');
+            }
+            
                 // Only render UI after data is loaded
                 if (typeof renderAll === 'function') {
                     renderAll();
                 }
-            } else {
-                console.log('No cloud data found, loading from localStorage');
-                loadDataFromLocal();
+        } else {
+            console.log('No cloud data found, loading from localStorage');
+            loadDataFromLocal();
             }
         } catch (error) {
             console.error('[Firestore Read Error]', { docRef, path: docRef.path || docRef.id || docRef, error });
@@ -1186,14 +1011,14 @@ async function saveDataToCloud() {
                         }, options: {} });
                         try {
                             await window.setDoc(syncRef, {
-                                lastSync: new Date().toISOString(),
-                                userAgent: navigator.userAgent,
-                                dataCount: {
-                                    inventory: inventory.length,
-                                    customers: customers.length,
-                                    repairs: repairs.length
-                                }
-                            });
+                            lastSync: new Date().toISOString(),
+                            userAgent: navigator.userAgent,
+                            dataCount: {
+                                inventory: inventory.length,
+                                customers: customers.length,
+                                repairs: repairs.length
+                            }
+                        });
                         } catch (error) {
                             console.error('[Firestore Write Error]', { docRef: syncRef, path: syncRef.path || syncRef.id || syncRef, data: {
                                 lastSync: new Date().toISOString(),
@@ -3078,6 +2903,7 @@ function resetUserModal() {
     // Close modal
     closeModal('add-user-modal');
 }
+
 function showSuccessMessage(message) {
     // Create success message element
     const successDiv = document.createElement('div');
