@@ -699,7 +699,7 @@ function initializeApplication() {
 }
 
 // Data management
-function loadData() {
+async function loadData() {
     console.log('=== LOADING DATA ===');
     
     // Initialize data manager for server-side storage
@@ -711,18 +711,19 @@ function loadData() {
     // Always try to load from cloud first, fallback to localStorage only if cloud fails
     if (window.auth && window.auth.currentUser) {
         console.log('User authenticated, loading from cloud...');
-        loadDataFromCloud();
+        await loadDataFromCloud();
     } else {
         console.log('No Firebase auth, attempting anonymous auth for cloud sync...');
         // Try anonymous authentication for cloud sync
         if (window.signInAnonymously) {
-            window.signInAnonymously(window.auth).then(() => {
+            try {
+                await window.signInAnonymously(window.auth);
                 console.log('Anonymous auth successful, loading from cloud...');
-                loadDataFromCloud();
-            }).catch((error) => {
+                await loadDataFromCloud();
+            } catch (error) {
                 console.log('Anonymous auth failed, using localStorage as fallback:', error);
                 loadDataFromLocal();
-            });
+            }
         } else {
             console.log('Firebase auth not available, using localStorage as fallback...');
             loadDataFromLocal();
@@ -4563,7 +4564,6 @@ function removeInvoiceItemFromEdit(button) {
     button.closest('tr').remove();
     updateInvoiceEditTotals();
 }
-
 function saveInvoiceChanges() {
     const invoiceId = document.getElementById('invoice-detail-view').getAttribute('data-invoice-id');
     const invoice = invoices.find(i => i.id === parseInt(invoiceId));
