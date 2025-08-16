@@ -85,9 +85,9 @@ async function initializeFirebase() {
         
         // Expose auth functions properly bound to the auth object
         window.onAuthStateChanged = (callback) => onAuthStateChanged(auth, callback);
-        window.signInWithEmailAndPassword = (email, password) => signInWithEmailAndPassword(auth, email, password);
-        window.createUserWithEmailAndPassword = (email, password) => createUserWithEmailAndPassword(auth, email, password);
-        window.signOut = () => signOut(auth);
+        window.signInWithEmailAndPassword = signInWithEmailAndPassword;
+        window.createUserWithEmailAndPassword = createUserWithEmailAndPassword;
+        window.signOut = signOut;
 
         // Add connection health monitoring
         window.checkFirestoreConnection = () => {
