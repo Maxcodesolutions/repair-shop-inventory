@@ -29,7 +29,7 @@ class DataManager {
             
             // Check if Firebase is available
             if (!window.auth) {
-                console.log('🔧 Firebase Config: Firebase not available, using localStorage only');
+                console.error('🔧 Firebase Config: Firebase not available. Please ensure Firebase is initialized.');
                 this.isOnline = false;
                 return;
             }
@@ -56,7 +56,7 @@ class DataManager {
     // Save data to server
     async saveDataToServer(collectionName, data, documentId = null) {
         if (!this.isFirebaseAvailable()) {
-            console.log('🔧 Firebase Config: Firebase not available, saving to localStorage only');
+            console.error('🔧 Firebase Config: Firebase not available, cannot save data.');
             return false;
         }
 
@@ -92,7 +92,7 @@ class DataManager {
     // Load data from server
     async loadDataFromServer(collectionName, documentId = null) {
         if (!this.isFirebaseAvailable()) {
-            console.log('🔧 Firebase Config: Firebase not available, loading from localStorage only');
+            console.error('🔧 Firebase Config: Firebase not available, cannot load data.');
             return null;
         }
 
@@ -128,7 +128,7 @@ class DataManager {
     async saveUserData(dataType, data) {
         const user = this.getCurrentUser();
         if (!user) {
-            console.log('🔧 Firebase Config: No user authenticated, cannot save user data');
+            console.error('🔧 Firebase Config: No user authenticated, cannot save user data.');
             return false;
         }
 
@@ -139,7 +139,7 @@ class DataManager {
     async loadUserData(dataType) {
         const user = this.getCurrentUser();
         if (!user) {
-            console.log('🔧 Firebase Config: No user authenticated, cannot load user data');
+            console.error('🔧 Firebase Config: No user authenticated, cannot load user data.');
             return null;
         }
 
@@ -151,7 +151,7 @@ class DataManager {
     async saveAllAppData(appData) {
         const user = this.getCurrentUser();
         if (!user) {
-            console.log('🔧 Firebase Config: No user authenticated, cannot save app data');
+            console.error('🔧 Firebase Config: No user authenticated, cannot save app data.');
             return false;
         }
 
@@ -177,7 +177,7 @@ class DataManager {
     async loadAllAppData() {
         const user = this.getCurrentUser();
         if (!user) {
-            console.log('🔧 Firebase Config: No user authenticated, cannot load app data');
+            console.error('🔧 Firebase Config: No user authenticated, cannot load app data.');
             return null;
         }
 

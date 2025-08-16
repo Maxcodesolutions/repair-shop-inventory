@@ -112,7 +112,7 @@ class CloudSyncManager {
             }
             
             // Test basic read operation
-            const testCollection = window.collection(window.db, '_connection_test');
+            const testCollection = window.safeCollection(window.db, '_connection_test');
             const testDoc = window.doc(testCollection, 'test');
             
             // Try to get the document (this will fail if there are connection issues)
@@ -492,7 +492,7 @@ class CloudSyncManager {
             console.log('🔧 SOLUTION: You need to log in to the application first');
             console.log('🔧 The login process should store userEmail and userPassword');
             console.log('🔧 Then cloud sync can use those credentials for Firebase');
-            return {
+        return { 
                 status: 'no_credentials',
                 message: 'No basic credentials found - log in to the application first'
             };
@@ -819,7 +819,7 @@ class CloudSyncManager {
                 // Fallback to direct Firebase operations
                 for (const dataType of this.dataTypes) {
                     try {
-                        const collectionRef = window.collection(dataType);
+                        const collectionRef = window.safeCollection(dataType);
                         const docRef = window.doc(collectionRef, 'data');
                         const docSnap = await window.getDoc(docRef);
                         
@@ -862,7 +862,7 @@ class CloudSyncManager {
         }
 
         try {
-            const userDocRef = window.doc(window.collection('users'), this.currentUser.uid);
+            const userDocRef = window.doc(window.safeCollection('users'), this.currentUser.uid);
             const userDoc = await window.getDoc(userDocRef);
             
             if (userDoc.exists()) {
@@ -906,7 +906,7 @@ class CloudSyncManager {
                         const localData = localStorage.getItem(dataType);
                         if (localData) {
                             const items = JSON.parse(localData);
-                            const collectionRef = window.collection(dataType);
+                            const collectionRef = window.safeCollection(dataType);
                             const docRef = window.doc(collectionRef, 'data');
                             
                             await window.setDoc(docRef, {
@@ -948,7 +948,7 @@ class CloudSyncManager {
         }
 
         try {
-            const userDocRef = window.doc(window.collection('users'), this.currentUser.uid);
+            const userDocRef = window.doc(window.safeCollection('users'), this.currentUser.uid);
             
             // Collect all local data
             const userData = {
