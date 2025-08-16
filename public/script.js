@@ -755,6 +755,12 @@ async function loadDataFromCloud() {
             payments = Array.isArray(data.payments) ? data.payments : (data.payments || []);
             deliveries = Array.isArray(data.deliveries) ? data.deliveries : (data.deliveries || getDefaultDeliveries());
             users = Array.isArray(data.users) ? data.users : (data.users || getDefaultUsers());
+            // After updating users, re-assign currentUser
+            if (window.auth && window.auth.currentUser && users && users.length > 0) {
+                const uid = window.auth.currentUser.uid;
+                // Try to match by UID if available, else by currentUserId
+                currentUser = users.find(u => u.uid === uid || u.id === currentUserId) || null;
+            }
             console.log('✅ Data loaded successfully from cloud:', {
                 inventory: inventory.length,
                 vendors: vendors.length,
