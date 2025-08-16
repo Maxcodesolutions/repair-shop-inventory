@@ -664,16 +664,16 @@ function initializeApplication() {
     startConnectionMonitoring();
     
     // Make utility functions available globally early
-    window.logDataState = logDataState;
-    window.validateAndFixDataConsistency = validateAndFixDataConsistency;
-    window.checkDataVariablesState = checkDataVariablesState;
-    window.checkDataMismatches = checkDataMismatches;
+    // window.logDataState = logDataState; // Removed, function no longer exists
+    // window.validateAndFixDataConsistency = validateAndFixDataConsistency; // Remove if not defined
+    // window.checkDataVariablesState = checkDataVariablesState; // Remove if not defined
+    // window.checkDataMismatches = checkDataMismatches; // Already removed
     
     console.log('🔧 Utility functions made available globally:', {
-        logDataState: typeof window.logDataState,
-        validateAndFixDataConsistency: typeof window.validateAndFixDataConsistency,
-        checkDataVariablesState: typeof window.checkDataVariablesState,
-        checkDataMismatches: typeof window.checkDataMismatches
+        // logDataState: typeof window.logDataState, // Removed
+        // validateAndFixDataConsistency: typeof window.validateAndFixDataConsistency, // Remove if not defined
+        // checkDataVariablesState: typeof window.checkDataVariablesState // Remove if not defined
+        // checkDataMismatches: typeof window.checkDataMismatches // Already removed
     });
     
     // Load data first
@@ -784,7 +784,6 @@ function loadDataFromCloud() {
         console.error('Error loading from cloud:', error);
     }
 }
-
 function saveData() {
     console.log('=== SAVING DATA ===');
     
@@ -9228,7 +9227,6 @@ function checkFirebaseConnection() {
 // Make connection functions available globally
 window.handleFirebaseConnectionIssues = handleFirebaseConnectionIssues;
 window.checkFirebaseConnection = checkFirebaseConnection;
-
 // Function to diagnose and fix Firebase authentication issues
 function diagnoseFirebaseAuth() {
     console.log('=== FIREBASE AUTHENTICATION DIAGNOSIS ===');
@@ -9996,7 +9994,6 @@ function fixCredentialInconsistency() {
 }
 // Make the function available globally
 window.fixCredentialInconsistency = fixCredentialInconsistency;
-
 // Function to force all browsers to use the same credentials
 function forceConsistentCredentialsAcrossBrowsers() {
     console.log('=== FORCING CONSISTENT CREDENTIALS ACROSS ALL BROWSERS ===');
