@@ -29,8 +29,8 @@ function checkLoginStatus() {
     if (loginStatus === 'true' && storedUserId) {
         currentUserId = parseInt(storedUserId);
         currentUser = users.find(u => u.id === currentUserId);
-        
         if (currentUser && currentUser.status === 'active') {
+            currentUserId = currentUser.id;
             console.log('User found and active:', currentUser);
             
             // Update username in header immediately
@@ -141,7 +141,8 @@ function handleLogin(e) {
     const authenticatedUser = authenticateUser(username, password);
     
     if (authenticatedUser) {
-        currentUser = authenticatedUser; // Ensure currentUser is set before updating header
+        currentUser = authenticatedUser;
+        currentUserId = currentUser.id;
         updateUsernameInHeader();
         
         loginSuccess.style.display = 'block';
@@ -1058,6 +1059,7 @@ function authenticateUser(username, password) {
     if (user) {
         console.log('User authenticated successfully:', user);
         currentUser = user;
+        currentUserId = currentUser.id;
         user.lastLogin = new Date().toISOString();
         saveData();
         return user;
