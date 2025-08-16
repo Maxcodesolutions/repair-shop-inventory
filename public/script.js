@@ -603,7 +603,7 @@ function setupFirebaseAuthListener() {
 // Global data
 let inventory = [];
 let vendors = [];
-let customers = [];
+let customers = [];;
 let purchases = [];
 let repairs = [];
 let outsourceRepairs = [];
@@ -667,16 +667,16 @@ function initializeApplication() {
     startConnectionMonitoring();
     
     // Make utility functions available globally early
-    window.logDataState = logDataState;
-    window.validateAndFixDataConsistency = validateAndFixDataConsistency;
-    window.checkDataVariablesState = checkDataVariablesState;
-    // window.checkDataMismatches = checkDataMismatches; // Removed, function no longer exists
+    // window.logDataState = logDataState; // Removed, function no longer exists
+    // window.validateAndFixDataConsistency = validateAndFixDataConsistency; // Remove if not defined
+    // window.checkDataVariablesState = checkDataVariablesState; // Remove if not defined
+    // window.checkDataMismatches = checkDataMismatches; // Already removed
     
     console.log('🔧 Utility functions made available globally:', {
-        logDataState: typeof window.logDataState,
-        validateAndFixDataConsistency: typeof window.validateAndFixDataConsistency,
-        checkDataVariablesState: typeof window.checkDataVariablesState
-        // checkDataMismatches: typeof window.checkDataMismatches // Removed
+        // logDataState: typeof window.logDataState, // Removed
+        // validateAndFixDataConsistency: typeof window.validateAndFixDataConsistency, // Remove if not defined
+        // checkDataVariablesState: typeof window.checkDataVariablesState // Remove if not defined
+        // checkDataMismatches: typeof window.checkDataMismatches // Already removed
     });
     
     // Load data first
@@ -792,7 +792,6 @@ function saveData() {
     
     console.log('=== DATA SAVING COMPLETE ===');
 }
-
 async function saveDataToCloud() {
     if (!window.auth || !window.auth.currentUser) {
         console.log('No authenticated user for cloud save');
@@ -1561,7 +1560,6 @@ function showSection(sectionName) {
     
     console.log('Section display completed for:', sectionName);
 }
-
 function renderWarranties() {
     const tbody = document.getElementById('warranties-tbody');
     if (!tbody) return;
@@ -5358,7 +5356,6 @@ function editQuotation() {
         alert('Edit functionality will be implemented in the next update.');
     }
 }
-
 function searchCustomersForQuotation() {
     const searchTerm = document.getElementById('quotation-customer').value.toLowerCase();
     const suggestionsContainer = document.getElementById('quotation-customer-suggestions');
@@ -9225,7 +9222,6 @@ function diagnoseFirebaseAuth() {
             });
     }
 }
-
 // Function to fix Firebase authentication issues
 function fixFirebaseAuth() {
     console.log('=== FIXING FIREBASE AUTHENTICATION ===');
@@ -10025,7 +10021,6 @@ window.setCloudSyncCredentials = function(email, password) {
     
     return true;
 };
-
 window.setupDefaultCloudSyncCredentials = function() {
     console.log('🔧 Setting up default cloud sync credentials...');
     
