@@ -522,7 +522,6 @@ function initializeApp() {
     // Handle deferred data loading from Firebase
     if (window.deferDataLoading && typeof dataManager !== 'undefined') {
         console.log('Handling deferred data loading...');
-        dataManager.loadDataFromLocal();
         window.deferDataLoading = false;
     }
     
@@ -572,16 +571,10 @@ function setupFirebaseAuthListener() {
                     }
                 }).catch((error) => {
                     console.error('Error loading from cloud:', error);
-                    // Fallback to local storage
-                    loadDataFromLocal();
-                    if (typeof renderAll === 'function') {
-                        renderAll();
-                    }
                 });
             } else {
                 console.log('User signed out, switching to local storage');
                 // Load from local storage when user signs out
-                loadDataFromLocal();
                 if (typeof renderAll === 'function') {
                     renderAll();
                 }
@@ -722,11 +715,9 @@ async function loadData() {
                 await loadDataFromCloud();
             } catch (error) {
                 console.log('Anonymous auth failed, using localStorage as fallback:', error);
-                loadDataFromLocal();
             }
         } else {
             console.log('Firebase auth not available, using localStorage as fallback...');
-            loadDataFromLocal();
         }
     }
 }
@@ -5429,7 +5420,6 @@ function convertToRepair() {
         }
     }
 }
-
 function editQuotation() {
     if (window.currentQuotationId) {
         // For now, just show an alert. You can implement a full edit modal later
@@ -6226,9 +6216,6 @@ function verifyDeliveryOTP(deliveryId, enteredOtp) {
         return false;
     }
 }
-
-
-
 function showOTPVerificationModal(pickDropId, type) {
     const pickDrop = pickDrops.find(pd => pd.id === pickDropId);
     if (!pickDrop) {
@@ -6314,7 +6301,6 @@ function updateInvoiceStatusFromList(invoiceId, newStatus) {
 // Initialize the application
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Initializing application...');
-    loadData();
     setupEventListeners();
     renderAll();
     updateDashboard();
@@ -7019,7 +7005,6 @@ function uploadDeviceImage(context) {
     const inputId = context === 'pickdrop' ? 'pickdrop-image-input' : 'repair-image-input';
     document.getElementById(inputId).click();
 }
-
 function handleImageUpload(context, input) {
     const file = input.files[0];
     if (file) {
@@ -9275,7 +9260,6 @@ function checkFirebaseConnection() {
 // Make connection functions available globally
 window.handleFirebaseConnectionIssues = handleFirebaseConnectionIssues;
 window.checkFirebaseConnection = checkFirebaseConnection;
-
 // Function to diagnose and fix Firebase authentication issues
 function diagnoseFirebaseAuth() {
     console.log('=== FIREBASE AUTHENTICATION DIAGNOSIS ===');

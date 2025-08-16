@@ -525,7 +525,6 @@ function initializeApp() {
     // Handle deferred data loading from Firebase
     if (window.deferDataLoading && typeof dataManager !== 'undefined') {
         console.log('Handling deferred data loading...');
-        dataManager.loadDataFromLocal();
         window.deferDataLoading = false;
     }
     
@@ -575,22 +574,9 @@ function setupFirebaseAuthListener() {
                     }
                 }).catch((error) => {
                     console.error('Error loading from cloud:', error);
-                    // Fallback to local storage
-                    loadDataFromLocal();
-                    if (typeof renderAll === 'function') {
-                        renderAll();
-                    }
                 });
             } else {
                 console.log('User signed out, switching to local storage');
-                // Load from local storage when user signs out
-                loadDataFromLocal();
-                if (typeof renderAll === 'function') {
-                    renderAll();
-                }
-                if (typeof updateDashboard === 'function') {
-                    updateDashboard();
-                }
             }
         });
         
@@ -726,11 +712,9 @@ async function loadData() {
                 await loadDataFromCloud();
             } catch (error) {
                 console.log('Anonymous auth failed, using localStorage as fallback:', error);
-                loadDataFromLocal();
             }
         } else {
             console.log('Firebase auth not available, using localStorage as fallback...');
-            loadDataFromLocal();
         }
     }
 }
@@ -1530,7 +1514,6 @@ function setupEventListeners() {
     document.getElementById('warranty-status-filter').addEventListener('change', filterWarranties);
     document.getElementById('warranty-type-filter').addEventListener('change', filterWarranties);
 }
-
 // Navigation
 function showSection(sectionName) {
     console.log('showSection called with:', sectionName);
@@ -2310,7 +2293,6 @@ function handleAddVendor(e) {
     closeModal('add-vendor-modal');
     renderVendors();
 }
-
 function handleAddCustomer(e) {
     e.preventDefault();
     
@@ -3048,7 +3030,6 @@ window.addEventListener('unhandledrejection', function(event) {
         return false;
     }
 });
-
 // Dashboard update
 function updateDashboard() {
     console.log('Updating dashboard...');
@@ -3821,7 +3802,6 @@ function viewCustomerHistory(id) {
         alert(historyText);
     }
 }
-
 function viewCustomer(id) {
     const customer = customers.find(c => c.id === id);
     if (!customer) {
@@ -4620,7 +4600,6 @@ function searchCustomersForInvoice() {
         hideInvoiceCustomerSuggestions();
     }
 }
-
 function showInvoiceCustomerSuggestions(customers) {
     const suggestionsContainer = document.getElementById('invoice-customer-suggestions');
     suggestionsContainer.innerHTML = '';
@@ -5414,7 +5393,6 @@ function editQuotation() {
         alert('Edit functionality will be implemented in the next update.');
     }
 }
-
 function searchCustomersForQuotation() {
     const searchTerm = document.getElementById('quotation-customer').value.toLowerCase();
     const suggestionsContainer = document.getElementById('quotation-customer-suggestions');
@@ -6206,9 +6184,6 @@ function verifyDeliveryOTP(deliveryId, enteredOtp) {
         return false;
     }
 }
-
-
-
 function showOTPVerificationModal(pickDropId, type) {
     const pickDrop = pickDrops.find(pd => pd.id === pickDropId);
     if (!pickDrop) {
@@ -6294,7 +6269,6 @@ function updateInvoiceStatusFromList(invoiceId, newStatus) {
 // Initialize the application
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Initializing application...');
-    loadData();
     setupEventListeners();
     renderAll();
     updateDashboard();
@@ -7002,7 +6976,6 @@ function uploadDeviceImage(context) {
     const inputId = context === 'pickdrop' ? 'pickdrop-image-input' : 'repair-image-input';
     document.getElementById(inputId).click();
 }
-
 function handleImageUpload(context, input) {
     const file = input.files[0];
     if (file) {
@@ -7746,7 +7719,6 @@ function qualityCheck() {
         }
     }
 }
-
 function readyForDelivery() {
     if (!window.currentJobCardId) {
         alert('No job card selected for delivery preparation');
@@ -8496,7 +8468,6 @@ function renderFilteredPayments(filteredItems) {
         tbody.innerHTML += row;
     });
 }
-
 function filterWarranties() {
     const searchTerm = document.getElementById('search-warranties').value.toLowerCase();
     const statusFilter = document.getElementById('warranty-status-filter').value;
@@ -9254,7 +9225,6 @@ function checkFirebaseConnection() {
     
     return status;
 }
-
 // Make connection functions available globally
 window.handleFirebaseConnectionIssues = handleFirebaseConnectionIssues;
 window.checkFirebaseConnection = checkFirebaseConnection;
@@ -10024,7 +9994,6 @@ function fixCredentialInconsistency() {
         }, 1000);
     }
 }
-
 // Make the function available globally
 window.fixCredentialInconsistency = fixCredentialInconsistency;
 
