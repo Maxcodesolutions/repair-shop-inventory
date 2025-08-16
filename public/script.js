@@ -730,7 +730,7 @@ async function loadData() {
         }
     }
 }
-function loadDataFromCloud() {
+async function loadDataFromCloud() {
     if (!window.auth || !window.auth.currentUser) {
         console.error('No authenticated user, cannot load data from cloud.');
         return;
@@ -788,7 +788,6 @@ function loadDataFromCloud() {
         console.error('Error loading data from Firebase cloud:', error);
     }
 }
-
 function saveData() {
     console.log('=== SAVING DATA ===');
     
@@ -1547,7 +1546,6 @@ function setupEventListeners() {
     document.getElementById('warranty-status-filter').addEventListener('change', filterWarranties);
     document.getElementById('warranty-type-filter').addEventListener('change', filterWarranties);
 }
-
 // Navigation
 function showSection(sectionName) {
     console.log('showSection called with:', sectionName);
@@ -2326,7 +2324,6 @@ function handleAddVendor(e) {
     closeModal('add-vendor-modal');
     renderVendors();
 }
-
 function handleAddCustomer(e) {
     e.preventDefault();
     
@@ -3064,7 +3061,6 @@ window.addEventListener('unhandledrejection', function(event) {
         return false;
     }
 });
-
 // Dashboard update
 function updateDashboard() {
     console.log('Updating dashboard...');
@@ -3836,7 +3832,6 @@ function viewCustomerHistory(id) {
         alert(historyText);
     }
 }
-
 function viewCustomer(id) {
     const customer = customers.find(c => c.id === id);
     if (!customer) {
@@ -4633,7 +4628,6 @@ function searchCustomersForInvoice() {
         hideInvoiceCustomerSuggestions();
     }
 }
-
 function showInvoiceCustomerSuggestions(customers) {
     const suggestionsContainer = document.getElementById('invoice-customer-suggestions');
     suggestionsContainer.innerHTML = '';
@@ -5410,7 +5404,6 @@ function rejectQuotation() {
         alert('Quotation rejected successfully!');
     }
 }
-
 function convertToRepair() {
     if (window.currentQuotationId) {
         const quotation = quotations.find(q => q.id === window.currentQuotationId);
@@ -6208,7 +6201,6 @@ function sendDeliveryOTP(deliveryId) {
     // Update the display
     renderDeliveries();
 }
-
 // Verify delivery OTP
 function verifyDeliveryOTP(deliveryId, enteredOtp) {
     const delivery = deliveries.find(d => d.id === deliveryId);
@@ -6993,9 +6985,6 @@ function addJobCardNote() {
         alert('Note added successfully!');
     }
 }
-
-
-
 // Image capture and upload functionality
 let currentImageContext = null;
 let mediaStream = null;
@@ -7774,7 +7763,6 @@ function qualityCheck() {
         }
     }
 }
-
 function readyForDelivery() {
     if (!window.currentJobCardId) {
         alert('No job card selected for delivery preparation');
@@ -8524,7 +8512,6 @@ function renderFilteredPayments(filteredItems) {
         tbody.innerHTML += row;
     });
 }
-
 function filterWarranties() {
     const searchTerm = document.getElementById('search-warranties').value.toLowerCase();
     const statusFilter = document.getElementById('warranty-status-filter').value;
@@ -9285,7 +9272,6 @@ function checkFirebaseConnection() {
     
     return status;
 }
-
 // Make connection functions available globally
 window.handleFirebaseConnectionIssues = handleFirebaseConnectionIssues;
 window.checkFirebaseConnection = checkFirebaseConnection;
@@ -10079,7 +10065,6 @@ function forceConsistentAuthWithSignOut() {
 }
 // Make the function available globally
 window.forceConsistentAuthWithSignOut = forceConsistentAuthWithSignOut;
-
 // Function to check what credentials are actually stored
 function checkStoredCredentials() {
     console.log('=== CHECKING STORED CREDENTIALS ===');
@@ -10824,7 +10809,6 @@ window.testFirestoreFunctionsIndividually = function() {
     console.log('📊 Individual Function Test Results:', results);
     return results;
 };
-
 // Function to inspect what the collection and doc functions actually are
 window.inspectFirestoreFunctions = function() {
     console.log('🔍 Inspecting Firestore functions to identify the issue...');
