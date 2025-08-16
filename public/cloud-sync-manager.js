@@ -832,50 +832,33 @@ class CloudSyncManager {
 
     async loadDataFromCloud() {
         try {
-            console.log('☁️ Cloud Sync Manager: 📥 Loading data from cloud...');
-            
-            // Test connection before proceeding
-            await this.testFirestoreConnection();
-            
-            if (!window.dataManager || typeof window.dataManager.loadAllAppData !== 'function') {
-                console.warn('☁️ Cloud Sync Manager: Data manager not available, using direct Firebase calls');
-                
-                // Fallback to direct Firebase operations
-                for (const dataType of this.dataTypes) {
-                    try {
-                        const collectionRef = window.collection(dataType);
-                        const docRef = window.doc(collectionRef, 'data');
-                        const docSnap = await window.getDoc(docRef);
-                        
-                        if (docSnap.exists()) {
-                            const data = docSnap.data();
-                            if (data && data.items) {
-                                // Store in localStorage as fallback
-                                localStorage.setItem(dataType, JSON.stringify(data.items));
-                                console.log(`☁️ Cloud Sync Manager: ✅ Loaded ${data.items.length} ${dataType} items`);
-                            }
-                        }
-                    } catch (itemError) {
-                        console.warn(`☁️ Cloud Sync Manager: Could not load ${dataType}:`, itemError);
+            console.log('☁️ Cloud Sync Manager: 📥 Loading data from cloud (real-time)...');
+            if (!window.auth || !window.auth.currentUser) {
+                console.error('No authenticated user, cannot load data from cloud.');
+                return;
+            }
+            const user = window.auth.currentUser;
+            if (!window.onSnapshot || !window.doc || !window.safeCollection || !window.db) {
+                console.error('Firestore onSnapshot not available, cannot load data from cloud.');
+                return;
+            }
+            const docRef = window.doc(window.safeCollection(window.db, 'users'), user.uid);
+            window.onSnapshot(docRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    console.log('✅ Real-time data loaded from cloud:', data);
+                    // You may want to update your app's state here, e.g.:
+                    if (window.dataManager && typeof window.dataManager.applyCloudData === 'function') {
+                        window.dataManager.applyCloudData(data);
                     }
+                } else {
+                    console.warn('❌ No cloud data found for this user.');
                 }
-            } else {
-                // Use the data manager
-                await window.dataManager.loadAllAppData();
-                console.log('☁️ Cloud Sync Manager: ✅ Data loaded via data manager');
-            }
-            
+            }, (error) => {
+                console.error('[Firestore Real-Time Error]', { docRef, error });
+            });
         } catch (error) {
-            console.error('☁️ Cloud Sync Manager: ❌ Failed to load data from cloud:', error);
-            
-            // Handle specific Firestore errors
-            if (error.code === 400 || error.message.includes('400')) {
-                console.error('☁️ Cloud Sync Manager: ❌ Firestore 400 error during load - connection issues');
-                throw error; // Re-throw to let caller handle it
-            }
-            
-            // For other errors, try to continue with local data
-            console.warn('☁️ Cloud Sync Manager: Continuing with local data due to load error');
+            console.error('Error setting up real-time listener from Firebase cloud:', error);
         }
     }
 

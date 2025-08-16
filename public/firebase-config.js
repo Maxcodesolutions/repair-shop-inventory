@@ -173,28 +173,49 @@ class DataManager {
         }
     }
 
-    // Load all application data for current user
+    // Load all application data for current user (real-time)
     async loadAllAppData() {
         const user = this.getCurrentUser();
         if (!user) {
-            console.error('🔧 Firebase Config: No user authenticated, cannot load app data.');
+            console.error('🛠️ Firebase Config: No user authenticated, cannot load app data.');
             return null;
         }
-
         try {
             const userDocRef = window.doc(window.collection(window.db, 'users'), user.uid);
-            const docSnap = await window.getDoc(userDocRef);
-            
-            if (docSnap.exists()) {
-                console.log('🔧 Firebase Config: All app data loaded from server successfully');
-                return docSnap.data();
-            } else {
-                console.log('🔧 Firebase Config: No user app data found on server');
-                return null;
-            }
+            window.onSnapshot(userDocRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    console.log('🛠️ Firebase Config: Real-time app data loaded from server successfully');
+                    this.applyCloudData(data);
+                } else {
+                    console.log('🛠️ Firebase Config: No user app data found on server');
+                }
+            }, (error) => {
+                console.error('[Firestore Real-Time Error]', { userDocRef, error });
+            });
         } catch (error) {
-            console.error('🔧 Firebase Config: Error loading all app data:', error);
+            console.error('🛠️ Firebase Config: Error loading all app data (real-time):', error);
             return null;
+        }
+    }
+
+    // Apply real-time cloud data to app state
+    applyCloudData(data) {
+        if (!data) return;
+        // Example: update global variables or trigger UI refresh
+        window.inventory = Array.isArray(data.inventory) ? data.inventory : (data.inventory || []);
+        window.vendors = Array.isArray(data.vendors) ? data.vendors : (data.vendors || []);
+        window.customers = Array.isArray(data.customers) ? data.customers : (data.customers || []);
+        window.repairs = Array.isArray(data.repairs) ? data.repairs : (data.repairs || []);
+        window.invoices = Array.isArray(data.invoices) ? data.invoices : (data.invoices || []);
+        window.quotations = Array.isArray(data.quotations) ? data.quotations : (data.quotations || []);
+        window.pickDrops = Array.isArray(data.pickDrops) ? data.pickDrops : (data.pickDrops || []);
+        window.payments = Array.isArray(data.payments) ? data.payments : (data.payments || []);
+        window.deliveries = Array.isArray(data.deliveries) ? data.deliveries : (data.deliveries || []);
+        window.users = Array.isArray(data.users) ? data.users : (data.users || []);
+        // Optionally trigger UI refresh here
+        if (typeof window.refreshData === 'function') {
+            window.refreshData('all');
         }
     }
 }
