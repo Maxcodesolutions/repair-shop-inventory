@@ -138,11 +138,11 @@ function handleLogin(e) {
     const authenticatedUser = authenticateUser(username, password);
     
     if (authenticatedUser) {
+        currentUser = authenticatedUser; // Ensure currentUser is set before updating header
+        updateUsernameInHeader();
+        
         loginSuccess.style.display = 'block';
         loginSuccess.textContent = 'Login successful! Redirecting...';
-        
-        // Update username in header immediately
-        updateUsernameInHeader();
         
         // Create a consistent cross-browser user ID
         const crossBrowserUserId = `user_${username}_${authenticatedUser.id}`;
