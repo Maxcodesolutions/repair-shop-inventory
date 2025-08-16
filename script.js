@@ -703,7 +703,7 @@ function initializeApplication() {
 }
 
 // Data management
-function loadData() {
+async function loadData() {
     console.log('=== LOADING DATA ===');
     
     // Initialize data manager for server-side storage
@@ -715,18 +715,19 @@ function loadData() {
     // Always try to load from cloud first, fallback to localStorage only if cloud fails
     if (window.auth && window.auth.currentUser) {
         console.log('User authenticated, loading from cloud...');
-        loadDataFromCloud();
+        await loadDataFromCloud();
     } else {
         console.log('No Firebase auth, attempting anonymous auth for cloud sync...');
         // Try anonymous authentication for cloud sync
         if (window.signInAnonymously) {
-            window.signInAnonymously(window.auth).then(() => {
+            try {
+                await window.signInAnonymously(window.auth);
                 console.log('Anonymous auth successful, loading from cloud...');
-                loadDataFromCloud();
-            }).catch((error) => {
+                await loadDataFromCloud();
+            } catch (error) {
                 console.log('Anonymous auth failed, using localStorage as fallback:', error);
                 loadDataFromLocal();
-            });
+            }
         } else {
             console.log('Firebase auth not available, using localStorage as fallback...');
             loadDataFromLocal();
@@ -735,37 +736,24 @@ function loadData() {
 }
 function loadDataFromCloud() {
     if (!window.auth || !window.auth.currentUser) {
-        console.log('No authenticated user, falling back to localStorage');
-        loadDataFromLocal();
+        console.error('No authenticated user, cannot load data from cloud.');
         return;
     }
-    
     try {
         console.log('Loading data from Firebase cloud...');
         const user = window.auth.currentUser;
-        
         // Check if Firebase functions are available
         if (!window.getDoc || !window.doc || !window.safeCollection || !window.db) {
-            console.log('Firebase functions not available, falling back to localStorage');
-            console.log('Available functions:', {
-                getDoc: !!window.getDoc,
-                doc: !!window.doc,
-                safeCollection: !!window.safeCollection,
-                db: !!window.db
-            });
-            loadDataFromLocal();
+            console.error('Firebase functions not available, cannot load data from cloud.');
             return;
         }
-        
         const docRef = window.doc(window.safeCollection('users'), user.uid);
         const docSnap = await window.getDoc(docRef);
-        
         if (docSnap.exists()) {
             const data = docSnap.data();
             console.log('Cloud data found, loading...');
             console.log('Cloud data keys:', Object.keys(data));
             console.log('Cloud data timestamp:', data.lastUpdated);
-            
             // Load data from cloud with safer validation - only use defaults if data is completely missing
             inventory = Array.isArray(data.inventory) ? data.inventory : (data.inventory || getDefaultInventory());
             vendors = Array.isArray(data.vendors) ? data.vendors : (data.vendors || getDefaultVendors());
@@ -779,7 +767,6 @@ function loadDataFromCloud() {
             payments = Array.isArray(data.payments) ? data.payments : (data.payments || []);
             deliveries = Array.isArray(data.deliveries) ? data.deliveries : (data.deliveries || getDefaultDeliveries());
             users = Array.isArray(data.users) ? data.users : (data.users || getDefaultUsers());
-            
             console.log('✅ Data loaded successfully from cloud:', {
                 inventory: inventory.length,
                 vendors: vendors.length,
@@ -789,15 +776,12 @@ function loadDataFromCloud() {
                 quotations: quotations.length,
                 pickDrops: pickDrops.length
             });
-            
             // Validate and fix data consistency issues - delay to ensure data is loaded
             setTimeout(() => {
                 validateAndFixDataConsistency();
             }, 100);
-            
             // Update username in header after cloud data is loaded
             updateUsernameInHeader();
-            
             // Check sync timestamp
             try {
                 const syncRef = window.doc(window.safeCollection('sync'), user.uid);
@@ -809,15 +793,11 @@ function loadDataFromCloud() {
             } catch (syncError) {
                 console.log('No sync timestamp found');
             }
-            
         } else {
-            console.log('No cloud data found, loading from localStorage');
-            loadDataFromLocal();
+            console.warn('❌ No cloud data found for this user.');
         }
     } catch (error) {
         console.error('Error loading from cloud:', error);
-        console.log('Falling back to localStorage');
-        loadDataFromLocal();
     }
 }
 
@@ -9616,7 +9596,6 @@ function showAvailableFunctions() {
 // Make the help function available globally
 window.showAvailableFunctions = showAvailableFunctions;
 window.help = showAvailableFunctions; // Short alias
-
 // Function to force consistent authentication and clear anonymous sessions
 function forceConsistentAuthAndClear() {
     console.log('=== FORCING CONSISTENT AUTHENTICATION AND CLEARING ANONYMOUS ===');
