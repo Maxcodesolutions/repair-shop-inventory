@@ -723,43 +723,43 @@ async function loadDataFromCloud() {
         }
         const docRef = window.doc(window.safeCollection(window.db, 'users'), user.uid);
         window.onSnapshot(docRef, (docSnap) => {
-            if (docSnap.exists()) {
-                const data = docSnap.data();
+        if (docSnap.exists()) {
+            const data = docSnap.data();
                 console.log('✅ Real-time data loaded from cloud:', data);
-                // Load data from cloud with safer validation - only use defaults if data is completely missing
-                inventory = Array.isArray(data.inventory) ? data.inventory : (data.inventory || getDefaultInventory());
-                vendors = Array.isArray(data.vendors) ? data.vendors : (data.vendors || getDefaultVendors());
-                customers = Array.isArray(data.customers) ? data.customers : (data.customers || getDefaultCustomers());
-                purchases = Array.isArray(data.purchases) ? data.purchases : (data.purchases || []);
-                repairs = Array.isArray(data.repairs) ? data.repairs : (data.repairs || []);
-                outsourceRepairs = Array.isArray(data.outsourceRepairs) ? data.outsourceRepairs : (data.outsourceRepairs || []);
-                invoices = Array.isArray(data.invoices) ? data.invoices : (data.invoices || []);
-                quotations = Array.isArray(data.quotations) ? data.quotations : (data.quotations || []);
-                pickDrops = Array.isArray(data.pickDrops) ? data.pickDrops : (data.pickDrops || []);
-                payments = Array.isArray(data.payments) ? data.payments : (data.payments || []);
-                deliveries = Array.isArray(data.deliveries) ? data.deliveries : (data.deliveries || getDefaultDeliveries());
-                users = Array.isArray(data.users) ? data.users : (data.users || getDefaultUsers());
-                console.log('✅ Data loaded successfully from cloud:', {
-                    inventory: inventory.length,
-                    vendors: vendors.length,
-                    customers: customers.length,
-                    repairs: repairs.length,
-                    invoices: invoices.length,
-                    quotations: quotations.length,
+            // Load data from cloud with safer validation - only use defaults if data is completely missing
+            inventory = Array.isArray(data.inventory) ? data.inventory : (data.inventory || getDefaultInventory());
+            vendors = Array.isArray(data.vendors) ? data.vendors : (data.vendors || getDefaultVendors());
+            customers = Array.isArray(data.customers) ? data.customers : (data.customers || getDefaultCustomers());
+            purchases = Array.isArray(data.purchases) ? data.purchases : (data.purchases || []);
+            repairs = Array.isArray(data.repairs) ? data.repairs : (data.repairs || []);
+            outsourceRepairs = Array.isArray(data.outsourceRepairs) ? data.outsourceRepairs : (data.outsourceRepairs || []);
+            invoices = Array.isArray(data.invoices) ? data.invoices : (data.invoices || []);
+            quotations = Array.isArray(data.quotations) ? data.quotations : (data.quotations || []);
+            pickDrops = Array.isArray(data.pickDrops) ? data.pickDrops : (data.pickDrops || []);
+            payments = Array.isArray(data.payments) ? data.payments : (data.payments || []);
+            deliveries = Array.isArray(data.deliveries) ? data.deliveries : (data.deliveries || getDefaultDeliveries());
+            users = Array.isArray(data.users) ? data.users : (data.users || getDefaultUsers());
+            console.log('✅ Data loaded successfully from cloud:', {
+                inventory: inventory.length,
+                vendors: vendors.length,
+                customers: customers.length,
+                repairs: repairs.length,
+                invoices: invoices.length,
+                quotations: quotations.length,
                     pickDrops: pickDrops.length,
                     payments: payments.length,
                     deliveries: deliveries.length,
                     users: users.length
-                });
-                // Validate and fix data consistency issues - delay to ensure data is loaded
-                setTimeout(() => {
-                    validateAndFixDataConsistency();
-                }, 100);
-                // Update username in header after cloud data is loaded
-                updateUsernameInHeader();
-            } else {
+            });
+            // Validate and fix data consistency issues - delay to ensure data is loaded
+            setTimeout(() => {
+                validateAndFixDataConsistency();
+            }, 100);
+            // Update username in header after cloud data is loaded
+            updateUsernameInHeader();
+        } else {
                 console.warn('❌ No cloud data found for this user.');
-            }
+        }
         }, (error) => {
             console.error('[Firestore Real-Time Error]', { docRef, error });
         });
