@@ -82,6 +82,7 @@ async function initializeFirebase() {
         window.doc = (collectionRef, documentId) => firestoreDoc(collectionRef, documentId);
         window.setDoc = (docRef, data, options) => firestoreSetDoc(docRef, data, options);
         window.getDoc = (docRef) => firestoreGetDoc(docRef);
+        window.onSnapshot = (...args) => (await import("https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js")).then(m => m.onSnapshot(...args));
         
         // Expose auth functions properly bound to the auth object
         window.onAuthStateChanged = (callback) => onAuthStateChanged(auth, callback);
