@@ -768,6 +768,23 @@ async function loadDataFromCloud() {
                 }, 100);
                 // Update username in header after cloud data is loaded
                 updateUsernameInHeader();
+                // Set currentUser and currentUserId after Firestore sync
+                if (window.auth && window.auth.currentUser && users && users.length > 0) {
+                    const uid = window.auth.currentUser.uid;
+                    // Try to match by UID if available, else by currentUserId
+                    currentUser = users.find(u => u.uid === uid || u.id === currentUserId) || null;
+                    if (currentUser) {
+                        currentUserId = currentUser.id;
+                    }
+                    console.log('[DEBUG] Setting currentUser after Firestore sync:', {
+                        uid,
+                        currentUserId,
+                        users,
+                        matched: currentUser
+                    });
+                } else {
+                    console.log('[DEBUG] No users found after Firestore sync');
+                }
         } else {
                 console.warn('❌ No cloud data found for this user.');
         }
