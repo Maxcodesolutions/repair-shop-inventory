@@ -755,6 +755,17 @@ async function loadDataFromCloud() {
             payments = Array.isArray(data.payments) ? data.payments : (data.payments || []);
             deliveries = Array.isArray(data.deliveries) ? data.deliveries : (data.deliveries || getDefaultDeliveries());
             users = Array.isArray(data.users) ? data.users : (data.users || getDefaultUsers());
+            // Ensure every user in users array has a uid property if it matches the current Firebase user
+            if (user && Array.isArray(users)) {
+                const emailPrefix = user.email && user.email.split('@')[0];
+                users = users.map(u => {
+                    // If username matches email prefix and uid is missing or incorrect, set it
+                    if (u.username === emailPrefix && u.uid !== user.uid) {
+                        return { ...u, uid: user.uid };
+                    }
+                    return u;
+                });
+            }
             // After updating users, re-assign currentUser
             if (window.auth && window.auth.currentUser && users && users.length > 0) {
                 const uid = window.auth.currentUser.uid;
