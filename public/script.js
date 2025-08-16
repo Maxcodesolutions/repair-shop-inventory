@@ -602,7 +602,6 @@ function setupFirebaseAuthListener() {
             // Try anonymous auth immediately
             tryAnonymousAuth();
         }
-        }
     } else {
         console.log('Firebase auth not available, using local storage only');
     }
@@ -6144,6 +6143,7 @@ function searchCustomersForOutsource() {
         hideCustomerSuggestions();
     }
 }
+
 function showCustomerSuggestions(customers) {
     const suggestionsContainer = document.getElementById('customer-suggestions');
     suggestionsContainer.innerHTML = '';
@@ -6267,7 +6267,6 @@ function updateInventoryStatus(itemId, newStatus) {
     updateDashboard();
 }
 window.updateInventoryStatus = updateInventoryStatus;
-
 // Update renderInventory function to use dropdown
 function renderInventoryWithDropdown() {
     const tbody = document.getElementById('inventory-tbody');
@@ -9835,7 +9834,6 @@ function testCloudWrite() {
         console.log(`❌ Cloud write error: ${error.message}`);
     }
 }
-
 function testCloudRead() {
     console.log('=== TESTING CLOUD READ ===');
     
@@ -10605,7 +10603,6 @@ function checkLocalStorageData() {
         }
     });
 }
-
 // Make localStorage check function available globally
 window.checkLocalStorageData = checkLocalStorageData;
 
@@ -11364,7 +11361,6 @@ window.checkFunctionConflicts = function() {
         hasConflicts: nonNativeFunctions.length > 0
     };
 };
-
 // Function to check Firebase loading status and provide solutions
 window.checkFirebaseLoadingStatus = function() {
     console.log('🔍 Checking Firebase loading status...');
