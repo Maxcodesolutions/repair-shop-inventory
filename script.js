@@ -2,6 +2,17 @@
 let currentUser = null;
 let currentUserId = null;
 
+function updateUsernameInHeader() {
+    const usernameElement = document.getElementById('username');
+    if (usernameElement && window.currentUser && window.currentUser.fullName) {
+        usernameElement.textContent = window.currentUser.fullName;
+        console.log('✅ Username updated in header:', window.currentUser.fullName);
+    } else if (usernameElement) {
+        usernameElement.textContent = 'Loading...';
+        console.warn('⚠️ Username not available, set to Loading...');
+    }
+}
+
 function checkLoginStatus() {
     const loginStatus = localStorage.getItem('loginStatus');
     const storedUserId = localStorage.getItem('currentUserId');
