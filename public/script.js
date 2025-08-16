@@ -9461,54 +9461,6 @@ function testGlobalSearch(searchTerm = 'test') {
 // Make test function available globally
 window.testGlobalSearch = testGlobalSearch;
 
-// Function to clear localStorage and ensure cloud-only storage
-function clearLocalStorageData() {
-    console.log('=== CLEARING LOCAL STORAGE DATA ===');
-    try {
-        localStorage.removeItem('inventory');
-        localStorage.removeItem('vendors');
-        localStorage.removeItem('customers');
-        localStorage.removeItem('purchases');
-        localStorage.removeItem('repairs');
-        localStorage.removeItem('outsourceRepairs');
-        localStorage.removeItem('invoices');
-        localStorage.removeItem('quotations');
-        localStorage.removeItem('pickDrops');
-        localStorage.removeItem('payments');
-        localStorage.removeItem('users');
-        localStorage.removeItem('deliveries');
-        
-        console.log('✅ LocalStorage data cleared successfully');
-        console.log('Data will now be stored only in the cloud');
-    } catch (error) {
-        console.error('❌ Error clearing localStorage:', error);
-    }
-}
-
-// Function to check if data exists in localStorage
-function checkLocalStorageData() {
-    console.log('=== CHECKING LOCAL STORAGE DATA ===');
-    const dataKeys = [
-        'inventory', 'vendors', 'customers', 'purchases', 'repairs', 
-        'outsourceRepairs', 'invoices', 'quotations', 'pickDrops', 
-        'payments', 'users', 'deliveries'
-    ];
-    
-    dataKeys.forEach(key => {
-        const data = localStorage.getItem(key);
-        if (data) {
-            const parsed = JSON.parse(data);
-            console.log(`${key}: ${parsed.length} items`);
-        } else {
-            console.log(`${key}: not found`);
-        }
-    });
-}
-
-// Make functions available globally
-window.clearLocalStorageData = clearLocalStorageData;
-window.checkLocalStorageData = checkLocalStorageData;
-
 // Function to force sync data to cloud
 function forceSyncToCloud() {
     console.log('=== FORCING SYNC TO CLOUD ===');
@@ -9954,7 +9906,6 @@ function forceConsistentAuth() {
 // Make cross-browser sync functions available globally
 window.checkCrossBrowserSyncStatus = checkCrossBrowserSyncStatus;
 window.forceConsistentAuth = forceConsistentAuth;
-
 // Function to immediately fix cross-browser sync
 function fixCrossBrowserSyncNow() {
     console.log('=== IMMEDIATE CROSS-BROWSER SYNC FIX ===');
@@ -10754,7 +10705,6 @@ function forceConsistentAuthWithSignOut() {
         }
     }
 }
-
 // Make the function available globally
 window.forceConsistentAuthWithSignOut = forceConsistentAuthWithSignOut;
 
@@ -11554,7 +11504,6 @@ window.checkFirestoreEnabled = function() {
     console.log('✅ Firestore appears to be enabled and SDK is loaded');
     console.log('🔧 If you\'re still getting errors, run testFirestoreConnection()');
 };
-
 // Function to diagnose Firestore SDK loading issues
 window.diagnoseFirestoreSDK = function() {
     console.log('🔍 Diagnosing Firestore SDK loading issues...');
@@ -12312,7 +12261,6 @@ window.setupDefaultCloudSyncCredentials = function() {
     
     return true;
 };
-
 window.checkCloudSyncCredentials = function() {
     console.log('🔍 Checking cloud sync credentials...');
     
