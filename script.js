@@ -515,9 +515,6 @@ function initializeApp() {
     // Setup Firebase auth listener for automatic cloud sync
     setupFirebaseAuthListener();
     
-    // Load data first
-    loadData();
-    
     // Ensure admin user exists
     ensureAdminUserExists();
     
@@ -659,8 +656,8 @@ function initializeApplication() {
         // checkDataMismatches: typeof window.checkDataMismatches // Already removed
     });
     
-    // Load data first
-    loadData();
+    // Ensure admin user exists
+    ensureAdminUserExists();
     
     checkLoginStatus();
     
@@ -672,24 +669,6 @@ function initializeApplication() {
 }
 
 // Data management
-async function loadData() {
-    console.log('=== LOADING DATA ===');
-    
-    // Initialize data manager for server-side storage
-    if (typeof dataManager !== 'undefined') {
-        console.log('Data manager available, initializing...');
-        dataManager.init();
-    }
-    
-    // Always try to load from cloud first, fallback to localStorage only if cloud fails
-    if (window.auth && window.auth.currentUser) {
-        console.log('User authenticated, loading from cloud...');
-        await loadDataFromCloud();
-    } else {
-        console.error('No Firebase authenticated user available. Cloud sync is not possible.');
-        // Optionally, show a login screen or error to the user here.
-    }
-}
 async function loadDataFromCloud() {
     if (!window.auth || !window.auth.currentUser) {
         console.error('No authenticated user, cannot load data from cloud.');

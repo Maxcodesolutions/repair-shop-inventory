@@ -2382,7 +2382,6 @@ function handleAddCustomer(e) {
     }
 
     console.log('About to save data. Customers array length:', customers.length);
-    saveData();
     closeModal('add-customer-modal');
     console.log('About to render customers. Customers array length:', customers.length);
     
@@ -2444,7 +2443,6 @@ function handleAddPurchase(e) {
     };
 
     purchases.push(newPurchase);
-    saveData();
     closeModal('add-purchase-modal');
     updateDashboard();
     renderPurchases();
@@ -2475,7 +2473,6 @@ function handleAddRepair(e) {
     };
     
     repairs.push(newRepair);
-    saveData();
     renderRepairs();
     closeModal('add-repair-modal');
     e.target.reset();
@@ -2505,7 +2502,6 @@ function handleAddOutsource(e) {
     };
 
     outsourceRepairs.push(newOutsource);
-    saveData();
     closeModal('add-outsource-modal');
     updateDashboard();
     renderOutsource();
@@ -2563,7 +2559,6 @@ function handleAddInvoice(e) {
     };
 
     invoices.push(newInvoice);
-    saveData();
     closeModal('add-invoice-modal');
     updateDashboard();
     renderInvoices();
@@ -2628,7 +2623,6 @@ function handleAddQuotation(e) {
     quotations.push(newQuotation);
     console.log('Added new quotation:', newQuotation);
     console.log('All quotations after adding:', quotations);
-    saveData();
     closeModal('add-quotation-modal');
     updateDashboard();
     renderQuotations();
@@ -2673,7 +2667,6 @@ function handleAddPickDrop(e) {
     };
     
     pickDrops.push(newPickDrop);
-    saveData();
     renderPickDrops();
     closeModal('add-pickdrop-modal');
     e.target.reset();
@@ -2890,7 +2883,6 @@ function handleAddPayment(e) {
         }
     }
     
-    saveData();
     renderPayments();
     closeModal('add-payment-modal');
     e.target.reset();
@@ -3834,7 +3826,6 @@ function editCustomerFromDetail() {
 function deletePurchase(id) {
     if (confirm('Are you sure you want to delete this purchase?')) {
         purchases = purchases.filter(p => p.id !== id);
-        saveData();
         updateDashboard();
         renderPurchases();
     }
@@ -3843,7 +3834,6 @@ function deletePurchase(id) {
 function deleteRepair(id) {
     if (confirm('Are you sure you want to delete this repair?')) {
         repairs = repairs.filter(r => r.id !== id);
-        saveData();
         updateDashboard();
         renderRepairs();
     }
@@ -3858,7 +3848,6 @@ function updateRepairStatus(id) {
             const expires = addMonths(new Date(), repair.warranty.months);
             repair.warranty.expiresOn = expires.toISOString().split('T')[0];
         }
-        saveData();
         renderRepairs();
         updateDashboard();
     }
@@ -3867,7 +3856,6 @@ function updateRepairStatus(id) {
 function deleteOutsource(id) {
     if (confirm('Are you sure you want to delete this outsource repair?')) {
         outsourceRepairs = outsourceRepairs.filter(o => o.id !== id);
-        saveData();
         updateDashboard();
         renderOutsource();
     }
@@ -3880,7 +3868,6 @@ function updateOutsourceStatus(id) {
         const currentIndex = statuses.indexOf(outsource.status);
         const nextIndex = (currentIndex + 1) % statuses.length;
         outsource.status = statuses[nextIndex];
-        saveData();
         renderOutsource();
         updateDashboard();
     }
@@ -3889,7 +3876,6 @@ function updateOutsourceStatus(id) {
 function deleteInvoice(id) {
     if (confirm('Are you sure you want to delete this invoice?')) {
         invoices = invoices.filter(i => i.id !== id);
-        saveData();
         updateDashboard();
         renderInvoices();
     }
@@ -3902,7 +3888,6 @@ function updateInvoiceStatus(id) {
         const currentIndex = statuses.indexOf(invoice.status);
         const nextIndex = (currentIndex + 1) % statuses.length;
         invoice.status = statuses[nextIndex];
-        saveData();
         renderInvoices();
         updateDashboard();
     }
@@ -4027,7 +4012,6 @@ function updateInvoiceStatusFromDetail() {
     
     // Update the invoice status
     invoice.status = newStatus;
-    saveData();
     
     // Update button states based on new status
     updateInvoiceActionButtons(newStatus);
@@ -4285,7 +4269,6 @@ function markInvoiceAsPaid() {
     }
     
     invoice.status = 'paid';
-    saveData();
     
     // Update the status dropdown
     const statusSelect = document.getElementById('invoice-status-select');
@@ -4498,9 +4481,6 @@ function saveInvoiceChanges() {
     invoice.taxAmount = taxAmount;
     invoice.discount = discount;
     invoice.total = subtotal + taxAmount - discount;
-    
-    // Save data
-    saveData();
     
     // Exit edit mode and refresh view
     exitInvoiceEditMode();
@@ -4875,7 +4855,6 @@ function renderPickDrops() {
 function deleteQuotation(id) {
     if (confirm('Are you sure you want to delete this quotation?')) {
         quotations = quotations.filter(q => q.id !== id);
-        saveData();
         updateDashboard();
         renderQuotations();
     }
@@ -4884,7 +4863,6 @@ function deleteQuotation(id) {
 function deletePickDrop(id) {
     if (confirm('Are you sure you want to delete this pick & drop?')) {
         pickDrops = pickDrops.filter(pd => pd.id !== id);
-        saveData();
         updateDashboard();
         renderPickDrops();
     }
@@ -4897,7 +4875,6 @@ function updateQuotationStatus(id) {
         const currentIndex = statuses.indexOf(quotation.status);
         const nextIndex = (currentIndex + 1) % statuses.length;
         quotation.status = statuses[nextIndex];
-        saveData();
         renderQuotations();
         updateDashboard();
     }
@@ -4938,7 +4915,7 @@ function updatePickDropStatus(id, newStatus = null) {
             console.log(`💾 Saving data after status update...`);
             
             // Save to cloud (asynchronous)
-            saveData();
+            saveDataToCloud();
             
             console.log(`📊 Rendering updated data...`);
             renderPickDrops();
@@ -5032,7 +5009,7 @@ function createRepairFromPickDrop(pickDrop) {
     console.log('💾 Saving data after repair creation...');
     
     // Save to cloud (asynchronous)
-    saveData();
+    saveDataToCloud();
     
     return newRepair;
 }
@@ -5065,7 +5042,7 @@ function convertToRepair(id) {
                 console.log('Repairs array after adding:', repairs);
                 console.log('Repairs array length:', repairs.length);
                 
-                saveData();
+                saveDataToCloud();
                 renderRepairs();
                 renderQuotations();
                 updateDashboard();
@@ -5337,7 +5314,7 @@ function convertToRepair() {
             updateQuotationStatus(window.currentQuotationId, 'converted');
             document.getElementById('quotation-status-select').value = 'converted';
             updateQuotationActionButtons('converted');
-            saveData();
+            saveDataToCloud();
             alert('Quotation converted to repair successfully!');
         }
     }
@@ -5984,7 +5961,7 @@ function updateInventoryStatus(itemId, newStatus) {
     
     // Update the item's status (we'll store it as a custom status)
     item.customStatus = newStatus;
-    saveData();
+    saveDataToCloud();
     
     alert(`Item status updated from "${oldStatus.replace('-', ' ')}" to "${newStatus.replace('-', ' ')}" successfully!`);
     updateDashboard();
@@ -6055,7 +6032,7 @@ function sendPickupOTP(pickDropId) {
     pickDrop.pickupOtp = otp;
     pickDrop.pickupOtpSent = true;
     pickDrop.pickupOtpVerified = false;
-    saveData();
+    saveDataToCloud();
     
     // In a real application, this would send via SMS/Email
     alert(`Pickup OTP sent to customer: ${otp}\n\nIn a real application, this would be sent via SMS or email.`);
@@ -6080,7 +6057,7 @@ function verifyPickupOTP(pickDropId, enteredOtp) {
     if (enteredOtp === pickDrop.pickupOtp) {
         pickDrop.pickupOtpVerified = true;
         pickDrop.status = 'picked-up';
-        saveData();
+        saveDataToCloud();
         alert('Pickup OTP verified successfully! Status updated to "Picked Up".');
         renderPickDrops();
         return true;
@@ -6104,7 +6081,7 @@ function sendDeliveryOTP(deliveryId) {
     delivery.deliveryOtpVerified = false;
     delivery.deliveryOtpSentTime = new Date().toISOString();
     
-    saveData();
+    saveDataToCloud();
     
     // In a real application, this would send the OTP via SMS/email
     alert(`Delivery OTP sent to customer: ${otp}\n\nIn a real application, this would be sent via SMS or email.`);
@@ -6128,7 +6105,7 @@ function verifyDeliveryOTP(deliveryId, enteredOtp) {
     if (enteredOtp === delivery.deliveryOtp) {
         delivery.deliveryOtpVerified = true;
         delivery.status = 'delivered';
-        saveData();
+        saveDataToCloud();
         alert('Delivery OTP verified successfully! Status updated to "Delivered".');
         renderDeliveries();
         return true;
@@ -6210,7 +6187,7 @@ function updateInvoiceStatusFromList(invoiceId, newStatus) {
     
     // Update the invoice status
     invoice.status = newStatus;
-    saveData();
+    saveDataToCloud();
     
     // Show success message
     alert(`Invoice status updated from "${oldStatus}" to "${newStatus}" successfully!`);
@@ -7481,7 +7458,7 @@ function updateJobCardData() {
     };
     
     // Save data
-    saveData();
+    saveDataToCloud();
     
     // Update the job card view if it's currently displayed
     if (document.getElementById('job-card-detail-view').style.display !== 'none') {
@@ -7556,7 +7533,7 @@ function addImageToJobCardContainer(imageData, fileName) {
     });
     
     // Save data
-    saveData();
+    saveDataToCloud();
     
     // Update display
     displayJobCardImages(repair.images);
@@ -7587,7 +7564,7 @@ function editJobCardImages() {
         if (imageIndex >= 0 && imageIndex < repair.images.length) {
             if (confirm(`Delete image: ${repair.images[imageIndex].fileName}?`)) {
                 repair.images.splice(imageIndex, 1);
-                saveData();
+                saveDataToCloud();
                 displayJobCardImages(repair.images);
                 alert('Image deleted successfully!');
             }
@@ -7652,7 +7629,7 @@ function qualityCheck() {
             repairs[repairIndex].qualityCheckTime = currentTime;
             
             // Save data
-            saveData();
+            saveDataToCloud();
             
             // Update job card view
             updateJobCardProgress('completed');
