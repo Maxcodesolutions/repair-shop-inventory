@@ -707,19 +707,8 @@ async function loadData() {
         console.log('User authenticated, loading from cloud...');
         await loadDataFromCloud();
     } else {
-        console.log('No Firebase auth, attempting anonymous auth for cloud sync...');
-        // Try anonymous authentication for cloud sync
-        if (window.signInAnonymously) {
-            try {
-                await window.signInAnonymously(window.auth);
-                console.log('Anonymous auth successful, loading from cloud...');
-                await loadDataFromCloud();
-            } catch (error) {
-                console.log('Anonymous auth failed, using localStorage as fallback:', error);
-            }
-        } else {
-            console.log('Firebase auth not available, using localStorage as fallback...');
-        }
+        console.error('No Firebase authenticated user available. Cloud sync is not possible.');
+        // Optionally, show a login screen or error to the user here.
     }
 }
 async function loadDataFromCloud() {
