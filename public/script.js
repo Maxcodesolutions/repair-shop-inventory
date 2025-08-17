@@ -595,9 +595,6 @@ function setupFirebaseAuthListener() {
             loadDataFromCloud();
         } else {
             console.log('No current user, attempting consistent authentication for cross-device sync...');
-            
-            // Try anonymous auth immediately
-                            tryAnonymousAuth();
         }
     } else {
         console.log('Firebase auth not available, using local storage only');
