@@ -680,36 +680,10 @@ function initializeApplication() {
         // checkDataMismatches: typeof window.checkDataMismatches // Already removed
     });
     
-    // Load data first
-    loadData();
-    
-    checkLoginStatus();
-    
-    // Setup login form event listener
+    // Do NOT call loadData() here anymore
+    // Only set up login form and other listeners
     document.getElementById('login-form').addEventListener('submit', handleLogin);
-    
-    // Setup customer autocomplete
     setupCustomerAutocomplete();
-}
-
-// Data management
-async function loadData() {
-    console.log('=== LOADING DATA ===');
-    
-    // Initialize data manager for server-side storage
-    if (typeof dataManager !== 'undefined') {
-        console.log('Data manager available, initializing...');
-        dataManager.init();
-    }
-    
-    // Always try to load from cloud first, fallback to localStorage only if cloud fails
-    if (window.auth && window.auth.currentUser) {
-        console.log('User authenticated, loading from cloud...');
-        await loadDataFromCloud();
-    } else {
-        console.error('No Firebase authenticated user available. Cloud sync is not possible.');
-        // Optionally, show a login screen or error to the user here.
-    }
 }
 async function loadDataFromCloud() {
     if (!window.auth || !window.auth.currentUser) {
