@@ -14,7 +14,6 @@ function updateUsernameInHeader() {
         console.log('✅ Username updated in header:', window.currentUser.fullName);
     } else if (usernameElement) {
         usernameElement.textContent = 'Loading...';
-        console.warn('⚠️ Username not available, set to Loading...');
     }
 }
 
@@ -287,7 +286,7 @@ function handleLogin(e) {
                             console.log('🔧 Invalid email format, trying to create account...');
                         } else {
                             console.log('🔧 Unknown error, trying to create account...');
-                        }
+                    }
                     
                     // Try to create account if sign-in fails
                     if (window.createUserWithEmailAndPassword) {
@@ -355,7 +354,7 @@ function handleLogin(e) {
                                         console.log('🔧 Invalid email format, trying anonymous auth...');
                                     } else {
                                         console.log('🔧 Unknown error, trying anonymous auth...');
-                                    }
+                                }
                                 
                                 // Fallback to anonymous auth
                                 tryAnonymousAuth();
@@ -1138,7 +1137,9 @@ function applyUserPermissions() {
     }
     
     // Update current user name in header
-    updateUsernameInHeader();
+    if (currentUser && currentUser.fullName) {
+        updateUsernameInHeader();
+    }
     
     // Debug current user state
     console.log('🔧 Current user state in applyUserPermissions:', {

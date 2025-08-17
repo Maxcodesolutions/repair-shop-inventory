@@ -14,7 +14,6 @@ function updateUsernameInHeader() {
         console.log('✅ Username updated in header:', window.currentUser.fullName);
     } else if (usernameElement) {
         usernameElement.textContent = 'Loading...';
-        console.warn('⚠️ Username not available, set to Loading...');
     }
 }
 
@@ -1177,7 +1176,9 @@ function applyUserPermissions() {
     }
     
     // Update current user name in header
-    updateUsernameInHeader();
+    if (currentUser && currentUser.fullName) {
+        updateUsernameInHeader();
+    }
     
     // Debug current user state
     console.log('🔧 Current user state in applyUserPermissions:', {
