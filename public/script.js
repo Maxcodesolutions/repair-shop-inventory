@@ -650,8 +650,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // localStorage.clear();
     
     // Wait for Firebase to be ready before initializing
-    if (window.ensureFirebaseAvailable) {
-        window.ensureFirebaseAvailable().then(() => {
+    if (window.waitForFirebase) {
+        window.waitForFirebase().then(() => {
             console.log('Firebase ready, initializing application...');
             initializeApplication();
         }).catch((error) => {
