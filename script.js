@@ -789,17 +789,13 @@ async function saveDataToCloud() {
             });
         }
         // Ensure arrays are defined and avoid undefined anywhere
-        const outsourceArray = (typeof outsource !== 'undefined' && Array.isArray(outsource)) 
-            ? outsource 
-            : [];
-
         const dataRaw = {
             inventory: Array.isArray(inventory) ? inventory : [],
             vendors: Array.isArray(vendors) ? vendors : [],
             customers: Array.isArray(customers) ? customers : [],
             purchases: Array.isArray(purchases) ? purchases : [],
             repairs: Array.isArray(repairs) ? repairs : [],
-            outsource: outsourceArray,
+            outsourceRepairs: Array.isArray(outsourceRepairs) ? outsourceRepairs : [],
             invoices: Array.isArray(invoices) ? invoices : [],
             quotations: Array.isArray(quotations) ? quotations : [],
             pickDrops: Array.isArray(pickDrops) ? pickDrops : [],

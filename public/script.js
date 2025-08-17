@@ -809,17 +809,13 @@ async function saveDataToCloud() {
     try {
         const user = window.auth.currentUser;
         // Ensure arrays are defined and avoid undefined anywhere
-        const outsourceArray = (typeof outsource !== 'undefined' && Array.isArray(outsource)) 
-            ? outsource 
-            : [];
-
         const dataRaw = {
             inventory: Array.isArray(inventory) ? inventory : [],
             vendors: Array.isArray(vendors) ? vendors : [],
             customers: Array.isArray(customers) ? customers : [],
             purchases: Array.isArray(purchases) ? purchases : [],
             repairs: Array.isArray(repairs) ? repairs : [],
-            outsource: outsourceArray,
+            outsourceRepairs: Array.isArray(outsourceRepairs) ? outsourceRepairs : [],
             invoices: Array.isArray(invoices) ? invoices : [],
             quotations: Array.isArray(quotations) ? quotations : [],
             pickDrops: Array.isArray(pickDrops) ? pickDrops : [],
@@ -3051,7 +3047,6 @@ function updateDashboard() {
     updateRevenueChart();
     updateQuotationValueChart();
 }
-
 // Warranty helpers
 function getWarrantiesExpiringSoonCount(daysAhead) {
     const today = new Date();
@@ -3852,7 +3847,6 @@ function updateRepairStatus(id) {
         updateDashboard();
     }
 }
-
 function deleteOutsource(id) {
     if (confirm('Are you sure you want to delete this outsource repair?')) {
         outsourceRepairs = outsourceRepairs.filter(o => o.id !== id);
@@ -4623,7 +4617,6 @@ function removeInvoiceItem(button) {
     button.parentElement.remove();
     calculateInvoiceTotals();
 }
-
 function calculateInvoiceTotals() {
     let subtotal = 0;
     
@@ -5399,7 +5392,6 @@ function removeQuotationItem(button) {
     button.parentElement.remove();
     calculateQuotationTotals();
 }
-
 function calculateQuotationTotals() {
     let subtotal = 0;
     
@@ -6195,7 +6187,6 @@ function updateInvoiceStatusFromList(invoiceId, newStatus) {
     // Update the dashboard charts
     updateDashboard();
 }
-
 // Initialize the application
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Initializing application...');
@@ -6991,7 +6982,6 @@ function openImageModal(imageSrc) {
 function closeImageModal() {
     document.getElementById('image-modal').style.display = 'none';
 }
-
 function displayJobCardImages(images) {
     const gallery = document.getElementById('job-card-images-gallery');
     gallery.innerHTML = '';
@@ -7780,7 +7770,6 @@ function updatePickDropStatusFromDetail() {
         updatePickDropStatus(window.currentPickDropId, newStatus);
     }
 }
-
 function displayPickDropImages(images) {
     const gallery = document.getElementById('pickdrop-images-gallery');
     gallery.innerHTML = '';
@@ -8560,7 +8549,6 @@ function initializeGlobalSearch() {
         setTimeout(initializeGlobalSearch, 1000);
     }
 }
-
 function performGlobalSearch() {
     console.log('=== PERFORMING GLOBAL SEARCH ===');
     const searchInput = document.getElementById('search-input');
@@ -9335,7 +9323,6 @@ function testFirebaseConnection() {
         console.log('❌ Firestore Database not available');
     }
 }
-
 function testCloudWrite() {
     console.log('=== TESTING CLOUD WRITE ===');
     
