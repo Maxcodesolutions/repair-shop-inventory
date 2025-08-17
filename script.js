@@ -491,7 +491,7 @@ function ensureAdminUserExists() {
         };
         
         users.push(newAdminUser);
-        saveData();
+        saveDataToCloud();
         console.log('Admin user created:', newAdminUser);
     } else {
         console.log('Admin user already exists:', adminUser);
@@ -502,7 +502,7 @@ function ensureAdminUserExists() {
         if (!adminUser.permissions.includes('payments')) {
             adminUser.permissions.push('payments');
         }
-        saveData();
+        saveDataToCloud();
     }
     
     console.log('Final users after ensuring admin:', users);
@@ -744,18 +744,43 @@ async function loadDataFromCloud() {
         console.error('Error setting up real-time listener from Firebase cloud:', error);
     }
 }
-function saveData() {
-    console.log('=== SAVING DATA ===');
+function saveDataToCloud() {
+    console.log('=== SAVING DATA TO CLOUD ===');
     
-    // Always try to save to cloud first
     if (window.auth && window.auth.currentUser) {
         console.log('User authenticated, saving to cloud...');
-        saveDataToCloud();
+        const user = window.auth.currentUser;
+        if (!window.setDoc || !window.doc || !window.safeCollection || !window.db) {
+            console.error('Firestore setDoc not available, cannot save data to cloud.');
+            return;
+        }
+        const docRef = window.doc(window.safeCollection(window.db, 'users'), user.uid);
+        const data = {
+            inventory,
+            vendors,
+            customers,
+            purchases,
+            repairs,
+            outsourceRepairs,
+            invoices,
+            quotations,
+            pickDrops,
+            payments,
+            deliveries,
+            users
+        };
+        window.setDoc(docRef, data, { merge: true })
+            .then(() => {
+                console.log('✅ Data saved to cloud successfully');
+            })
+            .catch((error) => {
+                console.error('❌ Error saving data to cloud:', error);
+            });
     } else {
         console.log('No authenticated user, cannot save data to cloud');
     }
     
-    console.log('=== DATA SAVING COMPLETE ===');
+    console.log('=== DATA SAVING TO CLOUD COMPLETE ===');
 }
 async function saveDataToCloud() {
     if (!window.auth || !window.auth.currentUser) {
@@ -821,15 +846,14 @@ async function saveDataToCloud() {
         let retryCount = 0;
         const maxRetries = 3;
         
-        // Use the improved data manager if available, otherwise fall back to direct Firebase calls
-        if (window.dataManager && typeof window.dataManager.saveAllAppData === 'function') {
+        while (retryCount < maxRetries) {
             try {
-                await window.dataManager.saveAllAppData(data);
-                console.log('✅ Data saved successfully to cloud using data manager');
+                await window.setDoc(window.doc(window.safeCollection('users'), user.uid), data);
+                console.log('✅ Data saved successfully to cloud using direct Firebase calls');
                 
                 // Also save a timestamp to verify sync
                 try {
-                    await window.dataManager.saveDataToServer('sync', {
+                    await window.setDoc(window.doc(window.safeCollection('sync'), user.uid), {
                         lastSync: new Date().toISOString(),
                         userAgent: navigator.userAgent,
                         dataCount: {
@@ -837,7 +861,7 @@ async function saveDataToCloud() {
                             customers: customers.length,
                             repairs: repairs.length
                         }
-                    }, user.uid);
+                    });
                     console.log('✅ Sync timestamp saved to cloud');
                 } catch (syncError) {
                     console.log('Warning: Could not save sync timestamp:', syncError.message);
@@ -846,55 +870,25 @@ async function saveDataToCloud() {
                 return; // Success, exit function
                 
             } catch (error) {
-                console.log(`❌ Data manager save failed:`, error.message);
-                // Fall through to Firebase fallback
-            }
-        } else {
-            // Fallback to direct Firebase calls
-            while (retryCount < maxRetries) {
-                try {
-                    await window.setDoc(window.doc(window.safeCollection('users'), user.uid), data);
-                    console.log('✅ Data saved successfully to cloud using direct Firebase calls');
-                    
-                    // Also save a timestamp to verify sync
-                    try {
-                        await window.setDoc(window.doc(window.safeCollection('sync'), user.uid), {
-                            lastSync: new Date().toISOString(),
-                            userAgent: navigator.userAgent,
-                            dataCount: {
-                                inventory: inventory.length,
-                                customers: customers.length,
-                                repairs: repairs.length
-                            }
-                        });
-                        console.log('✅ Sync timestamp saved to cloud');
-                    } catch (syncError) {
-                        console.log('Warning: Could not save sync timestamp:', syncError.message);
-                    }
-                    
-                                    return; // Success, exit function
+                retryCount++;
+                console.log(`❌ Cloud save attempt ${retryCount} failed:`, error.message);
                 
-                } catch (error) {
-                    retryCount++;
-                    console.log(`❌ Cloud save attempt ${retryCount} failed:`, error.message);
-                    
-                    if (error.message.includes('connection') || 
-                        error.message.includes('network') || 
-                        error.message.includes('ERR_CONNECTION_CLOSED') ||
-                        error.message.includes('connection closed')) {
-                        console.log('Connection error detected, retrying...');
-                        if (retryCount < maxRetries) {
-                            // Wait before retry with exponential backoff
-                            const waitTime = 1000 * Math.pow(2, retryCount - 1);
-                            console.log(`Waiting ${waitTime}ms before retry...`);
-                            await new Promise(resolve => setTimeout(resolve, waitTime));
-                            continue;
-                        }
+                if (error.message.includes('connection') || 
+                    error.message.includes('network') || 
+                    error.message.includes('ERR_CONNECTION_CLOSED') ||
+                    error.message.includes('connection closed')) {
+                    console.log('Connection error detected, retrying...');
+                    if (retryCount < maxRetries) {
+                        // Wait before retry with exponential backoff
+                        const waitTime = 1000 * Math.pow(2, retryCount - 1);
+                        console.log(`Waiting ${waitTime}ms before retry...`);
+                        await new Promise(resolve => setTimeout(resolve, waitTime));
+                        continue;
                     }
-                    
-                    // If it's not a connection error or max retries reached
-                    throw error;
                 }
+                
+                // If it's not a connection error or max retries reached
+                throw error;
             }
         }
         
@@ -1005,7 +999,7 @@ function authenticateUser(username, password) {
         currentUser = user;
         currentUserId = currentUser.id;
         user.lastLogin = new Date().toISOString();
-        saveData();
+        saveDataToCloud();
         return user;
     } else {
         console.log('Authentication failed. User not found or invalid credentials.');
@@ -1110,7 +1104,7 @@ function createUser(userData) {
     };
     
     users.push(newUser);
-    saveData();
+    saveDataToCloud();
     renderUsers();
     return newUser;
 }
@@ -1119,7 +1113,7 @@ function updateUser(userId, userData) {
     const userIndex = users.findIndex(u => u.id === userId);
     if (userIndex !== -1) {
         users[userIndex] = { ...users[userIndex], ...userData };
-        saveData();
+        saveDataToCloud();
         renderUsers();
         return users[userIndex];
     }
@@ -1148,7 +1142,7 @@ function deleteUser(userId) {
     const userIndex = users.findIndex(u => u.id === userId);
     if (userIndex !== -1) {
         users.splice(userIndex, 1);
-        saveData();
+        saveDataToCloud();
         renderUsers();
         showSuccessMessage('User deleted successfully!');
         return true;
@@ -1580,7 +1574,6 @@ function renderWarranties() {
     
     updateWarrantySummary(allWarranties);
 }
-
 function getWarrantyStatus(expiryDate) {
     if (!expiryDate) return 'unknown';
     
@@ -1739,7 +1732,7 @@ function forceUpdateAdminPermissions() {
         }
         
         // Save the updated data
-        saveData();
+        saveDataToCloud();
         console.log('✅ Saved updated user data');
         
         // Re-apply permissions
@@ -1836,7 +1829,7 @@ function editPayment(id) {
 function deletePayment(id) {
     if (confirm('Are you sure you want to delete this payment?')) {
         payments = payments.filter(p => p.id !== id);
-        saveData();
+        saveDataToCloud();
         renderPayments();
         updateDashboard();
     }
@@ -2156,7 +2149,7 @@ function handleAddItem(e) {
         inventory.push(newItem);
     }
 
-    saveData();
+    saveDataToCloud();
     closeModal('add-item-modal');
     updateDashboard();
     renderInventory();
@@ -2199,7 +2192,7 @@ function handleAddVendor(e) {
         vendors.push(newVendor);
     }
 
-    saveData();
+    saveDataToCloud();
     closeModal('add-vendor-modal');
     renderVendors();
 }
@@ -2331,7 +2324,7 @@ function handleAddCustomer(e) {
     }
 
     console.log('About to save data. Customers array length:', customers.length);
-    saveData();
+    saveDataToCloud();
     closeModal('add-customer-modal');
     console.log('About to render customers. Customers array length:', customers.length);
     
@@ -2353,7 +2346,6 @@ function handleAddCustomer(e) {
         e.target.submitting = false;
     }
 }
-
 function handleAddPurchase(e) {
     e.preventDefault();
     
@@ -2393,7 +2385,7 @@ function handleAddPurchase(e) {
     };
 
     purchases.push(newPurchase);
-    saveData();
+    saveDataToCloud();
     closeModal('add-purchase-modal');
     updateDashboard();
     renderPurchases();
@@ -2424,7 +2416,7 @@ function handleAddRepair(e) {
     };
     
     repairs.push(newRepair);
-    saveData();
+    saveDataToCloud();
     renderRepairs();
     closeModal('add-repair-modal');
     e.target.reset();
@@ -2454,7 +2446,7 @@ function handleAddOutsource(e) {
     };
 
     outsourceRepairs.push(newOutsource);
-    saveData();
+    saveDataToCloud();
     closeModal('add-outsource-modal');
     updateDashboard();
     renderOutsource();
@@ -2512,7 +2504,7 @@ function handleAddInvoice(e) {
     };
 
     invoices.push(newInvoice);
-    saveData();
+    saveDataToCloud();
     closeModal('add-invoice-modal');
     updateDashboard();
     renderInvoices();
@@ -2577,7 +2569,7 @@ function handleAddQuotation(e) {
     quotations.push(newQuotation);
     console.log('Added new quotation:', newQuotation);
     console.log('All quotations after adding:', quotations);
-    saveData();
+    saveDataToCloud();
     closeModal('add-quotation-modal');
     updateDashboard();
     renderQuotations();
@@ -2622,7 +2614,7 @@ function handleAddPickDrop(e) {
     };
     
     pickDrops.push(newPickDrop);
-    saveData();
+    saveDataToCloud();
     renderPickDrops();
     closeModal('add-pickdrop-modal');
     e.target.reset();
@@ -2839,7 +2831,7 @@ function handleAddPayment(e) {
         }
     }
     
-    saveData();
+    saveDataToCloud();
     renderPayments();
     closeModal('add-payment-modal');
     e.target.reset();
@@ -3125,7 +3117,6 @@ function updateRepairStatusChart() {
         }
     });
 }
-
 function updateRevenueChart() {
     const ctx = document.getElementById('revenueChart');
     if (!ctx) {
@@ -3560,7 +3551,7 @@ function editItem(id) {
 function deleteItem(id) {
     if (confirm('Are you sure you want to delete this item?')) {
         inventory = inventory.filter(i => i.id !== id);
-        saveData();
+        saveDataToCloud();
         updateDashboard();
         renderInventory();
     }
@@ -3588,7 +3579,7 @@ function editVendor(id) {
 function deleteVendor(id) {
     if (confirm('Are you sure you want to delete this vendor?')) {
         vendors = vendors.filter(v => v.id !== id);
-        saveData();
+        saveDataToCloud();
         renderVendors();
     }
 }
@@ -3671,7 +3662,7 @@ function editCustomer(id) {
 function deleteCustomer(id) {
     if (confirm('Are you sure you want to delete this customer?')) {
         customers = customers.filter(c => c.id !== id);
-        saveData();
+        saveDataToCloud();
         renderCustomers();
     }
 }
@@ -3784,7 +3775,7 @@ function editCustomerFromDetail() {
 function deletePurchase(id) {
     if (confirm('Are you sure you want to delete this purchase?')) {
         purchases = purchases.filter(p => p.id !== id);
-        saveData();
+        saveDataToCloud();
         updateDashboard();
         renderPurchases();
     }
@@ -3793,7 +3784,7 @@ function deletePurchase(id) {
 function deleteRepair(id) {
     if (confirm('Are you sure you want to delete this repair?')) {
         repairs = repairs.filter(r => r.id !== id);
-        saveData();
+        saveDataToCloud();
         updateDashboard();
         renderRepairs();
     }
@@ -3808,7 +3799,7 @@ function updateRepairStatus(id) {
             const expires = addMonths(new Date(), repair.warranty.months);
             repair.warranty.expiresOn = expires.toISOString().split('T')[0];
         }
-        saveData();
+        saveDataToCloud();
         renderRepairs();
         updateDashboard();
     }
@@ -3817,7 +3808,7 @@ function updateRepairStatus(id) {
 function deleteOutsource(id) {
     if (confirm('Are you sure you want to delete this outsource repair?')) {
         outsourceRepairs = outsourceRepairs.filter(o => o.id !== id);
-        saveData();
+        saveDataToCloud();
         updateDashboard();
         renderOutsource();
     }
@@ -3830,7 +3821,7 @@ function updateOutsourceStatus(id) {
         const currentIndex = statuses.indexOf(outsource.status);
         const nextIndex = (currentIndex + 1) % statuses.length;
         outsource.status = statuses[nextIndex];
-        saveData();
+        saveDataToCloud();
         renderOutsource();
         updateDashboard();
     }
@@ -3839,7 +3830,7 @@ function updateOutsourceStatus(id) {
 function deleteInvoice(id) {
     if (confirm('Are you sure you want to delete this invoice?')) {
         invoices = invoices.filter(i => i.id !== id);
-        saveData();
+        saveDataToCloud();
         updateDashboard();
         renderInvoices();
     }
@@ -3852,12 +3843,11 @@ function updateInvoiceStatus(id) {
         const currentIndex = statuses.indexOf(invoice.status);
         const nextIndex = (currentIndex + 1) % statuses.length;
         invoice.status = statuses[nextIndex];
-        saveData();
+        saveDataToCloud();
         renderInvoices();
         updateDashboard();
     }
 }
-
 function viewInvoice(id) {
     const invoice = invoices.find(i => i.id === id);
     if (!invoice) {
@@ -3977,7 +3967,7 @@ function updateInvoiceStatusFromDetail() {
     
     // Update the invoice status
     invoice.status = newStatus;
-    saveData();
+    saveDataToCloud();
     
     // Update button states based on new status
     updateInvoiceActionButtons(newStatus);
@@ -4235,7 +4225,7 @@ function markInvoiceAsPaid() {
     }
     
     invoice.status = 'paid';
-    saveData();
+    saveDataToCloud();
     
     // Update the status dropdown
     const statusSelect = document.getElementById('invoice-status-select');
@@ -4452,7 +4442,7 @@ function saveInvoiceChanges() {
     invoice.total = subtotal + taxAmount - discount;
     
     // Save data
-    saveData();
+    saveDataToCloud();
     
     // Exit edit mode and refresh view
     exitInvoiceEditMode();
@@ -4644,7 +4634,6 @@ function filterInvoices() {
     
     renderFilteredInvoices(filtered);
 }
-
 function renderFilteredInvoices(filteredItems) {
     const tbody = document.getElementById('invoices-tbody');
     tbody.innerHTML = '';
@@ -4827,7 +4816,7 @@ function renderPickDrops() {
 function deleteQuotation(id) {
     if (confirm('Are you sure you want to delete this quotation?')) {
         quotations = quotations.filter(q => q.id !== id);
-        saveData();
+        saveDataToCloud();
         updateDashboard();
         renderQuotations();
     }
@@ -4836,7 +4825,7 @@ function deleteQuotation(id) {
 function deletePickDrop(id) {
     if (confirm('Are you sure you want to delete this pick & drop?')) {
         pickDrops = pickDrops.filter(pd => pd.id !== id);
-        saveData();
+        saveDataToCloud();
         updateDashboard();
         renderPickDrops();
     }
@@ -4849,7 +4838,7 @@ function updateQuotationStatus(id) {
         const currentIndex = statuses.indexOf(quotation.status);
         const nextIndex = (currentIndex + 1) % statuses.length;
         quotation.status = statuses[nextIndex];
-        saveData();
+        saveDataToCloud();
         renderQuotations();
         updateDashboard();
     }
@@ -4890,7 +4879,7 @@ function updatePickDropStatus(id, newStatus = null) {
             console.log(`💾 Saving data after status update...`);
             
             // Save to cloud (asynchronous)
-            saveData();
+            saveDataToCloud();
             
             console.log(`📊 Rendering updated data...`);
             renderPickDrops();
@@ -4984,7 +4973,7 @@ function createRepairFromPickDrop(pickDrop) {
     console.log('💾 Saving data after repair creation...');
     
     // Also save to cloud (asynchronous)
-    saveData();
+    saveDataToCloud();
     
     return newRepair;
 }
@@ -5017,7 +5006,7 @@ function convertToRepair(id) {
                 console.log('Repairs array after adding:', repairs);
                 console.log('Repairs array length:', repairs.length);
                 
-                saveData();
+                saveDataToCloud();
                 renderRepairs();
                 renderQuotations();
                 updateDashboard();
@@ -5291,7 +5280,7 @@ function convertToRepair() {
             updateQuotationStatus(window.currentQuotationId, 'converted');
             document.getElementById('quotation-status-select').value = 'converted';
             updateQuotationActionButtons('converted');
-            saveData();
+            saveDataToCloud();
             alert('Quotation converted to repair successfully!');
         }
     }
@@ -5444,7 +5433,6 @@ function selectItemForQuotation(item, inputElement) {
     // Trigger calculation update
     calculateQuotationTotals();
 }
-
 function filterQuotations() {
     const searchTerm = document.getElementById('search-quotations').value.toLowerCase();
     const statusFilter = document.getElementById('quotation-status-filter').value;
@@ -5940,7 +5928,7 @@ function updateInventoryStatus(itemId, newStatus) {
     
     // Update the item's status (we'll store it as a custom status)
     item.customStatus = newStatus;
-    saveData();
+    saveDataToCloud();
     
     alert(`Item status updated from "${oldStatus.replace('-', ' ')}" to "${newStatus.replace('-', ' ')}" successfully!`);
     updateDashboard();
@@ -6011,7 +5999,7 @@ function sendPickupOTP(pickDropId) {
     pickDrop.pickupOtp = otp;
     pickDrop.pickupOtpSent = true;
     pickDrop.pickupOtpVerified = false;
-    saveData();
+    saveDataToCloud();
     
     // In a real application, this would send via SMS/Email
     alert(`Pickup OTP sent to customer: ${otp}\n\nIn a real application, this would be sent via SMS or email.`);
@@ -6036,7 +6024,7 @@ function verifyPickupOTP(pickDropId, enteredOtp) {
     if (enteredOtp === pickDrop.pickupOtp) {
         pickDrop.pickupOtpVerified = true;
         pickDrop.status = 'picked-up';
-        saveData();
+        saveDataToCloud();
         alert('Pickup OTP verified successfully! Status updated to "Picked Up".');
         renderPickDrops();
         return true;
@@ -6060,7 +6048,7 @@ function sendDeliveryOTP(deliveryId) {
     delivery.deliveryOtpVerified = false;
     delivery.deliveryOtpSentTime = new Date().toISOString();
     
-    saveData();
+    saveDataToCloud();
     
     // In a real application, this would send the OTP via SMS/email
     alert(`Delivery OTP sent to customer: ${otp}\n\nIn a real application, this would be sent via SMS or email.`);
@@ -6085,7 +6073,7 @@ function verifyDeliveryOTP(deliveryId, enteredOtp) {
     if (enteredOtp === delivery.deliveryOtp) {
         delivery.deliveryOtpVerified = true;
         delivery.status = 'delivered';
-        saveData();
+        saveDataToCloud();
         alert('Delivery OTP verified successfully! Status updated to "Delivered".');
         renderDeliveries();
         return true;
@@ -6167,7 +6155,7 @@ function updateInvoiceStatusFromList(invoiceId, newStatus) {
     
     // Update the invoice status
     invoice.status = newStatus;
-    saveData();
+    saveDataToCloud();
     
     // Show success message
     alert(`Invoice status updated from "${oldStatus}" to "${newStatus}" successfully!`);
@@ -6202,7 +6190,6 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('Loaded quotations:', quotations);
     console.log('Restored section:', lastSection);
 }); 
-
 function viewPickDrop(id) {
     const pickDrop = pickDrops.find(pd => pd.id === id);
     if (pickDrop) {
@@ -6993,7 +6980,6 @@ function displayJobCardImages(images) {
         gallery.innerHTML = '<p style="color: #64748b; text-align: center;">No device images available</p>';
     }
 }
-
 // Customer Autocomplete Functions
 function setupCustomerAutocomplete() {
     const customerInputs = [
@@ -7442,7 +7428,7 @@ function updateJobCardData() {
     };
     
     // Save data
-    saveData();
+    saveDataToCloud();
     
     // Update the job card view if it's currently displayed
     if (document.getElementById('job-card-detail-view').style.display !== 'none') {
@@ -7517,7 +7503,7 @@ function addImageToJobCardContainer(imageData, fileName) {
     });
     
     // Save data
-    saveData();
+    saveDataToCloud();
     
     // Update display
     displayJobCardImages(repair.images);
@@ -7548,7 +7534,7 @@ function editJobCardImages() {
         if (imageIndex >= 0 && imageIndex < repair.images.length) {
             if (confirm(`Delete image: ${repair.images[imageIndex].fileName}?`)) {
                 repair.images.splice(imageIndex, 1);
-                saveData();
+                saveDataToCloud();
                 displayJobCardImages(repair.images);
                 alert('Image deleted successfully!');
             }
@@ -7613,7 +7599,7 @@ function qualityCheck() {
             repairs[repairIndex].qualityCheckTime = currentTime;
             
             // Save data
-            saveData();
+            saveDataToCloud();
             
             // Update job card view
             updateJobCardProgress('completed');
@@ -7689,7 +7675,7 @@ function readyForDelivery() {
             saveDeliveryData();
             
             // Save repair data
-            saveData();
+            saveDataToCloud();
             
             // Update job card view
             updateJobCardProgress('ready-for-delivery');
@@ -7788,9 +7774,6 @@ function sendPickupOTPFromDetail() {
         sendPickupOTP(window.currentPickDropId);
     }
 }
-
-
-
 function addPickDropNote() {
     if (window.currentPickDropId) {
         const note = prompt('Enter note for this pick & drop service:');
@@ -7798,7 +7781,7 @@ function addPickDropNote() {
             const pickDropIndex = pickDrops.findIndex(pd => pd.id === window.currentPickDropId);
             if (pickDropIndex !== -1) {
                 pickDrops[pickDropIndex].notes = note;
-                saveData();
+                saveDataToCloud();
                 alert('Note added successfully!');
             }
         }
@@ -7909,7 +7892,7 @@ function updatePickDropData(event) {
             
             // Update the pick & drop
             pickDrops[pickDropIndex] = updatedPickDrop;
-            saveData();
+            saveDataToCloud();
             
             // Update the detail view
             viewPickDrop(window.currentPickDropId);
@@ -8569,7 +8552,6 @@ function performGlobalSearch() {
     console.log('Search results:', results);
     displayGlobalSearchResults(results, searchTerm);
 }
-
 function searchAllData(searchTerm) {
     console.log('=== SEARCHING ALL DATA ===');
     console.log('Search term:', searchTerm);
@@ -9236,7 +9218,7 @@ function checkFirebasePermissions() {
         message: 'Permission test'
     };
     
-            window.setDoc(window.doc(window.safeCollection('testData'), window.auth.currentUser.uid), testData)
+    window.setDoc(window.doc(window.safeCollection('testData'), window.auth.currentUser.uid), testData)
         .then(() => {
             console.log('✅ Write permission: OK');
             
@@ -9362,7 +9344,6 @@ function testCloudRead() {
         console.log(`❌ Cloud read error: ${error.message}`);
     }
 }
-
 function testFullSync() {
     console.log('=== TESTING FULL SYNC ===');
     

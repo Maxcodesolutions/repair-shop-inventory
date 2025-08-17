@@ -492,7 +492,7 @@ function ensureAdminUserExists() {
         };
         
         users.push(newAdminUser);
-        saveData();
+        saveDataToCloud();
         console.log('Admin user created:', newAdminUser);
     } else {
         console.log('Admin user already exists:', adminUser);
@@ -503,7 +503,7 @@ function ensureAdminUserExists() {
         if (!adminUser.permissions.includes('payments')) {
             adminUser.permissions.push('payments');
         }
-        saveData();
+        saveDataToCloud();
     }
     
     console.log('Final users after ensuring admin:', users);
@@ -775,13 +775,39 @@ async function loadDataFromCloud() {
         console.error('Error setting up real-time listener from Firebase cloud:', error);
     }
 }
-function saveData() {
-    console.log('=== SAVING DATA ===');
+function saveDataToCloud() {
+    console.log('=== SAVING DATA TO CLOUD ===');
     
     // Always try to save to cloud first
     if (window.auth && window.auth.currentUser) {
         console.log('User authenticated, saving to cloud...');
-        saveDataToCloud();
+        const user = window.auth.currentUser;
+        if (!window.setDoc || !window.doc || !window.safeCollection || !window.db) {
+            console.error('Firestore setDoc not available, cannot save data to cloud.');
+            return;
+        }
+        const docRef = window.doc(window.safeCollection(window.db, 'users'), user.uid);
+        const data = {
+            inventory,
+            vendors,
+            customers,
+            purchases,
+            repairs,
+            outsourceRepairs,
+            invoices,
+            quotations,
+            pickDrops,
+            payments,
+            deliveries,
+            users
+        };
+        window.setDoc(docRef, data, { merge: true })
+            .then(() => {
+                console.log('✅ Data saved to cloud successfully');
+            })
+            .catch((error) => {
+                console.error('❌ Error saving data to cloud:', error);
+            });
     } else {
         console.log('No authenticated user, cannot save data to cloud');
     }
@@ -1054,7 +1080,7 @@ function authenticateUser(username, password) {
         console.log('User authenticated successfully:', user);
         currentUser = user;
         user.lastLogin = new Date().toISOString();
-        saveData();
+        saveDataToCloud();
         return user;
     } else {
         console.log('Authentication failed. User not found or invalid credentials.');
@@ -1159,7 +1185,7 @@ function createUser(userData) {
     };
     
     users.push(newUser);
-    saveData();
+    saveDataToCloud();
     renderUsers();
     return newUser;
 }
@@ -1168,7 +1194,7 @@ function updateUser(userId, userData) {
     const userIndex = users.findIndex(u => u.id === userId);
     if (userIndex !== -1) {
         users[userIndex] = { ...users[userIndex], ...userData };
-        saveData();
+        saveDataToCloud();
         renderUsers();
         return users[userIndex];
     }
@@ -1197,7 +1223,7 @@ function deleteUser(userId) {
     const userIndex = users.findIndex(u => u.id === userId);
     if (userIndex !== -1) {
         users.splice(userIndex, 1);
-        saveData();
+        saveDataToCloud();
         renderUsers();
         showSuccessMessage('User deleted successfully!');
         return true;
@@ -1787,7 +1813,7 @@ function forceUpdateAdminPermissions() {
         }
         
         // Save the updated data
-        saveData();
+        saveDataToCloud();
         console.log('✅ Saved updated user data');
         
         // Re-apply permissions
@@ -1884,7 +1910,7 @@ function editPayment(id) {
 function deletePayment(id) {
     if (confirm('Are you sure you want to delete this payment?')) {
         payments = payments.filter(p => p.id !== id);
-        saveData();
+        saveDataToCloud();
         renderPayments();
         updateDashboard();
     }
@@ -2203,7 +2229,7 @@ function handleAddItem(e) {
         inventory.push(newItem);
     }
 
-    saveData();
+    saveDataToCloud();
     closeModal('add-item-modal');
     updateDashboard();
     renderInventory();
@@ -2246,7 +2272,7 @@ function handleAddVendor(e) {
         vendors.push(newVendor);
     }
 
-    saveData();
+    saveDataToCloud();
     closeModal('add-vendor-modal');
     renderVendors();
 }
@@ -3597,7 +3623,7 @@ function editItem(id) {
 function deleteItem(id) {
     if (confirm('Are you sure you want to delete this item?')) {
         inventory = inventory.filter(i => i.id !== id);
-        saveData();
+        saveDataToCloud();
         updateDashboard();
         renderInventory();
     }
@@ -3625,7 +3651,7 @@ function editVendor(id) {
 function deleteVendor(id) {
     if (confirm('Are you sure you want to delete this vendor?')) {
         vendors = vendors.filter(v => v.id !== id);
-        saveData();
+        saveDataToCloud();
         renderVendors();
     }
 }
@@ -3708,7 +3734,7 @@ function editCustomer(id) {
 function deleteCustomer(id) {
     if (confirm('Are you sure you want to delete this customer?')) {
         customers = customers.filter(c => c.id !== id);
-        saveData();
+        saveDataToCloud();
         renderCustomers();
     }
 }
@@ -3821,6 +3847,7 @@ function editCustomerFromDetail() {
 function deletePurchase(id) {
     if (confirm('Are you sure you want to delete this purchase?')) {
         purchases = purchases.filter(p => p.id !== id);
+        saveDataToCloud();
         updateDashboard();
         renderPurchases();
     }
@@ -3829,11 +3856,11 @@ function deletePurchase(id) {
 function deleteRepair(id) {
     if (confirm('Are you sure you want to delete this repair?')) {
         repairs = repairs.filter(r => r.id !== id);
+        saveDataToCloud();
         updateDashboard();
         renderRepairs();
     }
 }
-
 function updateRepairStatus(id) {
     const repair = repairs.find(r => r.id === id);
     if (repair) {
@@ -4648,7 +4675,6 @@ function calculateInvoiceTotals() {
         taxRow.style.display = 'none';
     }
 }
-
 function filterInvoices() {
     const searchTerm = document.getElementById('search-invoices').value.toLowerCase();
     const statusFilter = document.getElementById('invoice-status-filter').value;
@@ -5446,7 +5472,6 @@ function searchInventoryForQuotation(inputElement) {
         hideItemSuggestions(suggestionsContainer);
     }
 }
-
 function selectItemForQuotation(item, inputElement) {
     inputElement.value = item.name;
     inputElement.parentElement.querySelector('.item-suggestions').style.display = 'none';
@@ -6213,7 +6238,6 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('Loaded quotations:', quotations);
     console.log('Restored section:', lastSection);
 }); 
-
 function viewPickDrop(id) {
     const pickDrop = pickDrops.find(pd => pd.id === id);
     if (pickDrop) {
@@ -6999,7 +7023,6 @@ function displayJobCardImages(images) {
         gallery.innerHTML = '<p style="color: #64748b; text-align: center;">No device images available</p>';
     }
 }
-
 // Customer Autocomplete Functions
 function setupCustomerAutocomplete() {
     const customerInputs = [
@@ -7695,7 +7718,7 @@ function readyForDelivery() {
             saveDeliveryData();
             
             // Save repair data
-            saveData();
+            saveDataToCloud();
             
             // Update job card view
             updateJobCardProgress('ready-for-delivery');
@@ -7793,9 +7816,6 @@ function sendPickupOTPFromDetail() {
         sendPickupOTP(window.currentPickDropId);
     }
 }
-
-
-
 function addPickDropNote() {
     if (window.currentPickDropId) {
         const note = prompt('Enter note for this pick & drop service:');
@@ -7803,7 +7823,7 @@ function addPickDropNote() {
             const pickDropIndex = pickDrops.findIndex(pd => pd.id === window.currentPickDropId);
             if (pickDropIndex !== -1) {
                 pickDrops[pickDropIndex].notes = note;
-                saveData();
+                saveDataToCloud();
                 alert('Note added successfully!');
             }
         }
@@ -7914,7 +7934,7 @@ function updatePickDropData(event) {
             
             // Update the pick & drop
             pickDrops[pickDropIndex] = updatedPickDrop;
-            saveData();
+            saveDataToCloud();
             
             // Update the detail view
             viewPickDrop(window.currentPickDropId);
@@ -8043,7 +8063,7 @@ function handleAddDelivery(e) {
     };
     
     deliveries.push(newDelivery);
-    saveDeliveryData();
+    saveDataToCloud();
     renderDeliveries();
     closeModal('add-delivery-modal');
     e.target.reset();
@@ -8153,7 +8173,7 @@ function updateDeliveryStatus(id, newStatus) {
                 break;
         }
         
-        saveDeliveryData();
+        saveDataToCloud();
         renderDeliveries();
         
         // Update detail view if currently viewing
@@ -8226,7 +8246,7 @@ function addDeliveryNote() {
             const deliveryIndex = deliveries.findIndex(d => d.id === window.currentDeliveryId);
             if (deliveryIndex !== -1) {
                 deliveries[deliveryIndex].notes = note;
-                saveDeliveryData();
+                saveDataToCloud();
                 alert('Note added successfully!');
             }
         }
@@ -8248,7 +8268,7 @@ function printDelivery() {
 function deleteDelivery(id) {
     if (confirm('Are you sure you want to delete this delivery?')) {
         deliveries = deliveries.filter(d => d.id !== id);
-        saveDeliveryData();
+        saveDataToCloud();
         renderDeliveries();
     }
 }
@@ -8573,7 +8593,6 @@ function performGlobalSearch() {
     console.log('Search results:', results);
     displayGlobalSearchResults(results, searchTerm);
 }
-
 function searchAllData(searchTerm) {
     console.log('=== SEARCHING ALL DATA ===');
     console.log('Search term:', searchTerm);
