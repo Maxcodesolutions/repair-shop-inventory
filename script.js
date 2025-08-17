@@ -256,7 +256,7 @@ function handleLogin(e) {
                         console.log('❌ Email sign-in failed:', error.message);
                         console.log('Error code:', error.code);
                     
-                        // Check for 400 error (authentication disabled)
+                    // Check for 400 error (authentication disabled)
                         if (error.code === 'auth/admin-restricted-operation' || error.message.includes('400') || error.code === 'auth/invalid-value-(email),-starting-an-object-on-a-scalar-field') {
                             console.log('🔧 SOLUTION: Firebase Authentication is disabled or misconfigured');
                             console.log('This error typically means:');
