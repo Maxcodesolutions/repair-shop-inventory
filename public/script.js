@@ -551,7 +551,7 @@ function setupFirebaseAuthListener() {
     if (window.onAuthStateChanged && window.auth) {
         console.log('Setting up Firebase auth listener for cross-device sync...');
         
-        window.onAuthStateChanged(window.auth, (user) => {
+        window.onAuthStateChanged((user) => {
             if (user) {
                 const authMethod = user.providerData[0]?.providerId || 'Anonymous';
                 console.log('User authenticated automatically:', authMethod);

@@ -551,19 +551,16 @@ function initializeApp() {
 function setupFirebaseAuthListener() {
     if (window.onAuthStateChanged && window.auth) {
         console.log('Setting up Firebase auth listener for cross-device sync...');
-        
-        window.onAuthStateChanged(window.auth, (user) => {
+        window.onAuthStateChanged((user) => {
             if (user) {
                 const authMethod = user.providerData[0]?.providerId || 'Anonymous';
                 console.log('User authenticated automatically:', authMethod);
                 console.log('User UID for cross-device sync:', user.uid);
-                
                 if (authMethod === 'Anonymous') {
                     console.log('⚠️ Using anonymous authentication - this will create different UIDs per browser');
                 } else {
                     console.log('✅ Using consistent authentication - cross-browser sync enabled');
                 }
-                
                 // Automatically load data from cloud when user signs in
                 loadDataFromCloud().then(() => {
                     console.log('Data loaded from cloud after authentication');
@@ -581,19 +578,6 @@ function setupFirebaseAuthListener() {
                 console.log('User signed out, switching to local storage');
             }
         });
-        
-        // Check current auth state immediately
-        const currentUser = window.auth.currentUser;
-        if (currentUser) {
-            console.log('Current user found for cross-device sync:', currentUser.uid);
-            loadDataFromCloud();
-        } else {
-            console.log('No current user, attempting consistent authentication for cross-device sync...');
-            
-            // Try anonymous auth immediately
-                            tryAnonymousAuth();
-        }
-        }
     } else {
         console.log('Firebase auth not available, using local storage only');
     }
