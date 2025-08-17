@@ -66,7 +66,6 @@ function showApp() {
     console.log('App shown, initializing...');
     
     // Load data and render all sections
-    loadData();
     renderAll();
     
     // Update dashboard with current data
