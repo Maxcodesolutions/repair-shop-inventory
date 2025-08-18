@@ -1899,7 +1899,7 @@ function handleAddVendor(e) {
     closeModal('add-vendor-modal');
     renderVendors();
 }
-function handleAddCustomer(e) {
+async function handleAddCustomer(e) {
     e.preventDefault();
     
     // Prevent double submission
