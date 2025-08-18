@@ -131,52 +131,41 @@ function forceUpdateDashboard() {
 }
 
 // Handle login form submission
-function handleLogin(e) {
+async function handleLogin(e) {
     e.preventDefault();
-    
-    const username = document.getElementById('username').value;
+    const email = document.getElementById('username').value;
     const password = document.getElementById('password').value;
     const loginError = document.getElementById('login-error');
     const loginSuccess = document.getElementById('login-success');
-    
-    // Clear previous messages
     loginError.style.display = 'none';
     loginSuccess.style.display = 'none';
-    
-    console.log('Login attempt:', { username, password });
-    console.log('Available users:', users);
-    
-    const authenticatedUser = authenticateUser(username, password);
-    
-    if (authenticatedUser) {
-        currentUser = authenticatedUser;
-        currentUserId = currentUser.id;
-        updateUsernameInHeader();
-        
-        loginSuccess.style.display = 'block';
-        loginSuccess.textContent = 'Login successful! Redirecting...';
-        
-        // Firebase authentication for cloud sync
-        if (window.auth && window.signInWithEmailAndPassword) {
-            window.signInWithEmailAndPassword(window.auth, authenticatedUser.email, password)
-                    .then((userCredential) => {
-                        console.log('✅ Signed in with email for cross-browser sync:', userCredential.user.uid);
-                    })
-                    .catch((error) => {
-                        console.log('❌ Email sign-in failed:', error.message);
-                        console.log('Error code:', error.code);
-                });
+    try {
+        const userCredential = await window.signInWithEmailAndPassword(window.auth, email, password);
+        // Fetch user profile from Firestore
+        const usersCol = window.collection(window.db, 'users');
+        const snapshot = await window.getDocs(usersCol);
+        const allUsers = snapshot.docs.map(doc => doc.data());
+        const userProfile = allUsers.find(u => u.email === email);
+        if (userProfile) {
+            currentUser = userProfile;
+            currentUserId = userProfile.id;
+            updateUsernameInHeader();
+            loginSuccess.style.display = 'block';
+            loginSuccess.textContent = 'Login successful! Redirecting...';
+            setTimeout(() => {
+                showApp();
+                applyUserPermissions();
+            }, 1000);
+        } else {
+            loginError.style.display = 'block';
+            loginError.textContent = 'User profile not found in database.';
         }
-        
-        // Hide login and show app after a short delay
-        setTimeout(() => {
-            showApp();
-            applyUserPermissions();
-        }, 1000);
-    } else {
+    } catch (error) {
         loginError.style.display = 'block';
-        loginError.textContent = 'Invalid username or password. Please try again.';
+        loginError.textContent = 'Invalid email or password. Please try again.';
         document.getElementById('password').value = '';
+        console.log('❌ Email sign-in failed:', error.message);
+        console.log('Error code:', error.code);
     }
 }
 

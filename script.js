@@ -129,265 +129,41 @@ function forceUpdateDashboard() {
 }
 
 // Handle login form submission
-function handleLogin(e) {
+async function handleLogin(e) {
     e.preventDefault();
-    
-    const username = document.getElementById('username').value;
+    const email = document.getElementById('username').value;
     const password = document.getElementById('password').value;
     const loginError = document.getElementById('login-error');
     const loginSuccess = document.getElementById('login-success');
-    
-    // Clear previous messages
     loginError.style.display = 'none';
     loginSuccess.style.display = 'none';
-    
-    console.log('Login attempt:', { username, password });
-    console.log('Available users:', users);
-    
-    const authenticatedUser = authenticateUser(username, password);
-    
-    if (authenticatedUser) {
-        currentUser = authenticatedUser;
-        currentUserId = currentUser.id;
-        updateUsernameInHeader();
-        
-        loginSuccess.style.display = 'block';
-        loginSuccess.textContent = 'Login successful! Redirecting...';
-        
-        // Create a consistent cross-browser user ID
-        const crossBrowserUserId = `user_${username}_${authenticatedUser.id}`;
-        
-        // Firebase authentication for cloud sync
-        if (window.auth) {
-            console.log('🌐 Cloud sync - attempting Firebase authentication...');
-            
-            // Debug username variable
-            console.log('🔍 Username debug:', {
-                username: username,
-                type: typeof username,
-                value: username,
-                isString: typeof username === 'string',
-                length: username ? username.length : 'undefined'
-            });
-            
-            // Ensure username is a valid string
-            if (!username || typeof username !== 'string' || username.trim() === '') {
-                console.error('❌ Invalid username for Firebase auth:', username);
-                console.log('🔧 Skipping Firebase authentication due to invalid username');
-                return;
-            }
-            
-            // Create a valid email for cross-browser sync
-            const syncEmail = `${username.trim()}@repairshop.com`; // Fixed email format
-        const syncPassword = 'admin123456'; // Use stronger password for Firebase
-            
-            // Validate email format
-            console.log('🔍 Email validation:', {
-                rawUsername: username,
-                trimmedUsername: username.trim(),
-                constructedEmail: syncEmail,
-                emailType: typeof syncEmail,
-                emailLength: syncEmail.length
-            });
-            
-            console.log('🔑 Firebase Auth Details:', {
-                email: syncEmail,
-                password: '***' + syncPassword.slice(-4),
-                authAvailable: !!window.auth,
-                signInAvailable: !!window.signInWithEmailAndPassword,
-                createAccountAvailable: !!window.createUserWithEmailAndPassword
-            });
-            
-                    // Try to sign in with email/password for consistent cross-browser sync
-        if (window.signInWithEmailAndPassword) {
-                // Final validation before Firebase call
-                console.log('🔍 Final validation before Firebase sign-in:', {
-                    auth: !!window.auth,
-                    email: syncEmail,
-                    emailType: typeof syncEmail,
-                    password: '***' + syncPassword.slice(-4),
-                    passwordType: typeof syncPassword,
-                    functionAvailable: !!window.signInWithEmailAndPassword
-                });
-                
-                // Deep email analysis
-                console.log('🔍 Deep email analysis:', {
-                    rawEmail: syncEmail,
-                    emailLength: syncEmail.length,
-                    emailCharCodes: Array.from(syncEmail).map(c => c.charCodeAt(0)),
-                    emailBytes: new TextEncoder().encode(syncEmail),
-                    emailTrimmed: syncEmail.trim(),
-                    emailNormalized: syncEmail.normalize(),
-                    emailJSON: JSON.stringify(syncEmail),
-                    emailStringified: String(syncEmail),
-                    emailConstructor: syncEmail.constructor.name,
-                    emailPrototype: Object.getPrototypeOf(syncEmail).constructor.name
-                });
-                
-                // Ensure all parameters are valid
-                if (!window.auth || !syncEmail || !syncPassword || typeof syncEmail !== 'string' || typeof syncPassword !== 'string') {
-                    console.error('❌ Invalid parameters for Firebase sign-in:', {
-                        auth: !!window.auth,
-                        email: syncEmail,
-                        password: !!syncPassword,
-                        emailType: typeof syncEmail,
-                        passwordType: typeof syncPassword
-                    });
-                    console.log('🔧 Skipping Firebase sign-in due to invalid parameters');
-                    return;
-                }
-                
-                // Additional email validation
-                if (syncEmail.includes('\0') || syncEmail.includes('\u0000')) {
-                    console.error('❌ Email contains null characters');
-                    return;
-                }
-                
-                // Try to create a clean copy of the email
-                const cleanEmail = syncEmail.trim().normalize();
-                if (cleanEmail !== syncEmail) {
-                    console.log('🔧 Email cleaned:', {
-                        original: JSON.stringify(syncEmail),
-                        cleaned: JSON.stringify(cleanEmail)
-                    });
-                }
-                
-                console.log('🔄 Attempting Firebase sign-in...');
-            window.signInWithEmailAndPassword(window.auth, syncEmail, syncPassword)
-                .then((userCredential) => {
-                    console.log('✅ Signed in with email for cross-browser sync:', userCredential.user.uid);
-                    console.log('Cross-browser user ID:', crossBrowserUserId);
-                    // Data will be automatically loaded from cloud via the auth listener
-                })
-                .catch((error) => {
-                        console.log('❌ Email sign-in failed:', error.message);
-                        console.log('Error code:', error.code);
-                    
-                    // Check for 400 error (authentication disabled)
-                        if (error.code === 'auth/admin-restricted-operation' || error.message.includes('400') || error.code === 'auth/invalid-value-(email),-starting-an-object-on-a-scalar-field') {
-                            console.log('🔧 SOLUTION: Firebase Authentication is disabled or misconfigured');
-                            console.log('This error typically means:');
-                            console.log('1. Firebase Authentication is disabled in your project');
-                            console.log('2. Email/Password sign-in method is not enabled');
-                            console.log('3. Your domain is not authorized');
-                            console.log('4. API key restrictions are blocking the request');
-                            console.log('');
-                            console.log('To fix this:');
-                            console.log('1. Go to Firebase Console → Authentication → Sign-in method');
-                            console.log('2. Enable Email/Password authentication');
-                            console.log('3. Go to Authentication → Settings → Authorized domains');
-                            console.log('4. Add your domain (localhost, your actual domain)');
-                            console.log('5. Check Google Cloud Console for API key restrictions');
-                            console.log('');
-                            console.log('Falling back to anonymous auth...');
-                        return;
-                    }
-                        
-                        // Check for other common errors
-                        if (error.code === 'auth/user-not-found') {
-                            console.log('🔧 User not found, trying to create account...');
-                        } else if (error.code === 'auth/wrong-password') {
-                            console.log('🔧 Wrong password, trying to create account...');
-                        } else if (error.code === 'auth/invalid-email') {
-                            console.log('🔧 Invalid email format, trying to create account...');
-                        } else {
-                            console.log('🔧 Unknown error, trying to create account...');
-                    }
-                    
-                    // Try to create account if sign-in fails
-                    if (window.createUserWithEmailAndPassword) {
-                            // Final validation before Firebase account creation
-                            console.log('🔍 Final validation before Firebase account creation:', {
-                                auth: !!window.auth,
-                                email: syncEmail,
-                                emailType: typeof syncEmail,
-                                password: '***' + syncPassword.slice(-4),
-                                passwordType: typeof syncPassword,
-                                functionAvailable: !!window.createUserWithEmailAndPassword
-                            });
-                            
-                            // Ensure all parameters are valid
-                            if (!window.auth || !syncEmail || !syncPassword || typeof syncEmail !== 'string' || typeof syncPassword !== 'string') {
-                                console.error('❌ Invalid parameters for Firebase account creation:', {
-                                    auth: !!window.auth,
-                                    email: syncEmail,
-                                    password: !!syncPassword,
-                                    emailType: typeof syncEmail,
-                                    passwordType: typeof syncPassword
-                                });
-                                console.log('🔧 Skipping Firebase account creation due to invalid parameters');
-                                return;
-                            }
-                            
-                            console.log('🔄 Attempting to create Firebase account...');
-                        window.createUserWithEmailAndPassword(window.auth, syncEmail, syncPassword)
-                            .then((userCredential) => {
-                                console.log('✅ Account created for cross-browser sync:', userCredential.user.uid);
-                                console.log('Cross-browser user ID:', crossBrowserUserId);
-                                // Data will be automatically loaded from cloud via the auth listener
-                            })
-                            .catch((createError) => {
-                                    console.log('❌ Account creation failed:', createError.message);
-                                    console.log('Error code:', createError.code);
-                                
-                                // Check for 400 error (authentication disabled)
-                                    if (createError.code === 'auth/admin-restricted-operation' || createError.message.includes('400') || createError.code === 'auth/invalid-value-(email),-starting-an-object-on-a-scalar-field') {
-                                        console.log('🔧 SOLUTION: Firebase Authentication is disabled or misconfigured');
-                                        console.log('This error typically means:');
-                                        console.log('1. Firebase Authentication is disabled in your project');
-                                        console.log('2. Email/Password sign-in method is not enabled');
-                                        console.log('3. Your domain is not authorized');
-                                        console.log('4. API key restrictions are blocking the request');
-                                        console.log('');
-                                        console.log('To fix this:');
-                                        console.log('1. Go to Firebase Console → Authentication → Sign-in method');
-                                        console.log('2. Enable Email/Password authentication');
-                                        console.log('3. Go to Authentication → Settings → Authorized domains');
-                                        console.log('4. Add your domain (localhost, your actual domain)');
-                                        console.log('5. Check Google Cloud Console for API key restrictions');
-                                        console.log('');
-                                        console.log('Falling back to anonymous auth...');
-                                    return;
-                                }
-                                    
-                                    // Check for other common errors
-                                    if (createError.code === 'auth/email-already-in-use') {
-                                        console.log('🔧 Email already in use, trying anonymous auth...');
-                                    } else if (createError.code === 'auth/weak-password') {
-                                        console.log('🔧 Password too weak, trying anonymous auth...');
-                                    } else if (createError.code === 'auth/invalid-email') {
-                                        console.log('🔧 Invalid email format, trying anonymous auth...');
-                                    } else {
-                                        console.log('🔧 Unknown error, trying anonymous auth...');
-                                }
-                                
-                                // Fallback to anonymous auth
-                                tryAnonymousAuth();
-                            });
-                    } else {
-                            console.log('🔧 createUserWithEmailAndPassword not available, trying anonymous auth...');
-                        tryAnonymousAuth();
-                    }
-                });
+    try {
+        const userCredential = await window.signInWithEmailAndPassword(window.auth, email, password);
+        // Fetch user profile from Firestore
+        const usersCol = window.collection(window.db, 'users');
+        const snapshot = await window.getDocs(usersCol);
+        const allUsers = snapshot.docs.map(doc => doc.data());
+        const userProfile = allUsers.find(u => u.email === email);
+        if (userProfile) {
+            currentUser = userProfile;
+            currentUserId = userProfile.id;
+            updateUsernameInHeader();
+            loginSuccess.style.display = 'block';
+            loginSuccess.textContent = 'Login successful! Redirecting...';
+            setTimeout(() => {
+                showApp();
+                applyUserPermissions();
+            }, 1000);
         } else {
-                console.log('🔧 signInWithEmailAndPassword not available, trying anonymous auth...');
-            tryAnonymousAuth();
+            loginError.style.display = 'block';
+            loginError.textContent = 'User profile not found in database.';
         }
-        } else {
-            console.log('🔧 Firebase auth not available, cloud sync disabled');
-        }
-        
-
-        
-        // Hide login and show app after a short delay
-        setTimeout(() => {
-            showApp();
-            applyUserPermissions();
-        }, 1000);
-    } else {
+    } catch (error) {
         loginError.style.display = 'block';
-        loginError.textContent = 'Invalid username or password. Please try again.';
+        loginError.textContent = 'Invalid email or password. Please try again.';
         document.getElementById('password').value = '';
+        console.log('❌ Email sign-in failed:', error.message);
+        console.log('Error code:', error.code);
     }
 }
 
@@ -810,17 +586,6 @@ async function saveDataToCloud() {
     
     try {
         const user = window.auth.currentUser;
-        // Ensure every user in users array has a uid property if it matches the current Firebase user
-        if (user && Array.isArray(users)) {
-            const emailPrefix = user.email && user.email.split('@')[0];
-            users = users.map(u => {
-                // If username matches email prefix and uid is missing or incorrect, set it
-                if (u.username === emailPrefix && u.uid !== user.uid) {
-                    return { ...u, uid: user.uid };
-                }
-                return u;
-            });
-        }
         // Ensure arrays are defined and avoid undefined anywhere
         const dataRaw = {
             inventory: Array.isArray(inventory) ? inventory : [],
