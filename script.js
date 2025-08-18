@@ -2638,7 +2638,7 @@ function handleAddPickDrop(e) {
     document.getElementById('pickdrop-images-container').innerHTML = '';
 }
 
-function handleAddUser(e) {
+async function handleAddUser(e) {
     e.preventDefault();
     
     // Get selected permissions
@@ -2668,6 +2668,11 @@ function handleAddUser(e) {
     // Password is required for new users
     if (!editingUserId && !userData.password) {
         alert('Password is required for new users.');
+        return;
+    }
+    
+    if (await emailExistsInCloud(userData.email)) {
+        alert('This email is already registered. Please use a different email.');
         return;
     }
     
