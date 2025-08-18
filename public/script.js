@@ -2345,6 +2345,14 @@ function handleAddUser(e) {
         return;
     }
     
+    // Add this helper to check if email exists in global users collection
+    async function emailExistsInCloud(email) {
+        if (!window.db || !window.collection || !window.getDocs) return false;
+        const usersCol = window.collection(window.db, 'users');
+        const snapshot = await window.getDocs(usersCol);
+        return snapshot.docs.some(doc => doc.data().email === email);
+    }
+    
     if (editingUserId) {
         // Edit mode - update existing user
         const existingUser = users.find(u => u.id === editingUserId);
@@ -2382,6 +2390,12 @@ function handleAddUser(e) {
             return;
         }
         
+        // Check if email already exists in global users collection
+        if (await emailExistsInCloud(userData.email)) {
+            alert('This email is already registered. Please use a different email.');
+            return;
+        }
+        
         // Create Firebase Auth account first
         if (window.createUserWithEmailAndPassword && window.auth) {
             window.createUserWithEmailAndPassword(window.auth, userData.email, userData.password)
@@ -2391,7 +2405,11 @@ function handleAddUser(e) {
                     showSuccessMessage('User created successfully!');
                 })
                 .catch((error) => {
-                    alert('Failed to create Firebase Auth account: ' + error.message);
+                    if (error.code === 'auth/email-already-in-use') {
+                        alert('This email is already registered in Firebase Auth. Please use a different email.');
+                    } else {
+                        alert('Failed to create Firebase Auth account: ' + error.message);
+                    }
                 });
         } else {
             alert('Firebase Auth is not available. Cannot create user.');
@@ -3898,7 +3916,6 @@ function registerPaymentForInvoice() {
     // Show the payment modal
     showModal('add-payment-modal');
 }
-
 function markInvoiceAsPaid() {
     const invoiceId = document.getElementById('invoice-detail-view').getAttribute('data-invoice-id');
     const invoice = invoices.find(i => i.id === parseInt(invoiceId));
