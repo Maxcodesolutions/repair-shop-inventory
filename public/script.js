@@ -2399,10 +2399,11 @@ async function handleAddUser(e) {
         // Create Firebase Auth account first
         if (window.createUserWithEmailAndPassword && window.auth) {
             window.createUserWithEmailAndPassword(window.auth, userData.email, userData.password)
-                .then((userCredential) => {
-                    // Only add to app user list if Firebase Auth creation succeeds
-        createUser(userData);
-        showSuccessMessage('User created successfully!');
+                .then(async (userCredential) => {
+                    // Only add to Firestore if Auth creation succeeds
+                    await createUser(userData);
+                    showSuccessMessage('User created successfully!');
+                    await fetchAndRenderAllUsers();
                 })
                 .catch((error) => {
                     if (error.code === 'auth/email-already-in-use') {
@@ -2419,6 +2420,15 @@ async function handleAddUser(e) {
     // Reset the form and close modal
     resetUserModal();
 }
+
+async function fetchAndRenderAllUsers() {
+    if (!window.db || !window.collection || !window.getDocs) return;
+    const usersCol = window.collection(window.db, 'users');
+    const snapshot = await window.getDocs(usersCol);
+    users = snapshot.docs.map(doc => doc.data());
+    renderUsers();
+}
+
 function resetUserModal() {
     // Reset form
     document.getElementById('add-user-form').reset();
