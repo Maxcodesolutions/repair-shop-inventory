@@ -2713,13 +2713,38 @@ async function handleAddUser(e) {
             return;
         }
         
-        createUser(userData);
-        showSuccessMessage('User created successfully!');
+        if (window.createUserWithEmailAndPassword && window.auth) {
+            window.createUserWithEmailAndPassword(window.auth, userData.email, userData.password)
+                .then(async (userCredential) => {
+                    // Only add to Firestore if Auth creation succeeds
+                    await createUser(userData);
+                    showSuccessMessage('User created successfully!');
+                    await fetchAndRenderAllUsers();
+                })
+                .catch((error) => {
+                    if (error.code === 'auth/email-already-in-use') {
+                        alert('This email is already registered in Firebase Auth. Please use a different email.');
+                    } else {
+                        alert('Failed to create Firebase Auth account: ' + error.message);
+                    }
+                });
+        } else {
+            alert('Firebase Auth is not available. Cannot create user.');
+        }
     }
     
     // Reset the form and close modal
     resetUserModal();
 }
+
+async function fetchAndRenderAllUsers() {
+    if (!window.db || !window.collection || !window.getDocs) return;
+    const usersCol = window.collection(window.db, 'users');
+    const snapshot = await window.getDocs(usersCol);
+    users = snapshot.docs.map(doc => doc.data());
+    renderUsers();
+}
+
 function resetUserModal() {
     // Reset form
     document.getElementById('add-user-form').reset();
