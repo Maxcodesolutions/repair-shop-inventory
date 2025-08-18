@@ -786,7 +786,6 @@ function applyUserPermissions() {
         username: currentUser?.username
     });
 }
-
 function createUser(userData) {
     const newUser = {
         id: users.length > 0 ? Math.max(...users.map(u => u.id)) + 1 : 1,
@@ -1557,7 +1556,6 @@ function showModal(modalId) {
         populatePaymentModal();
     }
 }
-
 // Dashboard navigation function
 function navigateToSection(sectionName) {
     console.log(`🔄 Navigating to section: ${sectionName}`);
@@ -2314,7 +2312,6 @@ function handleAddPickDrop(e) {
     if (window.deviceImages) window.deviceImages.pickdrop = [];
     document.getElementById('pickdrop-images-container').innerHTML = '';
 }
-
 function handleAddUser(e) {
     e.preventDefault();
     
@@ -3101,7 +3098,6 @@ function renderPurchases() {
         tbody.innerHTML += row;
     });
 }
-
 function renderRepairs() {
     const tbody = document.getElementById('repairs-tbody');
     tbody.innerHTML = '';
@@ -3882,7 +3878,6 @@ function printInvoice() {
         printWindow.close();
     }, 500);
 }
-
 function registerPaymentForInvoice() {
     const invoiceId = document.getElementById('invoice-detail-view').getAttribute('data-invoice-id');
     const invoice = invoices.find(i => i.id === parseInt(invoiceId));
@@ -4661,7 +4656,6 @@ function createRepairFromPickDrop(pickDrop) {
     
     return newRepair;
 }
-
 function convertToRepair(id) {
     console.log('convertToRepair called with id:', id);
     const quotation = quotations.find(q => q.id === id);
@@ -5438,7 +5432,6 @@ function filterCustomers() {
     
     renderFilteredCustomers(filtered);
 }
-
 function renderFilteredCustomers(filteredItems) {
     const tbody = document.getElementById('customers-tbody');
     tbody.innerHTML = '';
