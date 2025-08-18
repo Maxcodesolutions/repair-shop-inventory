@@ -38,7 +38,7 @@ async function initializeFirebase() {
         // Import Firebase modules
         const { initializeApp } = await import("https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js");
         const { getFirestore, collection: firestoreCollection, doc: firestoreDoc, setDoc: firestoreSetDoc, getDoc: firestoreGetDoc, onSnapshot, connectFirestoreEmulator, getDocs: firestoreGetDocs } = await import("https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js");
-        const { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, connectAuthEmulator } = await import("https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js");
+        const { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, sendPasswordResetEmail, connectAuthEmulator } = await import("https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js");
         const { getAnalytics } = await import("https://www.gstatic.com/firebasejs/12.0.0/firebase-analytics.js");
 
         console.log('🔥 Firebase Global: Modules imported, initializing app...');
@@ -90,6 +90,7 @@ async function initializeFirebase() {
         window.signInWithEmailAndPassword = signInWithEmailAndPassword;
         window.createUserWithEmailAndPassword = createUserWithEmailAndPassword;
         window.signOut = signOut;
+        window.sendPasswordResetEmail = sendPasswordResetEmail;
 
         // Add connection health monitoring
         window.checkFirestoreConnection = () => {

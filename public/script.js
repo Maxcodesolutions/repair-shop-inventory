@@ -2322,101 +2322,43 @@ function handleAddPickDrop(e) {
 async function handleAddUser(e) {
     e.preventDefault();
     
-    // Get selected permissions
-    const permissions = [];
-    const permissionCheckboxes = document.querySelectorAll('.permissions-grid input[type="checkbox"]:checked');
-    permissionCheckboxes.forEach(checkbox => {
-        const permission = checkbox.id.replace('perm-', '');
-        permissions.push(permission);
-    });
-    
     const userData = {
-        username: document.getElementById('user-username').value,
+        username: document.getElementById('user-username').value.trim(),
         password: document.getElementById('user-password').value,
-        fullName: document.getElementById('user-fullname').value,
-        email: document.getElementById('user-email').value,
+        fullName: document.getElementById('user-fullname').value.trim(),
+        email: document.getElementById('user-email').value.trim(),
         role: document.getElementById('user-role').value,
         status: document.getElementById('user-status').value,
-        permissions: permissions
+        permissions: getSelectedPermissions()
     };
     
-    // Validate required fields
-    if (!userData.username || !userData.fullName || !userData.email || !userData.role || !userData.status) {
-        alert('Please fill in all required fields.');
+    if (!userData.email || !userData.password) {
+        alert('Email and password are required.');
         return;
     }
     
-    // Password is required for new users
-    if (!editingUserId && !userData.password) {
-        alert('Password is required for new users.');
+    if (await emailExistsInCloud(userData.email)) {
+        alert('This email is already registered. Please use a different email.');
         return;
     }
     
-    if (editingUserId) {
-        // Edit mode - update existing user
-        const existingUser = users.find(u => u.id === editingUserId);
-        if (!existingUser) {
-            alert('User not found!');
-            return;
+    if (window.createUserWithEmailAndPassword && window.auth) {
+        try {
+            const userCredential = await window.createUserWithEmailAndPassword(window.auth, userData.email, userData.password);
+            // Add to Firestore users collection
+            createUser(userData);
+            showSuccessMessage('User created successfully!');
+        } catch (error) {
+            if (error.code === 'auth/email-already-in-use') {
+                alert('This email is already registered in Firebase Auth. Please use a different email.');
+            } else {
+                alert('Failed to create Firebase Auth account: ' + error.message);
+            }
         }
-        
-        // Check if username already exists (excluding the current user being edited)
-        const usernameExists = users.find(u => u.username === userData.username && u.id !== editingUserId);
-        if (usernameExists) {
-            alert('Username already exists! Please choose a different username.');
-            return;
-        }
-        
-        // If password is empty, keep the existing password
-        if (!userData.password) {
-            userData.password = existingUser.password;
-        }
-        
-        // Prevent users from deactivating their own account
-        if (editingUserId === currentUser.id && userData.status === 'inactive') {
-            alert('You cannot deactivate your own account!');
-            return;
-        }
-        
-        updateUser(editingUserId, userData);
-        showSuccessMessage('User updated successfully!');
     } else {
-        // Add mode - create new user
-        // Check if username already exists
-        const existingUser = users.find(u => u.username === userData.username);
-        if (existingUser) {
-            alert('Username already exists! Please choose a different username.');
-            return;
-        }
-        
-        // Check if email already exists in global users collection
-        if (await emailExistsInCloud(userData.email)) {
-            alert('This email is already registered. Please use a different email.');
-            return;
-        }
-        
-        // Create Firebase Auth account first
-        if (window.createUserWithEmailAndPassword && window.auth) {
-            window.createUserWithEmailAndPassword(window.auth, userData.email, userData.password)
-                .then(async (userCredential) => {
-                    // Only add to Firestore if Auth creation succeeds
-                    await createUser(userData);
-                    showSuccessMessage('User created successfully!');
-                    await fetchAndRenderAllUsers();
-                })
-                .catch((error) => {
-                    if (error.code === 'auth/email-already-in-use') {
-                        alert('This email is already registered in Firebase Auth. Please use a different email.');
-                    } else {
-                        alert('Failed to create Firebase Auth account: ' + error.message);
-                    }
-                });
-        } else {
-            alert('Firebase Auth is not available. Cannot create user.');
-        }
+        alert('Firebase Auth is not available. Cannot create user.');
     }
     
-    // Reset the form and close modal
     resetUserModal();
 }
 
