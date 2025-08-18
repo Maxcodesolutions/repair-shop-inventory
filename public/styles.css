@@ -714,45 +714,46 @@ tr:hover {
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
+/* Generic Modal Styles */
 .modal {
-    display: none;
-    position: fixed;
-    z-index: 2000;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
+  display: none; /* Hidden by default */
+  position: fixed;
+  z-index: 10001;
+  left: 0;
+  top: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: auto;
+  background: rgba(0,0,0,0.4); /* Black w/ opacity */
+  justify-content: center;
+  align-items: center;
 }
 
-.modal-content {
-    background-color: white;
-    margin: 2% auto;
-    border-radius: 12px;
-    width: 90%;
-    max-width: 600px;
-    max-height: 90vh;
-    overflow-y: auto;
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+.modal .modal-content {
+  background: #fff;
+  margin: auto;
+  padding: 30px 20px;
+  border-radius: 12px;
+  max-width: 400px;
+  width: 90vw;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+  position: relative;
 }
 
-.modal-header {
-    padding: 1.5rem 2rem;
-    border-bottom: 1px solid #e2e8f0;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+.modal .modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px;
 }
 
-.close {
-    color: #64748b;
-    font-size: 1.5rem;
-    font-weight: bold;
-    cursor: pointer;
-}
-
-form {
-    padding: 2rem;
+.modal .close {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #888;
+  cursor: pointer;
+  border: none;
+  background: none;
 }
 
 /* Customer modal specific styling */
