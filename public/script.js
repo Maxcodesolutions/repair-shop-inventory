@@ -3093,7 +3093,6 @@ function renderCustomers() {
         tbody.innerHTML += row;
     });
 }
-
 function renderPurchases() {
     const tbody = document.getElementById('purchases-tbody');
     tbody.innerHTML = '';
@@ -3752,7 +3751,6 @@ function setupInvoiceBackButton() {
         });
     }
 }
-
 function printInvoice() {
     const invoiceId = document.getElementById('invoice-detail-view').getAttribute('data-invoice-id');
     const invoice = invoices.find(i => i.id === parseInt(invoiceId));
@@ -4539,7 +4537,6 @@ function updateQuotationStatus(id) {
         updateDashboard();
     }
 }
-
 function updatePickDropStatus(id, newStatus = null) {
     const pickDrop = pickDrops.find(pd => pd.id === id);
     if (pickDrop) {
@@ -5321,7 +5318,6 @@ function addPurchaseItem() {
 function removePurchaseItem(button) {
     button.parentElement.remove();
 }
-
 // Search and filter functionality
 function filterInventory() {
     const searchTerm = document.getElementById('search-inventory').value.toLowerCase();
@@ -6102,7 +6098,6 @@ function updateJobCardProgress(status) {
             break;
     }
 }
-
 function updateJobCardActionButtons(status) {
     const completeBtn = document.querySelector('.job-card-actions .btn-success');
     const deliverBtn = document.querySelector('.job-card-actions .btn-info');
@@ -6128,6 +6123,15 @@ function updateJobCardActionButtons(status) {
             break;
     }
 }
+
+// Add this helper to check if email exists in global users collection
+async function emailExistsInCloud(email) {
+    if (!window.db || !window.collection || !window.getDocs) return false;
+    const usersCol = window.collection(window.db, 'users');
+    const snapshot = await window.getDocs(usersCol);
+    return snapshot.docs.some(doc => doc.data().email === email);
+}
+
 function printJobCard() {
     if (!window.currentJobCardId) {
         alert('No job card selected for printing');
@@ -6823,7 +6827,6 @@ function populatePickDropForm(customer) {
         deliveryAddressEl.value = customer.address || '';
     }
 }
-
 // Edit Job Card Functions
 let currentEditingJobCardId = null;
 
@@ -7620,7 +7623,6 @@ function initializeEditPickDropImages(images) {
     if (!window.deviceImages) window.deviceImages = {};
     window.deviceImages['edit-pickdrop'] = images || [];
 }
-
 function setupEditPickDropCustomerAutocomplete() {
     const customerInput = document.getElementById('edit-pickdrop-customer');
     const suggestionsContainer = document.getElementById('edit-pickdrop-customer-suggestions');
