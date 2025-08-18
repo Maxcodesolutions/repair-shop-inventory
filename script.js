@@ -754,7 +754,7 @@ async function loadDataFromCloud() {
 }
 function saveDataToCloud() {
     console.log('=== SAVING DATA TO CLOUD ===');
-    
+
     if (window.auth && window.auth.currentUser) {
         console.log('User authenticated, saving to cloud...');
         const user = window.auth.currentUser;
@@ -784,7 +784,7 @@ function saveDataToCloud() {
             .catch((error) => {
                 console.error('❌ Error saving data to cloud:', error);
             });
-    } else {
+        } else {
         console.log('No authenticated user, cannot save data to cloud');
     }
     
@@ -854,49 +854,49 @@ async function saveDataToCloud() {
         let retryCount = 0;
         const maxRetries = 3;
         
-        while (retryCount < maxRetries) {
-            try {
-                await window.setDoc(window.doc(window.safeCollection('users'), user.uid), data);
-                console.log('✅ Data saved successfully to cloud using direct Firebase calls');
-                
-                // Also save a timestamp to verify sync
+            while (retryCount < maxRetries) {
                 try {
+                await window.setDoc(window.doc(window.safeCollection('users'), user.uid), data);
+                    console.log('✅ Data saved successfully to cloud using direct Firebase calls');
+                    
+                    // Also save a timestamp to verify sync
+                    try {
                     await window.setDoc(window.doc(window.safeCollection('sync'), user.uid), {
-                        lastSync: new Date().toISOString(),
-                        userAgent: navigator.userAgent,
-                        dataCount: {
-                            inventory: inventory.length,
-                            customers: customers.length,
-                            repairs: repairs.length
-                        }
-                    });
-                    console.log('✅ Sync timestamp saved to cloud');
-                } catch (syncError) {
-                    console.log('Warning: Could not save sync timestamp:', syncError.message);
-                }
-                
-                return; // Success, exit function
-                
-            } catch (error) {
-                retryCount++;
-                console.log(`❌ Cloud save attempt ${retryCount} failed:`, error.message);
-                
-                if (error.message.includes('connection') || 
-                    error.message.includes('network') || 
-                    error.message.includes('ERR_CONNECTION_CLOSED') ||
-                    error.message.includes('connection closed')) {
-                    console.log('Connection error detected, retrying...');
-                    if (retryCount < maxRetries) {
-                        // Wait before retry with exponential backoff
-                        const waitTime = 1000 * Math.pow(2, retryCount - 1);
-                        console.log(`Waiting ${waitTime}ms before retry...`);
-                        await new Promise(resolve => setTimeout(resolve, waitTime));
-                        continue;
+                            lastSync: new Date().toISOString(),
+                            userAgent: navigator.userAgent,
+                            dataCount: {
+                                inventory: inventory.length,
+                                customers: customers.length,
+                                repairs: repairs.length
+                            }
+                        });
+                        console.log('✅ Sync timestamp saved to cloud');
+                    } catch (syncError) {
+                        console.log('Warning: Could not save sync timestamp:', syncError.message);
                     }
-                }
+                    
+                                    return; // Success, exit function
                 
-                // If it's not a connection error or max retries reached
-                throw error;
+                } catch (error) {
+                    retryCount++;
+                    console.log(`❌ Cloud save attempt ${retryCount} failed:`, error.message);
+                    
+                    if (error.message.includes('connection') || 
+                        error.message.includes('network') || 
+                        error.message.includes('ERR_CONNECTION_CLOSED') ||
+                        error.message.includes('connection closed')) {
+                        console.log('Connection error detected, retrying...');
+                        if (retryCount < maxRetries) {
+                            // Wait before retry with exponential backoff
+                            const waitTime = 1000 * Math.pow(2, retryCount - 1);
+                            console.log(`Waiting ${waitTime}ms before retry...`);
+                            await new Promise(resolve => setTimeout(resolve, waitTime));
+                            continue;
+                        }
+                    }
+                    
+                    // If it's not a connection error or max retries reached
+                    throw error;
             }
         }
         
