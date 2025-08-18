@@ -2361,7 +2361,6 @@ async function handleAddUser(e) {
     
     resetUserModal();
 }
-
 async function fetchAndRenderAllUsers() {
     if (!window.db || !window.collection || !window.getDocs) return;
     const usersCol = window.collection(window.db, 'users');
