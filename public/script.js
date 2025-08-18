@@ -133,33 +133,38 @@ function forceUpdateDashboard() {
 // Handle login form submission
 async function handleLogin(e) {
     e.preventDefault();
-    const email = document.getElementById('username').value;
+    let loginInput = document.getElementById('username').value; // could be username or email
     const password = document.getElementById('password').value;
     const loginError = document.getElementById('login-error');
     const loginSuccess = document.getElementById('login-success');
     loginError.style.display = 'none';
     loginSuccess.style.display = 'none';
+    // Fetch all users from Firestore
+    const usersCol = window.collection(window.db, 'users');
+    const snapshot = await window.getDocs(usersCol);
+    const allUsers = snapshot.docs.map(doc => doc.data());
+    // Try to find by email first, then by username
+    let userProfile = allUsers.find(u => u.email === loginInput);
+    if (!userProfile) {
+        userProfile = allUsers.find(u => u.username === loginInput);
+    }
+    if (!userProfile) {
+        loginError.style.display = 'block';
+        loginError.textContent = 'User not found.';
+        return;
+    }
     try {
-        const userCredential = await window.signInWithEmailAndPassword(window.auth, email, password);
-        // Fetch user profile from Firestore
-        const usersCol = window.collection(window.db, 'users');
-        const snapshot = await window.getDocs(usersCol);
-        const allUsers = snapshot.docs.map(doc => doc.data());
-        const userProfile = allUsers.find(u => u.email === email);
-        if (userProfile) {
-            currentUser = userProfile;
-            currentUserId = userProfile.id;
-            updateUsernameInHeader();
-            loginSuccess.style.display = 'block';
-            loginSuccess.textContent = 'Login successful! Redirecting...';
-            setTimeout(() => {
-                showApp();
-                applyUserPermissions();
-            }, 1000);
-        } else {
-            loginError.style.display = 'block';
-            loginError.textContent = 'User profile not found in database.';
-        }
+        // Use the found email for Firebase Auth
+        const userCredential = await window.signInWithEmailAndPassword(window.auth, userProfile.email, password);
+        currentUser = userProfile;
+        currentUserId = userProfile.id;
+        updateUsernameInHeader();
+        loginSuccess.style.display = 'block';
+        loginSuccess.textContent = 'Login successful! Redirecting...';
+        setTimeout(() => {
+            showApp();
+            applyUserPermissions();
+        }, 1000);
     } catch (error) {
         loginError.style.display = 'block';
         loginError.textContent = 'Invalid email or password. Please try again.';
@@ -1916,7 +1921,7 @@ async function handleAddCustomer(e) {
             return;
         }
     
-        const customerName = document.getElementById('customer-name').value;
+    const customerName = document.getElementById('customer-name').value;
     const customerPhone = document.getElementById('customer-phone').value;
     const customerEmail = document.getElementById('customer-email').value;
     const customerAddress = document.getElementById('customer-address').value;

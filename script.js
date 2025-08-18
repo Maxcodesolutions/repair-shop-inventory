@@ -131,33 +131,38 @@ function forceUpdateDashboard() {
 // Handle login form submission
 async function handleLogin(e) {
     e.preventDefault();
-    const email = document.getElementById('username').value;
+    let loginInput = document.getElementById('username').value; // could be username or email
     const password = document.getElementById('password').value;
     const loginError = document.getElementById('login-error');
     const loginSuccess = document.getElementById('login-success');
     loginError.style.display = 'none';
     loginSuccess.style.display = 'none';
+    // Fetch all users from Firestore
+    const usersCol = window.collection(window.db, 'users');
+    const snapshot = await window.getDocs(usersCol);
+    const allUsers = snapshot.docs.map(doc => doc.data());
+    // Try to find by email first, then by username
+    let userProfile = allUsers.find(u => u.email === loginInput);
+    if (!userProfile) {
+        userProfile = allUsers.find(u => u.username === loginInput);
+    }
+    if (!userProfile) {
+        loginError.style.display = 'block';
+        loginError.textContent = 'User not found.';
+        return;
+    }
     try {
-        const userCredential = await window.signInWithEmailAndPassword(window.auth, email, password);
-        // Fetch user profile from Firestore
-        const usersCol = window.collection(window.db, 'users');
-        const snapshot = await window.getDocs(usersCol);
-        const allUsers = snapshot.docs.map(doc => doc.data());
-        const userProfile = allUsers.find(u => u.email === email);
-        if (userProfile) {
-            currentUser = userProfile;
-            currentUserId = userProfile.id;
-            updateUsernameInHeader();
-            loginSuccess.style.display = 'block';
-            loginSuccess.textContent = 'Login successful! Redirecting...';
-            setTimeout(() => {
-                showApp();
-                applyUserPermissions();
-            }, 1000);
-        } else {
-            loginError.style.display = 'block';
-            loginError.textContent = 'User profile not found in database.';
-        }
+        // Use the found email for Firebase Auth
+        const userCredential = await window.signInWithEmailAndPassword(window.auth, userProfile.email, password);
+        currentUser = userProfile;
+        currentUserId = userProfile.id;
+        updateUsernameInHeader();
+        loginSuccess.style.display = 'block';
+        loginSuccess.textContent = 'Login successful! Redirecting...';
+        setTimeout(() => {
+            showApp();
+            applyUserPermissions();
+        }, 1000);
     } catch (error) {
         loginError.style.display = 'block';
         loginError.textContent = 'Invalid email or password. Please try again.';
@@ -797,7 +802,6 @@ function hasPermission(permission) {
     if (!currentUser) return false;
     return currentUser.permissions.includes(permission);
 }
-
 function applyUserPermissions() {
     if (!currentUser) return;
     
@@ -1596,7 +1600,6 @@ function viewPayment(id) {
     
     alert(`Payment Details:\nID: PAY-${payment.id}\nCustomer: ${payment.customer}\nAmount: ₹${payment.amount}\nMethod: ${payment.method}\nDate: ${payment.date}\nStatus: ${payment.status}`);
 }
-
 function editPayment(id) {
     const payment = payments.find(p => p.id === id);
     if (!payment) return;
@@ -2353,7 +2356,6 @@ function handleAddQuotation(e) {
     updateDashboard();
     renderQuotations();
 }
-
 function handleAddPickDrop(e) {
     e.preventDefault();
     
@@ -3154,7 +3156,6 @@ function renderVendors() {
         grid.innerHTML += card;
     });
 }
-
 function renderCustomers() {
     const tbody = document.getElementById('customers-tbody');
     tbody.innerHTML = '';
@@ -3853,7 +3854,6 @@ function setupInvoiceBackButton() {
         });
     }
 }
-
 function printInvoice() {
     const invoiceId = document.getElementById('invoice-detail-view').getAttribute('data-invoice-id');
     const invoice = invoices.find(i => i.id === parseInt(invoiceId));
@@ -4652,7 +4652,6 @@ function updateQuotationStatus(id) {
         updateDashboard();
     }
 }
-
 function updatePickDropStatus(id, newStatus = null) {
     const pickDrop = pickDrops.find(pd => pd.id === id);
     if (pickDrop) {
@@ -5439,7 +5438,6 @@ function addPurchaseItem() {
 function removePurchaseItem(button) {
     button.parentElement.remove();
 }
-
 // Search and filter functionality
 function filterInventory() {
     const searchTerm = document.getElementById('search-inventory').value.toLowerCase();
@@ -6224,7 +6222,6 @@ function updateJobCardProgress(status) {
             break;
     }
 }
-
 function updateJobCardActionButtons(status) {
     const completeBtn = document.querySelector('.job-card-actions .btn-success');
     const deliverBtn = document.querySelector('.job-card-actions .btn-info');
@@ -6950,7 +6947,6 @@ function populatePickDropForm(customer) {
         deliveryAddressEl.value = customer.address || '';
     }
 }
-
 // Edit Job Card Functions
 let currentEditingJobCardId = null;
 
@@ -7748,7 +7744,6 @@ function initializeEditPickDropImages(images) {
     if (!window.deviceImages) window.deviceImages = {};
     window.deviceImages['edit-pickdrop'] = images || [];
 }
-
 function setupEditPickDropCustomerAutocomplete() {
     const customerInput = document.getElementById('edit-pickdrop-customer');
     const suggestionsContainer = document.getElementById('edit-pickdrop-customer-suggestions');
