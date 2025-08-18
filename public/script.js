@@ -155,8 +155,8 @@ async function handleLogin(e) {
     if (!userProfile) {
         loginError.style.display = 'block';
         loginError.textContent = 'User not found.';
-        return;
-    }
+                return;
+            }
     try {
         // Use the found email for Firebase Auth
         console.log('Attempting Firebase Auth sign-in with email:', userProfile.email); // DEBUG LOG
@@ -1926,7 +1926,7 @@ async function handleAddCustomer(e) {
             return;
         }
     
-    const customerName = document.getElementById('customer-name').value;
+        const customerName = document.getElementById('customer-name').value;
     const customerPhone = document.getElementById('customer-phone').value;
     const customerEmail = document.getElementById('customer-email').value;
     const customerAddress = document.getElementById('customer-address').value;
