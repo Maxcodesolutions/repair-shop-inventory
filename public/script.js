@@ -2,6 +2,14 @@
 let currentUser = null;
 let currentUserId = null;
 
+// Add this helper to check if email exists in global users collection
+async function emailExistsInCloud(email) {
+    if (!window.db || !window.collection || !window.getDocs) return false;
+    const usersCol = window.collection(window.db, 'users');
+    const snapshot = await window.getDocs(usersCol);
+    return snapshot.docs.some(doc => doc.data().email === email);
+}
+
 function validateAndFixDataConsistency() {
     // TODO: Implement data consistency checks if needed
     console.log('validateAndFixDataConsistency called (stub)');
@@ -2345,14 +2353,6 @@ function handleAddUser(e) {
         return;
     }
     
-    // Add this helper to check if email exists in global users collection
-    async function emailExistsInCloud(email) {
-        if (!window.db || !window.collection || !window.getDocs) return false;
-        const usersCol = window.collection(window.db, 'users');
-        const snapshot = await window.getDocs(usersCol);
-        return snapshot.docs.some(doc => doc.data().email === email);
-    }
-    
     if (editingUserId) {
         // Edit mode - update existing user
         const existingUser = users.find(u => u.id === editingUserId);
@@ -3130,7 +3130,7 @@ function renderRepairs() {
         const estimate = repair.estimate || 7; // Default 7 days if not specified
         
         const estimatedDate = new Date(startDate);
-        estimatedDate.setDate(estimatedDate.getDate() + estimate);
+        estimatedDate.getDate() + estimate;
         
         // Warranty indicator cell
         let warrantyBadge = '';
@@ -6123,15 +6123,6 @@ function updateJobCardActionButtons(status) {
             break;
     }
 }
-
-// Add this helper to check if email exists in global users collection
-async function emailExistsInCloud(email) {
-    if (!window.db || !window.collection || !window.getDocs) return false;
-    const usersCol = window.collection(window.db, 'users');
-    const snapshot = await window.getDocs(usersCol);
-    return snapshot.docs.some(doc => doc.data().email === email);
-}
-
 function printJobCard() {
     if (!window.currentJobCardId) {
         alert('No job card selected for printing');

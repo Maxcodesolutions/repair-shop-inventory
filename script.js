@@ -2,6 +2,14 @@
 let currentUser = null;
 let currentUserId = null;
 
+// Add this helper to check if email exists in global users collection
+async function emailExistsInCloud(email) {
+    if (!window.db || !window.collection || !window.getDocs) return false;
+    const usersCol = window.collection(window.db, 'users');
+    const snapshot = await window.getDocs(usersCol);
+    return snapshot.docs.some(doc => doc.data().email === email);
+}
+
 function validateAndFixDataConsistency() {
     // TODO: Implement data consistency checks if needed
     console.log('validateAndFixDataConsistency called (stub)');
@@ -10155,11 +10163,3 @@ window.checkCloudSyncCredentials = function() {
     
     return status;
 };
-
-// Add this helper to check if email exists in global users collection
-async function emailExistsInCloud(email) {
-    if (!window.db || !window.collection || !window.getDocs) return false;
-    const usersCol = window.collection(window.db, 'users');
-    const snapshot = await window.getDocs(usersCol);
-    return snapshot.docs.some(doc => doc.data().email === email);
-}
