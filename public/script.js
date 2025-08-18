@@ -2768,8 +2768,20 @@ function handleAddUser(e) {
             return;
         }
         
-        createUser(userData);
-        showSuccessMessage('User created successfully!');
+        // Create Firebase Auth account first
+        if (window.createUserWithEmailAndPassword && window.auth) {
+            window.createUserWithEmailAndPassword(window.auth, userData.email, userData.password)
+                .then((userCredential) => {
+                    // Only add to app user list if Firebase Auth creation succeeds
+                    createUser(userData);
+                    showSuccessMessage('User created successfully!');
+                })
+                .catch((error) => {
+                    alert('Failed to create Firebase Auth account: ' + error.message);
+                });
+        } else {
+            alert('Firebase Auth is not available. Cannot create user.');
+        }
     }
     
     // Reset the form and close modal
