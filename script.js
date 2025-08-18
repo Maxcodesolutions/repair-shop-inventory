@@ -1089,7 +1089,7 @@ function applyUserPermissions() {
     });
 }
 
-function createUser(userData) {
+async function createUser(userData) {
     const newUser = {
         id: users.length > 0 ? Math.max(...users.map(u => u.id)) + 1 : 1,
         username: userData.username,
@@ -1102,6 +1102,12 @@ function createUser(userData) {
         lastLogin: null,
         createdAt: new Date().toISOString()
     };
+    
+    if (window.db && window.collection && window.setDoc && window.doc) {
+        const usersCol = window.collection(window.db, 'users');
+        const userDoc = window.doc(usersCol, userData.uid || userData.username);
+        await window.setDoc(userDoc, userData);
+    }
     
     users.push(newUser);
     saveDataToCloud();
@@ -10149,3 +10155,11 @@ window.checkCloudSyncCredentials = function() {
     
     return status;
 };
+
+// Add this helper to check if email exists in global users collection
+async function emailExistsInCloud(email) {
+    if (!window.db || !window.collection || !window.getDocs) return false;
+    const usersCol = window.collection(window.db, 'users');
+    const snapshot = await window.getDocs(usersCol);
+    return snapshot.docs.some(doc => doc.data().email === email);
+}
