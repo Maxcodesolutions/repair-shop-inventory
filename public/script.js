@@ -157,6 +157,7 @@ async function handleLogin(e) {
     }
     try {
         // Use the found email for Firebase Auth
+        console.log('Attempting Firebase Auth sign-in with email:', userProfile.email); // DEBUG LOG
         const userCredential = await window.signInWithEmailAndPassword(window.auth, userProfile.email, password);
         currentUser = userProfile;
         currentUserId = userProfile.id;
