@@ -140,7 +140,8 @@ async function handleLogin(e) {
     // Fetch all users from Firestore
     const usersCol = window.collection(window.db, 'users');
     const snapshot = await window.getDocs(usersCol);
-    const allUsers = snapshot.docs.map(doc => doc.data());
+    // Flatten all users arrays from all documents
+    const allUsers = snapshot.docs.flatMap(doc => (doc.data().users || []));
     console.log('All users loaded from Firestore:', allUsers); // DEBUG LOG
     // Try to find by email first, then by username (case-insensitive)
     let userProfile = allUsers.find(u => u.email && u.email.toLowerCase() === loginInput.toLowerCase());
