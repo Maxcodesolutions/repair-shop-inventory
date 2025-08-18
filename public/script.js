@@ -2320,7 +2320,7 @@ function handleAddPickDrop(e) {
     if (window.deviceImages) window.deviceImages.pickdrop = [];
     document.getElementById('pickdrop-images-container').innerHTML = '';
 }
-function handleAddUser(e) {
+async function handleAddUser(e) {
     e.preventDefault();
     
     // Get selected permissions
