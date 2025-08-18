@@ -159,12 +159,12 @@ function handleLogin(e) {
         // Firebase authentication for cloud sync
         if (window.auth && window.signInWithEmailAndPassword) {
             window.signInWithEmailAndPassword(window.auth, authenticatedUser.email, password)
-                .then((userCredential) => {
-                    console.log('✅ Signed in with email for cross-browser sync:', userCredential.user.uid);
-                })
-                .catch((error) => {
-                    console.log('❌ Email sign-in failed:', error.message);
-                    console.log('Error code:', error.code);
+                    .then((userCredential) => {
+                        console.log('✅ Signed in with email for cross-browser sync:', userCredential.user.uid);
+                    })
+                    .catch((error) => {
+                        console.log('❌ Email sign-in failed:', error.message);
+                        console.log('Error code:', error.code);
                 });
         }
         
@@ -577,8 +577,8 @@ function saveDataToCloud() {
         const user = window.auth.currentUser;
         if (!window.setDoc || !window.doc || !window.safeCollection || !window.db) {
             console.error('Firestore setDoc not available, cannot save data to cloud.');
-            return;
-        }
+        return;
+    }
         const docRef = window.doc(window.safeCollection(window.db, 'users'), user.uid);
         const data = {
             inventory,
@@ -601,7 +601,7 @@ function saveDataToCloud() {
             .catch((error) => {
                 console.error('❌ Error saving data to cloud:', error);
             });
-    } else {
+        } else {
         console.log('No authenticated user, cannot save data to cloud');
     }
     
@@ -2401,8 +2401,8 @@ function handleAddUser(e) {
             window.createUserWithEmailAndPassword(window.auth, userData.email, userData.password)
                 .then((userCredential) => {
                     // Only add to app user list if Firebase Auth creation succeeds
-                    createUser(userData);
-                    showSuccessMessage('User created successfully!');
+        createUser(userData);
+        showSuccessMessage('User created successfully!');
                 })
                 .catch((error) => {
                     if (error.code === 'auth/email-already-in-use') {
