@@ -131,7 +131,7 @@ function forceUpdateDashboard() {
 // Handle login form submission
 async function handleLogin(e) {
     e.preventDefault();
-    let loginInput = document.getElementById('username').value; // could be username or email
+    let loginInput = document.getElementById('username').value.trim(); // trim input
     const password = document.getElementById('password').value;
     const loginError = document.getElementById('login-error');
     const loginSuccess = document.getElementById('login-success');
@@ -141,10 +141,10 @@ async function handleLogin(e) {
     const usersCol = window.collection(window.db, 'users');
     const snapshot = await window.getDocs(usersCol);
     const allUsers = snapshot.docs.map(doc => doc.data());
-    // Try to find by email first, then by username
-    let userProfile = allUsers.find(u => u.email === loginInput);
+    // Try to find by email first, then by username (case-insensitive)
+    let userProfile = allUsers.find(u => u.email && u.email.toLowerCase() === loginInput.toLowerCase());
     if (!userProfile) {
-        userProfile = allUsers.find(u => u.username === loginInput);
+        userProfile = allUsers.find(u => u.username && u.username.toLowerCase() === loginInput.toLowerCase());
     }
     if (!userProfile) {
         loginError.style.display = 'block';
@@ -797,7 +797,6 @@ function authenticateUser(username, password) {
     }
     return null;
 }
-
 function hasPermission(permission) {
     if (!currentUser) return false;
     return currentUser.permissions.includes(permission);
@@ -1593,7 +1592,6 @@ function updatePaymentSummary() {
         `;
     }
 }
-
 function viewPayment(id) {
     const payment = payments.find(p => p.id === id);
     if (!payment) return;
