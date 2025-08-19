@@ -316,6 +316,18 @@
                     Login successful! Redirecting...
                 </div>
             </form>
+            <form id="forgot-password-form" class="login-form" style="display:none;">
+                <div class="form-group">
+                    <label for="forgot-email">Enter your email address</label>
+                    <input type="email" id="forgot-email" required autocomplete="email">
+                </div>
+                <div id="forgot-password-success" class="login-success" style="display:none;"></div>
+                <div id="forgot-password-error" class="login-error" style="display:none;"></div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" id="forgot-password-cancel">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Send Reset Link</button>
+                </div>
+            </form>
         </div>
     </div>
 
