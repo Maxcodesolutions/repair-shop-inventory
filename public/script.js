@@ -139,27 +139,28 @@ async function handleLogin(e) {
     const loginSuccess = document.getElementById('login-success');
     loginError.style.display = 'none';
     loginSuccess.style.display = 'none';
+    // Extra debug output
+    console.log('[DEBUG] Login input:', loginInput, '| Password:', password);
     // Fetch all users from Firestore
     const usersCol = window.collection(window.db, 'users');
     const snapshot = await window.getDocs(usersCol);
     // Flatten all users arrays from all documents
     const allUsers = snapshot.docs.flatMap(doc => (doc.data().users || []));
-    console.log('All users loaded from Firestore:', allUsers); // DEBUG LOG
-    // DEBUG: Print all user emails and passwords loaded from Firestore
-    allUsers.forEach(u => console.log('[DEBUG] User:', u.email, 'Password:', u.password));
+    console.log('[DEBUG] All users loaded from Firestore:', allUsers);
     // Try to find by email first, then by username (case-insensitive)
     let userProfile = allUsers.find(u => u.email && u.email.toLowerCase() === loginInput.toLowerCase());
     if (!userProfile) {
         userProfile = allUsers.find(u => u.username && u.username.toLowerCase() === loginInput.toLowerCase());
     }
+    console.log('[DEBUG] Found user profile:', userProfile);
     if (!userProfile) {
         loginError.style.display = 'block';
         loginError.textContent = 'User not found.';
-                return;
-            }
+        return;
+    }
     try {
         // Use the found email for Firebase Auth
-        console.log('Attempting Firebase Auth sign-in with email:', userProfile.email); // DEBUG LOG
+        console.log('[DEBUG] Attempting Firebase Auth sign-in with email:', userProfile.email, '| Password:', password);
         const userCredential = await window.signInWithEmailAndPassword(window.auth, userProfile.email, password);
         currentUser = userProfile;
         currentUserId = userProfile.id;
@@ -174,8 +175,8 @@ async function handleLogin(e) {
         loginError.style.display = 'block';
         loginError.textContent = 'Invalid email or password. Please try again.';
         document.getElementById('password').value = '';
-        console.log('❌ Email sign-in failed:', error.message);
-        console.log('Error code:', error.code);
+        console.log('[DEBUG] Email sign-in failed:', error.message, '| Error object:', error);
+        console.log('[DEBUG] Error code:', error.code);
     }
 }
 
