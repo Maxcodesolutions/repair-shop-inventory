@@ -3472,3 +3472,11 @@ textarea {
     padding-top: 1rem;
     border-top: 1px solid #e2e8f0;
 }
+
+.login-overlay {
+  z-index: 9999;
+}
+
+.modal {
+  z-index: 10001;
+}
