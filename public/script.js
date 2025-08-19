@@ -1926,7 +1926,7 @@ async function handleAddCustomer(e) {
             return;
         }
     
-        const customerName = document.getElementById('customer-name').value;
+    const customerName = document.getElementById('customer-name').value;
     const customerPhone = document.getElementById('customer-phone').value;
     const customerEmail = document.getElementById('customer-email').value;
     const customerAddress = document.getElementById('customer-address').value;
