@@ -3480,3 +3480,44 @@ textarea {
 .modal {
   z-index: 99999;
 }
+
+.hidden {
+  display: none !important;
+}
+
+.forgot-link {
+  margin-top: 10px;
+  color: #3498db;
+  text-align: center;
+  display: block;
+  cursor: pointer;
+}
+
+/* Add any other classes as needed for styling previously inline-styled elements */
+
+.small-muted {
+  font-size: 12px;
+  color: #666;
+  margin-top: 10px;
+}
+
+.forgot-link {
+  margin-top: 10px;
+  color: #3498db;
+  text-align: center;
+  display: block;
+  cursor: pointer;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.chart-container-tall {
+  height: 240px;
+  overflow: hidden;
+}
+
+.canvas-tall {
+  height: 180px !important;
+}
