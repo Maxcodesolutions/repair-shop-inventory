@@ -401,6 +401,10 @@ body {
     margin-bottom: 1rem;
 }
 
+.dashboard-canvas {
+    height: 180px !important;
+}
+
 .quick-actions {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
@@ -3521,3 +3525,39 @@ textarea {
 .canvas-tall {
   height: 180px !important;
 }
+
+/* Hide elements */
+.hidden {
+  display: none !important;
+}
+
+/* Success message styling */
+.login-success {
+  color: #27ae60;
+  background: #eafaf1;
+  border: 1px solid #27ae60;
+  padding: 8px 12px;
+  border-radius: 4px;
+  margin-bottom: 10px;
+  font-size: 15px;
+  display: none;
+}
+
+/* Error message styling */
+.login-error {
+  color: #c0392b;
+  background: #fdecea;
+  border: 1px solid #c0392b;
+  padding: 8px 12px;
+  border-radius: 4px;
+  margin-bottom: 10px;
+  font-size: 15px;
+  display: none;
+}
+
+/* Show messages when not hidden */
+.login-success:not(.hidden), .login-error:not(.hidden) {
+  display: block;
+}
+
+/* Add any other classes as needed for layout/visibility */

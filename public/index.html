@@ -302,6 +302,16 @@
         .hidden {
             display: none;
         }
+
+        /* Chart Container Styles */
+        .chart-container {
+            margin-bottom: 20px;
+        }
+
+        /* Dashboard Canvas Styles */
+        .dashboard-canvas {
+            height: 180px !important;
+        }
     </style>
 </head>
 <body>
@@ -327,7 +337,7 @@
                 <button type="submit" class="login-btn">
                     <i class="fas fa-sign-in-alt"></i> Login
                 </button>
-                <a href="#" id="forgot-password-link" class="forgot-link">Forgot Password?</a>
+                <a href="forgot-password.html" id="forgot-password-link" class="forgot-link">Forgot Password?</a>
                 <div id="login-error" class="login-error">
                     Invalid username or password. Please try again.
                 </div>
@@ -338,7 +348,7 @@
             <form id="forgot-password-form" class="login-form hidden">
                 <div class="form-group">
                     <label for="forgot-email">Enter your email address</label>
-                    <input type="email" id="forgot-email" required autocomplete="email">
+                    <input type="email" id="forgot-email" required autocomplete="email" title="Enter your email address" placeholder="Email address">
                 </div>
                 <div id="forgot-password-success" class="login-success"></div>
                 <div id="forgot-password-error" class="login-error"></div>
@@ -502,20 +512,20 @@
                     </div>
                     
                     <div class="dashboard-charts">
-                        <div class="chart-container" style="height: 240px; overflow: hidden;">
+                        <div class="chart-container dashboard-canvas">
                             <h3>Repair Status Distribution</h3>
-                            <canvas id="repairStatusChart" width="400" height="180" style="height: 180px !important;"></canvas>
+                            <canvas id="repairStatusChart" width="400" height="180" class="dashboard-canvas"></canvas>
                         </div>
-                        <div class="chart-container" style="height: 240px; overflow: hidden;">
+                        <div class="chart-container dashboard-canvas">
                             <h3>Monthly Revenue (Invoices)</h3>
-                            <canvas id="revenueChart" width="400" height="180" style="height: 180px !important;"></canvas>
+                            <canvas id="revenueChart" width="400" height="180" class="dashboard-canvas"></canvas>
                         </div>
                     </div>
                     
                     <div class="dashboard-charts">
-                        <div class="chart-container" style="height: 240px; overflow: hidden;">
+                        <div class="chart-container dashboard-canvas">
                             <h3>Quotation Value Analysis</h3>
-                            <canvas id="quotationValueChart" width="400" height="180" style="height: 180px !important;"></canvas>
+                            <canvas id="quotationValueChart" width="400" height="180" class="dashboard-canvas"></canvas>
                         </div>
                         <div class="chart-container">
                             <h3>Quick Actions</h3>
@@ -705,7 +715,7 @@
                     </div>
 
                     <!-- Customer Detail View -->
-                    <div class="customer-detail-view" id="customer-detail-view" style="display: none;">
+                    <div class="customer-detail-view hidden" id="customer-detail-view">
                         <div class="customer-detail-header">
                             <button class="btn btn-secondary back-to-customers-btn" onclick="backToCustomerList()">
                                 <i class="fas fa-arrow-left"></i> Back to Customers
@@ -793,7 +803,7 @@
                     </div>
                     
                     <!-- Job Card Detail View -->
-                    <div class="job-card-detail-view" id="job-card-detail-view" style="display: none;">
+                    <div class="job-card-detail-view hidden" id="job-card-detail-view">
                         <div class="job-card-detail-header">
                             <button class="btn btn-secondary back-to-repairs-btn" onclick="backToRepairList()">
                                 <i class="fas fa-arrow-left"></i> Back to Repairs
@@ -919,7 +929,7 @@
                                     <button class="btn btn-primary" onclick="printJobCard()">
                                         <i class="fas fa-print"></i> Print Job Card
                                     </button>
-                                    <button class="btn btn-success" onclick="updateJobCardStatus('completed')">
+                                    <button class="btn btn-success="updateJobCardStatus('completed')">
                                         <i class="fas fa-check"></i> Mark as Completed
                                     </button>
                                     <button class="btn btn-info" onclick="updateJobCardStatus('delivered')">
@@ -944,7 +954,7 @@
                 </section>
 
                 <!-- Pick & Drop Detail View -->
-                <div class="pickdrop-detail-view" id="pickdrop-detail-view" style="display: none;">
+                <div class="pickdrop-detail-view hidden" id="pickdrop-detail-view">
                     <div class="pickdrop-detail-header">
                         <div class="pickdrop-detail-header-content">
                             <h2>Pick & Drop Details</h2>
@@ -1012,7 +1022,7 @@
                                 </div>
                             </div>
                             
-                            <div class="pickdrop-repair-section" id="pickdrop-repair-section" style="display: none;">
+                            <div class="pickdrop-repair-section hidden" id="pickdrop-repair-section">
                                 <h4>Repair Information:</h4>
                                 <div class="repair-link">
                                     <p><strong>Repair Status:</strong> <span id="pickdrop-repair-status">In Progress</span></p>
@@ -1183,7 +1193,7 @@
                                     <button type="button" class="btn btn-secondary" onclick="uploadDeviceImage('edit-pickdrop')">
                                         <i class="fas fa-upload"></i> Upload Image
                                     </button>
-                                    <input type="file" id="edit-pickdrop-image-input" accept="image/*" style="display: none;" onchange="handleImageUpload('edit-pickdrop', this)">
+                                    <input type="file" id="edit-pickdrop-image-input" accept="image/*" class="hidden" onchange="handleImageUpload('edit-pickdrop', this)">
                                 </div>
                                 <div class="device-images-container" id="edit-pickdrop-images-container">
                                     <!-- Device images will be displayed here -->
@@ -1199,7 +1209,7 @@
                 </div>
 
                 <!-- Delivery Detail View -->
-                <div class="delivery-detail-view" id="delivery-detail-view" style="display: none;">
+                <div class="delivery-detail-view hidden" id="delivery-detail-view">
                     <div class="delivery-detail-header">
                         <div class="delivery-detail-header-content">
                             <h2>Delivery Details</h2>
@@ -1690,7 +1700,7 @@
                     </div>
                     
                     <!-- Invoice Detail View -->
-                    <div class="invoice-detail-view" id="invoice-detail-view" style="display: none;">
+                    <div class="invoice-detail-view hidden" id="invoice-detail-view">
                         <div class="invoice-detail-header">
                             <button class="btn btn-secondary back-to-invoices-btn" onclick="backToInvoiceList()">
                                 <i class="fas fa-arrow-left"></i> Back to Invoices
@@ -1823,7 +1833,7 @@
                     </div>
                     
                     <!-- Quotation Detail View -->
-                    <div class="quotation-detail-view" id="quotation-detail-view" style="display: none;">
+                    <div class="quotation-detail-view hidden" id="quotation-detail-view">
                         <div class="quotation-detail-header">
                             <button class="btn btn-secondary back-to-quotations-btn" onclick="backToQuotationList()">
                                 <i class="fas fa-arrow-left"></i> Back to Quotations
@@ -2137,7 +2147,7 @@
                     </div>
                     
                     <!-- Warranty Detail View -->
-                    <div class="warranty-detail-view" id="warranty-detail-view" style="display: none;">
+                    <div class="warranty-detail-view hidden" id="warranty-detail-view">
                         <div class="warranty-detail-header">
                             <button class="btn btn-secondary back-to-warranties-btn" onclick="backToWarrantyList()">
                                 <i class="fas fa-arrow-left"></i> Back to Warranties
@@ -2439,7 +2449,7 @@
                     <h4>Purchase Items</h4>
                     <div id="purchase-items-list">
                         <div class="purchase-item">
-                            <select class="purchase-item-select" required>
+                            <select class="purchase-item-select" required title="Select purchase item">
                                 <option value="">Select Item</option>
                             </select>
                             <input type="number" class="purchase-quantity" placeholder="Qty" min="1" required>
@@ -2609,7 +2619,7 @@
                                 <i class="fas fa-upload"></i> Upload Image
                             </button>
                         </div>
-                        <input type="file" id="repair-image-input" accept="image/*" style="display: none;" onchange="handleImageUpload('repair', this)">
+                        <input type="file" id="repair-image-input" accept="image/*" class="hidden" onchange="handleImageUpload('repair', this)">
                         <div class="device-images-container" id="repair-images-container">
                             <!-- Captured/uploaded images will be displayed here -->
                         </div>
@@ -2973,7 +2983,7 @@
                                 <i class="fas fa-upload"></i> Upload Image
                             </button>
                         </div>
-                        <input type="file" id="pickdrop-image-input" accept="image/*" style="display: none;" onchange="handleImageUpload('pickdrop', this)">
+                        <input type="file" id="pickdrop-image-input" accept="image/*" class="hidden" onchange="handleImageUpload('pickdrop', this)">
                         <div class="device-images-container" id="pickdrop-images-container">
                             <!-- Captured/uploaded images will be displayed here -->
                         </div>
@@ -3114,7 +3124,7 @@
     <!-- Camera Preview Modal -->
     <div class="camera-preview" id="camera-preview">
         <video id="camera-video" autoplay playsinline></video>
-        <canvas id="camera-canvas" style="display: none;"></canvas>
+        <canvas id="camera-canvas" class="hidden"></canvas>
         <div class="camera-controls">
             <button class="btn btn-capture" onclick="capturePhoto()">
                 <i class="fas fa-camera"></i> Capture
@@ -3127,7 +3137,7 @@
 
     <!-- Image Modal for Full View -->
     <div class="image-modal" id="image-modal">
-        <button class="close-modal" onclick="closeImageModal()">
+        <button class="close-modal" onclick="closeImageModal()" title="Close image modal">
             <i class="fas fa-times"></i>
         </button>
         <img id="modal-image" src="" alt="Device Image">
@@ -3239,11 +3249,8 @@
 
                      <div class="form-row">
                          <div class="form-group">
-                             <label>Warranty</label>
-                             <div class="checkbox-container">
-                                 <input type="checkbox" id="edit-job-card-warranty-enabled">
-                                 <span class="checkbox-label">Include repair warranty</span>
-                             </div>
+                             <label for="edit-job-card-warranty-enabled">Enable repair warranty</label>
+                             <input type="checkbox" id="edit-job-card-warranty-enabled" title="Enable repair warranty">
                          </div>
                          <div class="form-group">
                              <label for="edit-job-card-warranty-months">Warranty Duration (months)</label>
@@ -3268,7 +3275,7 @@
                                 <button type="button" class="btn btn-secondary" onclick="uploadDeviceImage('edit-job-card')">
                                     <i class="fas fa-upload"></i> Upload Image
                                 </button>
-                                <input type="file" id="edit-job-card-image-input" accept="image/*" style="display: none;" onchange="handleImageUpload('edit-job-card', this)">
+                                <input type="file" id="edit-job-card-image-input" accept="image/*" class="hidden" onchange="handleImageUpload('edit-job-card', this)">
                             </div>
                             <div class="device-images-container" id="edit-job-card-images-container">
                                 <!-- Device images will be displayed here -->
@@ -3295,7 +3302,7 @@
             <form id="forgot-password-form">
                 <div class="form-group">
                     <label for="forgot-email">Enter your email address</label>
-                    <input type="email" id="forgot-email" required autocomplete="email">
+                    <input type="email" id="forgot-email" required autocomplete="email" title="Enter your email address" placeholder="Email address">
                 </div>
                 <div id="forgot-password-success" class="login-success"></div>
                 <div id="forgot-password-error" class="login-error"></div>
