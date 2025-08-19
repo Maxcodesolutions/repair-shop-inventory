@@ -1450,7 +1450,52 @@ function forceUpdateAdminPermissions() {
     }
 }
 
-
+// === ADMIN: Sync missing Auth users to Firestore users array ===
+async function syncAuthUsersToFirestore() {
+    if (!window.auth || !window.db || !window.collection || !window.getDocs || !window.setDoc) {
+        alert('Firebase not ready.');
+        return;
+    }
+    // Import listUsers from Firebase Admin SDK via REST API (since client SDK cannot list users)
+    // This requires a backend or Cloud Function. As a workaround, prompt for admin emails to sync.
+    const emails = prompt('Enter comma-separated emails of users to sync from Auth to Firestore:');
+    if (!emails) return;
+    const emailList = emails.split(',').map(e => e.trim()).filter(Boolean);
+    if (emailList.length === 0) return;
+    // Fetch Firestore users array
+    const usersCol = window.collection(window.db, 'users');
+    const snapshot = await window.getDocs(usersCol);
+    let allUsers = snapshot.docs.flatMap(doc => (doc.data().users || []));
+    let docRefs = snapshot.docs.map(doc => doc.ref);
+    // For each email, check if present in Firestore users array
+    let added = 0;
+    for (const email of emailList) {
+        if (allUsers.some(u => u.email && u.email.toLowerCase() === email.toLowerCase())) {
+            console.log('User already in Firestore:', email);
+            continue;
+        }
+        // Prompt for username and password for each missing user
+        const username = prompt(`Enter username for ${email}:`);
+        const password = prompt(`Enter password for ${email}:`);
+        if (!username || !password) continue;
+        // Add to first users doc (or create if none)
+        let usersDocRef = docRefs[0];
+        if (!usersDocRef) {
+            // Create a new doc if none exists
+            const { doc } = await import('https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js');
+            usersDocRef = doc(window.db, 'users', 'main');
+        }
+        // Update users array
+        const usersDocSnap = await window.getDoc(usersDocRef);
+        let usersArr = (usersDocSnap.exists() && usersDocSnap.data().users) ? usersDocSnap.data().users : [];
+        usersArr.push({ email, username, password, status: 'active', role: 'admin' });
+        await window.setDoc(usersDocRef, { users: usersArr }, { merge: true });
+        added++;
+        console.log('Added user to Firestore:', email);
+    }
+    alert(`Sync complete. ${added} users added to Firestore.`);
+}
+window.syncAuthUsersToFirestore = syncAuthUsersToFirestore;
 
 function renderPayments() {
     const tbody = document.getElementById('payments-tbody');
@@ -1538,9 +1583,6 @@ function deletePayment(id) {
         updateDashboard();
     }
 }
-
-
-
 // Modal functions
 function showModal(modalId) {
     document.getElementById(modalId).style.display = 'block';
@@ -1926,7 +1968,7 @@ async function handleAddCustomer(e) {
             return;
         }
     
-    const customerName = document.getElementById('customer-name').value;
+        const customerName = document.getElementById('customer-name').value;
     const customerPhone = document.getElementById('customer-phone').value;
     const customerEmail = document.getElementById('customer-email').value;
     const customerAddress = document.getElementById('customer-address').value;
