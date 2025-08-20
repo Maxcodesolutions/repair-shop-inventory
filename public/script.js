@@ -1498,6 +1498,41 @@ async function syncAuthUsersToFirestore() {
 }
 window.syncAuthUsersToFirestore = syncAuthUsersToFirestore;
 
+// Utility: Make a user admin by email in Firestore users array
+async function makeUserAdmin(email = 'cpsingh@gmail.com') {
+    if (!window.db || !window.collection || !window.getDocs || !window.setDoc) {
+        alert('Firebase not ready.');
+        return;
+    }
+    const usersCol = window.collection(window.db, 'users');
+    const snapshot = await window.getDocs(usersCol);
+    let updated = false;
+    for (const docSnap of snapshot.docs) {
+        let usersArr = docSnap.data().users || [];
+        let changed = false;
+        usersArr = usersArr.map(u => {
+            if (u.email && u.email.toLowerCase() === email.toLowerCase()) {
+                if (u.role !== 'admin') {
+                    u.role = 'admin';
+                    changed = true;
+                }
+            }
+            return u;
+        });
+        if (changed) {
+            await window.setDoc(docSnap.ref, { users: usersArr }, { merge: true });
+            updated = true;
+            console.log('[makeUserAdmin] Updated user to admin in doc:', docSnap.id);
+        }
+    }
+    if (updated) {
+        alert('User ' + email + ' is now an admin!');
+    } else {
+        alert('User not found or already admin.');
+    }
+}
+window.makeUserAdmin = makeUserAdmin;
+
 function renderPayments() {
     const tbody = document.getElementById('payments-tbody');
     if (!tbody) return;
