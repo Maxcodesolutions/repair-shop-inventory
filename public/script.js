@@ -17,11 +17,19 @@ function validateAndFixDataConsistency() {
 
 function updateUsernameInHeader() {
     const usernameElement = document.getElementById('username');
-    if (usernameElement && window.currentUser && window.currentUser.fullName) {
-        usernameElement.textContent = window.currentUser.fullName;
-        console.log('✅ Username updated in header:', window.currentUser.fullName);
+    console.log('🔧 DEBUG: updateUsernameInHeader called');
+    console.log('🔧 DEBUG: currentUser:', currentUser);
+    console.log('🔧 DEBUG: currentUser.fullName:', currentUser?.fullName);
+    console.log('🔧 DEBUG: usernameElement:', usernameElement);
+    
+    if (usernameElement && currentUser) {
+        // Try to use fullName first, then username as fallback
+        const displayName = currentUser.fullName || currentUser.username || 'Unknown User';
+        usernameElement.textContent = displayName;
+        console.log('✅ Username updated in header:', displayName);
     } else if (usernameElement) {
         usernameElement.textContent = 'Loading...';
+        console.log('⚠️ Username not available, set to Loading...');
     }
 }
 
@@ -164,6 +172,9 @@ async function handleLogin(e) {
         const userCredential = await window.signInWithEmailAndPassword(window.auth, userProfile.email, password);
         currentUser = userProfile;
         currentUserId = userProfile.id;
+        console.log('🔧 DEBUG: After login - currentUser:', currentUser);
+        console.log('🔧 DEBUG: After login - currentUser.fullName:', currentUser.fullName);
+        console.log('🔧 DEBUG: After login - currentUser.username:', currentUser.username);
         updateUsernameInHeader();
         loginSuccess.style.display = 'block';
         loginSuccess.textContent = 'Login successful! Redirecting...';
