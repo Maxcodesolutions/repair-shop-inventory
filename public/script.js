@@ -538,6 +538,10 @@ let deliveries = [];
 let payments = [];
 let users = [];
 
+// Real-time sync state
+let isRealTimeListenerActive = false;
+let realTimeUnsubscribe = null;
+
 // User roles and permissions
 const userRoles = {
     admin: {
@@ -617,6 +621,13 @@ async function loadDataFromCloud() {
         console.error('No authenticated user, cannot load data from cloud.');
         return;
     }
+    
+    // Prevent multiple listeners from being set up
+    if (isRealTimeListenerActive) {
+        console.log('🔗 Real-time listener already active, skipping...');
+        return;
+    }
+    
     try {
         console.log('Loading data from Firebase cloud (real-time)...');
         const user = window.auth.currentUser;
@@ -630,8 +641,11 @@ async function loadDataFromCloud() {
         
         console.log('🔗 Setting up real-time listener for shared document: shared_data/repairmaniac_com');
         
+        // Mark listener as active
+        isRealTimeListenerActive = true;
+        
         // Set up real-time listener for shared data
-        window.onSnapshot(sharedDocRef, (docSnap) => {
+        realTimeUnsubscribe = window.onSnapshot(sharedDocRef, (docSnap) => {
             if (docSnap.exists()) {
                 const data = docSnap.data();
                 console.log('✅ Real-time data loaded from shared cloud document:', data);
@@ -700,11 +714,15 @@ async function loadDataFromCloud() {
                 
                 // Validate and fix data consistency issues - delay to ensure data is loaded
                 setTimeout(() => {
-                    validateAndFixDataConsistency();
+                    if (typeof validateAndFixDataConsistency === 'function') {
+                        validateAndFixDataConsistency();
+                    }
                 }, 100);
                 
                 // Update username in header after cloud data is loaded
-                updateUsernameInHeader();
+                if (typeof updateUsernameInHeader === 'function') {
+                    updateUsernameInHeader();
+                }
                 
                 // Re-render all data after cloud load
                 if (typeof renderAll === 'function') {
@@ -715,17 +733,26 @@ async function loadDataFromCloud() {
                 }
                 
                 // After data is loaded, check if user should be automatically logged in
-            checkLoginStatus();
-        } else {
-                console.warn('❌ No cloud data found for this user.');
-                // Even if no cloud data, check login status for localStorage fallback
-                checkLoginStatus();
-        }
+                if (typeof checkLoginStatus === 'function') {
+                    checkLoginStatus();
+                }
+            } else {
+                console.log('⚠️ Shared document does not exist yet, creating with defaults...');
+                // Create the shared document with default data
+                createSharedDocumentWithDefaults();
+            }
         }, (error) => {
-            console.error('[Firestore Real-Time Error]', { docRef, error });
+            console.error('❌ Error in real-time listener:', error);
+            // Reset the listener flag on error
+            isRealTimeListenerActive = false;
         });
+        
+        console.log('✅ Real-time listener set up successfully');
+        
     } catch (error) {
-        console.error('Error setting up real-time listener from Firebase cloud:', error);
+        console.error('❌ Error setting up real-time listener:', error);
+        // Reset the listener flag on error
+        isRealTimeListenerActive = false;
     }
 }
 function saveDataToCloud() {
@@ -2110,6 +2137,105 @@ async function createDefaultAdminUser() {
         throw error;
     }
 }
+
+// Create shared document with default data
+async function createSharedDocumentWithDefaults() {
+    try {
+        console.log('🔄 Creating shared document with default data...');
+        
+        const defaultData = {
+            inventory: getDefaultInventory(),
+            vendors: getDefaultVendors(),
+            customers: getDefaultCustomers(),
+            purchases: [],
+            repairs: [],
+            outsourceRepairs: [],
+            invoices: [],
+            quotations: [],
+            pickDrops: [],
+            payments: [],
+            deliveries: getDefaultDeliveries(),
+            users: getDefaultUsers(),
+            lastUpdated: new Date().toISOString(),
+            updatedBy: 'system',
+            created: true
+        };
+        
+        if (window.db && window.safeCollection && window.setDoc && window.doc) {
+            const sharedDocRef = window.doc(window.safeCollection(window.db, 'shared_data'), 'repairmaniac_com');
+            await window.setDoc(sharedDocRef, defaultData);
+            console.log('✅ Shared document created with default data');
+        }
+        
+        // Update local arrays
+        inventory = defaultData.inventory;
+        vendors = defaultData.vendors;
+        customers = defaultData.customers;
+        repairs = defaultData.repairs;
+        outsourceRepairs = defaultData.outsourceRepairs;
+        invoices = defaultData.invoices;
+        quotations = defaultData.quotations;
+        pickDrops = defaultData.pickDrops;
+        payments = defaultData.payments;
+        deliveries = defaultData.deliveries;
+        users = defaultData.users;
+        
+    } catch (error) {
+        console.error('❌ Error creating shared document:', error);
+    }
+}
+
+// Cleanup function for real-time listener
+function cleanupRealTimeListener() {
+    if (realTimeUnsubscribe && typeof realTimeUnsubscribe === 'function') {
+        realTimeUnsubscribe();
+        console.log('🔗 Real-time listener cleaned up');
+    }
+    isRealTimeListenerActive = false;
+    realTimeUnsubscribe = null;
+}
+
+// Make cleanup function available globally
+window.cleanupRealTimeListener = cleanupRealTimeListener;
+
+// Temporary simple login for testing (bypasses complex sync)
+async function simpleLogin(e) {
+    e.preventDefault();
+    console.log('🔧 Using simple login bypass...');
+    
+    // Create a simple admin user for testing
+    const testUser = {
+        id: 1,
+        username: 'admin',
+        fullName: 'Test Admin',
+        email: 'admin@test.com',
+        role: 'admin',
+        permissions: ['dashboard', 'inventory', 'purchases', 'vendors', 'customers', 'repairs', 'outsource', 'invoices', 'quotations', 'pickdrop', 'delivery', 'payments', 'reports', 'users', 'warranties']
+    };
+    
+    currentUser = testUser;
+    currentUserId = testUser.id;
+    
+    // Save to localStorage
+    localStorage.setItem('loginStatus', 'true');
+    localStorage.setItem('currentUserId', currentUserId.toString());
+    localStorage.setItem('currentUserEmail', testUser.email);
+    
+    console.log('✅ Simple login successful:', testUser);
+    
+    // Show success message
+    const loginSuccess = document.getElementById('login-success');
+    loginSuccess.style.display = 'block';
+    loginSuccess.textContent = 'Simple login successful! Redirecting...';
+    
+    // Redirect to app
+    setTimeout(() => {
+        showApp();
+    }, 1000);
+}
+
+// Make simple login available globally
+window.simpleLogin = simpleLogin;
 
 // Handle role change in user modal
 function handleRoleChange() {
