@@ -116,12 +116,18 @@ function showLogin() {
 }
 
 // Hide login and show app
-function showApp() {
+async function showApp() {
     document.getElementById('login-overlay').style.display = 'none';
     document.getElementById('app-container').style.display = 'block';
     
     // Initialize the application after showing the app
     console.log('App shown, initializing...');
+    
+    // Migrate to shared document for real-time sync
+    await migrateToSharedDocument();
+    
+    // Load data from cloud (now from shared document)
+    await loadDataFromCloud();
     
     // Load data and render all sections
     renderAll();
@@ -146,7 +152,7 @@ function showApp() {
     // Debug the app state
     debugAppState();
     
-    console.log('App initialization completed');
+    console.log('App initialization completed with real-time sync enabled');
 }
 
 // Force re-initialize navigation (for debugging)
@@ -566,77 +572,97 @@ async function loadDataFromCloud() {
             console.error('Firestore onSnapshot not available, cannot load data from cloud.');
             return;
         }
-        const docRef = window.doc(window.safeCollection(window.db, 'users'), user.uid);
-        window.onSnapshot(docRef, (docSnap) => {
-        if (docSnap.exists()) {
-            const data = docSnap.data();
-                console.log('✅ Real-time data loaded from cloud:', data);
-            // Load data from cloud with safer validation - only use defaults if data is completely missing
-            inventory = Array.isArray(data.inventory) ? data.inventory : (data.inventory || getDefaultInventory());
-            vendors = Array.isArray(data.vendors) ? data.vendors : (data.vendors || getDefaultVendors());
-            customers = Array.isArray(data.customers) ? data.customers : (data.customers || getDefaultCustomers());
-            purchases = Array.isArray(data.purchases) ? data.purchases : (data.purchases || []);
-            repairs = Array.isArray(data.repairs) ? data.repairs : (data.repairs || []);
-            outsourceRepairs = Array.isArray(data.outsourceRepairs) ? data.outsourceRepairs : (data.outsourceRepairs || []);
-            invoices = Array.isArray(data.invoices) ? data.invoices : (data.invoices || []);
-            quotations = Array.isArray(data.quotations) ? data.quotations : (data.quotations || []);
-            pickDrops = Array.isArray(data.pickDrops) ? data.pickDrops : (data.pickDrops || []);
-            payments = Array.isArray(data.payments) ? data.payments : (data.payments || []);
-            deliveries = Array.isArray(data.deliveries) ? data.deliveries : (data.deliveries || getDefaultDeliveries());
-            users = Array.isArray(data.users) ? data.users : (data.users || getDefaultUsers());
-            // Ensure every user in users array has a uid property if it matches the current Firebase user
-            if (user && Array.isArray(users)) {
-                const emailPrefix = user.email && user.email.split('@')[0];
-                users = users.map(u => {
-                    // If username matches email prefix and uid is missing or incorrect, set it
-                    if (u.username === emailPrefix && u.uid !== user.uid) {
-                        return { ...u, uid: user.uid };
-                    }
-                    return u;
-                });
-            }
-            // After updating users, re-assign currentUser
-            if (window.auth && window.auth.currentUser && users && users.length > 0) {
-                const uid = window.auth.currentUser.uid;
-                // Try to match by UID if available, else by currentUserId
-                currentUser = users.find(u => u.uid === uid || u.id === currentUserId) || null;
-                if (currentUser) {
-                    currentUserId = currentUser.id;
+        
+        // Use a shared document for all users to enable real-time sync
+        const sharedDocRef = window.doc(window.safeCollection(window.db, 'shared_data'), 'repairmaniac_com');
+        
+        console.log('🔗 Setting up real-time listener for shared document: shared_data/repairmaniac_com');
+        
+        // Set up real-time listener for shared data
+        window.onSnapshot(sharedDocRef, (docSnap) => {
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                console.log('✅ Real-time data loaded from shared cloud document:', data);
+                
+                // Load data from cloud with safer validation - only use defaults if data is completely missing
+                inventory = Array.isArray(data.inventory) ? data.inventory : (data.inventory || getDefaultInventory());
+                vendors = Array.isArray(data.vendors) ? data.vendors : (data.vendors || getDefaultVendors());
+                customers = Array.isArray(data.customers) ? data.customers : (data.customers || getDefaultCustomers());
+                purchases = Array.isArray(data.purchases) ? data.purchases : (data.purchases || []);
+                repairs = Array.isArray(data.repairs) ? data.repairs : (data.repairs || []);
+                outsourceRepairs = Array.isArray(data.outsourceRepairs) ? data.outsourceRepairs : (data.outsourceRepairs || []);
+                invoices = Array.isArray(data.invoices) ? data.invoices : (data.invoices || []);
+                quotations = Array.isArray(data.quotations) ? data.quotations : (data.quotations || []);
+                pickDrops = Array.isArray(data.pickDrops) ? data.pickDrops : (data.pickDrops || []);
+                payments = Array.isArray(data.payments) ? data.payments : (data.payments || []);
+                deliveries = Array.isArray(data.deliveries) ? data.deliveries : (data.deliveries || getDefaultDeliveries());
+                users = Array.isArray(data.users) ? data.users : (data.users || getDefaultUsers());
+                
+                // Ensure every user in users array has a uid property if it matches the current Firebase user
+                if (user && Array.isArray(users)) {
+                    const emailPrefix = user.email && user.email.split('@')[0];
+                    users = users.map(u => {
+                        // If username matches email prefix and uid is missing or incorrect, set it
+                        if (u.username === emailPrefix && u.uid !== user.uid) {
+                            return { ...u, uid: user.uid };
+                        }
+                        return u;
+                    });
                 }
-                console.log('[DEBUG] Setting currentUser after Firestore sync:', {
-                    uid,
-                    currentUserId,
-                    users,
-                    matched: currentUser
-                });
-            } else {
-                console.log('[DEBUG] Could not set currentUser:', {
-                    auth: window.auth,
-                    firebaseUser: window.auth && window.auth.currentUser,
-                    users,
-                    currentUserId
-                });
-            }
-            console.log('✅ Data loaded successfully from cloud:', {
-                inventory: inventory.length,
-                vendors: vendors.length,
-                customers: customers.length,
-                repairs: repairs.length,
-                invoices: invoices.length,
-                quotations: quotations.length,
+                
+                // After updating users, re-assign currentUser
+                if (window.auth && window.auth.currentUser && users && users.length > 0) {
+                    const uid = window.auth.currentUser.uid;
+                    // Try to match by UID if available, else by currentUserId
+                    currentUser = users.find(u => u.uid === uid || u.id === currentUserId) || null;
+                    if (currentUser) {
+                        currentUserId = currentUser.id;
+                    }
+                    console.log('[DEBUG] Setting currentUser after Firestore sync:', {
+                        uid,
+                        currentUserId,
+                        users,
+                        matched: currentUser
+                    });
+                } else {
+                    console.log('[DEBUG] Could not set currentUser:', {
+                        auth: window.auth,
+                        firebaseUser: window.auth && window.auth.currentUser,
+                        users,
+                        currentUserId
+                    });
+                }
+                
+                console.log('✅ Data loaded successfully from shared cloud document:', {
+                    inventory: inventory.length,
+                    vendors: vendors.length,
+                    customers: customers.length,
+                    repairs: repairs.length,
+                    invoices: invoices.length,
+                    quotations: quotations.length,
                     pickDrops: pickDrops.length,
                     payments: payments.length,
                     deliveries: deliveries.length,
                     users: users.length
-            });
-            // Validate and fix data consistency issues - delay to ensure data is loaded
-            setTimeout(() => {
-                validateAndFixDataConsistency();
-            }, 100);
-            // Update username in header after cloud data is loaded
-            updateUsernameInHeader();
-            
-            // After data is loaded, check if user should be automatically logged in
+                });
+                
+                // Validate and fix data consistency issues - delay to ensure data is loaded
+                setTimeout(() => {
+                    validateAndFixDataConsistency();
+                }, 100);
+                
+                // Update username in header after cloud data is loaded
+                updateUsernameInHeader();
+                
+                // Re-render all data after cloud load
+                if (typeof renderAll === 'function') {
+                    renderAll();
+                }
+                if (typeof updateDashboard === 'function') {
+                    updateDashboard();
+                }
+                
+                // After data is loaded, check if user should be automatically logged in
             checkLoginStatus();
         } else {
                 console.warn('❌ No cloud data found for this user.');
@@ -655,13 +681,15 @@ function saveDataToCloud() {
     
     // Always try to save to cloud first
     if (window.auth && window.auth.currentUser) {
-        console.log('User authenticated, saving to cloud...');
+        console.log('User authenticated, saving to shared cloud document...');
         const user = window.auth.currentUser;
         if (!window.setDoc || !window.doc || !window.safeCollection || !window.db) {
             console.error('Firestore setDoc not available, cannot save data to cloud.');
-        return;
-    }
-        const docRef = window.doc(window.safeCollection(window.db, 'users'), user.uid);
+            return;
+        }
+        
+        // Save to shared document for real-time sync between users
+        const sharedDocRef = window.doc(window.safeCollection(window.db, 'shared_data'), 'repairmaniac_com');
         const data = {
             inventory,
             vendors,
@@ -674,16 +702,19 @@ function saveDataToCloud() {
             pickDrops,
             payments,
             deliveries,
-            users
+            users,
+            lastUpdated: new Date().toISOString(),
+            updatedBy: user.email
         };
-        window.setDoc(docRef, data, { merge: true })
+        
+        window.setDoc(sharedDocRef, data, { merge: true })
             .then(() => {
-                console.log('✅ Data saved to cloud successfully');
+                console.log('✅ Data saved to shared cloud document successfully');
             })
             .catch((error) => {
-                console.error('❌ Error saving data to cloud:', error);
+                console.error('❌ Error saving data to shared cloud document:', error);
             });
-        } else {
+    } else {
         console.log('No authenticated user, cannot save data to cloud');
     }
     
@@ -1921,6 +1952,71 @@ function initializeUserModal() {
     
     console.log('User modal initialized');
 }
+
+// Migrate existing user data to shared document for real-time sync
+async function migrateToSharedDocument() {
+    if (!window.auth || !window.auth.currentUser) {
+        console.log('No authenticated user, cannot migrate data');
+        return;
+    }
+    
+    try {
+        console.log('🔄 Starting data migration to shared document...');
+        
+        // First, try to load existing data from user-specific document
+        const user = window.auth.currentUser;
+        const userDocRef = window.doc(window.safeCollection(window.db, 'users'), user.uid);
+        const userDocSnap = await window.getDoc(userDocRef);
+        
+        if (userDocSnap.exists()) {
+            const userData = userDocSnap.data();
+            console.log('📥 Found existing user data:', userData);
+            
+            // Save this data to the shared document
+            const sharedDocRef = window.doc(window.safeCollection(window.db, 'shared_data'), 'repairmaniac_com');
+            await window.setDoc(sharedDocRef, {
+                ...userData,
+                lastUpdated: new Date().toISOString(),
+                updatedBy: user.email,
+                migratedFrom: user.uid
+            }, { merge: true });
+            
+            console.log('✅ Data migration completed successfully');
+            
+            // Now load from the shared document
+            await loadDataFromCloud();
+        } else {
+            console.log('📝 No existing user data found, creating shared document with defaults');
+            
+            // Create shared document with default data
+            const sharedDocRef = window.doc(window.safeCollection(window.db, 'shared_data'), 'repairmaniac_com');
+            await window.setDoc(sharedDocRef, {
+                inventory: getDefaultInventory(),
+                vendors: getDefaultVendors(),
+                customers: getDefaultCustomers(),
+                purchases: [],
+                repairs: [],
+                outsourceRepairs: [],
+                invoices: [],
+                quotations: [],
+                pickDrops: [],
+                payments: [],
+                deliveries: getDefaultDeliveries(),
+                users: getDefaultUsers(),
+                lastUpdated: new Date().toISOString(),
+                updatedBy: user.email,
+                created: true
+            });
+            
+            console.log('✅ Shared document created with default data');
+        }
+            } catch (error) {
+            console.error('❌ Error during data migration:', error);
+        }
+    }
+    
+    // Make migration function available globally for testing
+    window.migrateToSharedDocument = migrateToSharedDocument;
 
 // Handle role change in user modal
 function handleRoleChange() {
