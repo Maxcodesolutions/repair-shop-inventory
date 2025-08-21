@@ -432,118 +432,301 @@
             <div class="content-wrapper">
                 <!-- Dashboard Section -->
                 <section id="dashboard" class="content-section">
+                    <!-- Dashboard Header -->
+                    <div class="dashboard-header">
+                        <div class="dashboard-welcome">
+                            <h1>Welcome back, <span id="dashboard-username">User</span>! 👋</h1>
+                            <p class="dashboard-subtitle">Here's what's happening with your repair shop today</p>
+                        </div>
+                        <div class="dashboard-date">
+                            <div class="current-date">
+                                <i class="fas fa-calendar-alt"></i>
+                                <span id="current-date">Loading...</span>
+                            </div>
+                            <div class="current-time">
+                                <i class="fas fa-clock"></i>
+                                <span id="current-time">Loading...</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Key Metrics Grid -->
                     <div class="dashboard-grid">
-                        <div class="stat-card clickable-card" onclick="navigateToSection('inventory')" title="Click to view Inventory">
-                            <div class="stat-icon">
-                                <i class="fas fa-boxes"></i>
+                        <div class="stat-card stat-card-primary clickable-card" onclick="navigateToSection('inventory')" title="Click to view Inventory">
+                            <div class="stat-card-content">
+                                <div class="stat-icon">
+                                    <i class="fas fa-boxes"></i>
+                                </div>
+                                <div class="stat-details">
+                                    <h3 id="total-items">0</h3>
+                                    <p>Total Items</p>
+                                    <span class="stat-change positive">+12% from last month</span>
+                                </div>
                             </div>
-                            <div class="stat-content">
-                                <h3 id="total-items">0</h3>
-                                <p>Total Items</p>
-                            </div>
-                            <div class="card-hover-indicator">
+                            <div class="stat-card-footer">
+                                <span class="stat-label">Inventory</span>
                                 <i class="fas fa-arrow-right"></i>
                             </div>
                         </div>
-                        <div class="stat-card clickable-card" onclick="navigateToSection('inventory')" title="Click to view Low Stock Items">
-                            <div class="stat-icon">
-                                <i class="fas fa-exclamation-triangle"></i>
+
+                        <div class="stat-card stat-card-warning clickable-card" onclick="navigateToSection('inventory')" title="Click to view Low Stock Items">
+                            <div class="stat-card-content">
+                                <div class="stat-icon">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                </div>
+                                <div class="stat-details">
+                                    <h3 id="low-stock">0</h3>
+                                    <p>Low Stock Items</p>
+                                    <span class="stat-change negative">Requires attention</span>
+                                </div>
                             </div>
-                            <div class="stat-content">
-                                <h3 id="low-stock">0</h3>
-                                <p>Low Stock Items</p>
-                            </div>
-                            <div class="card-hover-indicator">
+                            <div class="stat-card-footer">
+                                <span class="stat-label">Stock Alert</span>
                                 <i class="fas fa-arrow-right"></i>
                             </div>
                         </div>
-                        <div class="stat-card clickable-card" onclick="navigateToSection('purchases')" title="Click to view Purchases">
-                            <div class="stat-icon">
-                                <i class="fas fa-shopping-cart"></i>
+
+                        <div class="stat-card stat-card-info clickable-card" onclick="navigateToSection('purchases')" title="Click to view Purchases">
+                            <div class="stat-card-content">
+                                <div class="stat-icon">
+                                    <i class="fas fa-shopping-cart"></i>
+                                </div>
+                                <div class="stat-details">
+                                    <h3 id="pending-orders">0</h3>
+                                    <p>Pending Orders</p>
+                                    <span class="stat-change neutral">Processing</span>
+                                </div>
                             </div>
-                            <div class="stat-content">
-                                <h3 id="pending-orders">0</h3>
-                                <p>Pending Orders</p>
-                            </div>
-                            <div class="card-hover-indicator">
+                            <div class="stat-card-footer">
+                                <span class="stat-label">Purchases</span>
                                 <i class="fas fa-arrow-right"></i>
                             </div>
                         </div>
-                        <div class="stat-card clickable-card" onclick="navigateToSection('repairs')" title="Click to view Repairs">
-                            <div class="stat-icon">
-                                <i class="fas fa-wrench"></i>
+
+                        <div class="stat-card stat-card-success clickable-card" onclick="navigateToSection('repairs')" title="Click to view Repairs">
+                            <div class="stat-card-content">
+                                <div class="stat-icon">
+                                    <i class="fas fa-wrench"></i>
+                                </div>
+                                <div class="stat-details">
+                                    <h3 id="active-repairs">0</h3>
+                                    <p>Active Repairs</p>
+                                    <span class="stat-change positive">In progress</span>
+                                </div>
                             </div>
-                            <div class="stat-content">
-                                <h3 id="active-repairs">0</h3>
-                                <p>Active Repairs</p>
-                            </div>
-                            <div class="card-hover-indicator">
+                            <div class="stat-card-footer">
+                                <span class="stat-label">Repairs</span>
                                 <i class="fas fa-arrow-right"></i>
                             </div>
                         </div>
-                         <div class="stat-card clickable-card" onclick="navigateToSection('warranties')" title="Click to view Warranties">
-                             <div class="stat-icon">
-                                 <i class="fas fa-shield-alt"></i>
-                             </div>
-                             <div class="stat-content">
-                                 <h3 id="warranty-expiring">0</h3>
-                                 <p>Warranties Expiring Soon</p>
-                             </div>
-                             <div class="card-hover-indicator">
-                                 <i class="fas fa-arrow-right"></i>
-                             </div>
-                         </div>
+
+                        <div class="stat-card stat-card-danger clickable-card" onclick="navigateToSection('warranties')" title="Click to view Warranties">
+                            <div class="stat-card-content">
+                                <div class="stat-icon">
+                                    <i class="fas fa-shield-alt"></i>
+                                </div>
+                                <div class="stat-details">
+                                    <h3 id="warranty-expiring">0</h3>
+                                    <p>Warranties Expiring</p>
+                                    <span class="stat-change negative">Soon</span>
+                                </div>
+                            </div>
+                            <div class="stat-card-footer">
+                                <span class="stat-label">Warranties</span>
+                                <i class="fas fa-arrow-right"></i>
+                            </div>
+                        </div>
+
+                        <div class="stat-card stat-card-purple clickable-card" onclick="navigateToSection('customers')" title="Click to view Customers">
+                            <div class="stat-card-content">
+                                <div class="stat-icon">
+                                    <i class="fas fa-user-friends"></i>
+                                </div>
+                                <div class="stat-details">
+                                    <h3 id="total-customers">0</h3>
+                                    <p>Total Customers</p>
+                                    <span class="stat-change positive">Growing</span>
+                                </div>
+                            </div>
+                            <div class="stat-card-footer">
+                                <span class="stat-label">Customers</span>
+                                <i class="fas fa-arrow-right"></i>
+                            </div>
+                        </div>
                     </div>
-                    
-                    <div class="dashboard-charts">
-                        <div class="chart-container dashboard-canvas">
-                            <h3>Repair Status Distribution</h3>
-                            <canvas id="repairStatusChart" width="400" height="180" class="dashboard-canvas"></canvas>
+
+                    <!-- Charts and Analytics Section -->
+                    <div class="dashboard-analytics">
+                        <div class="analytics-header">
+                            <h2>Analytics & Insights</h2>
+                            <div class="analytics-filters">
+                                <select id="chart-period" class="chart-period-select">
+                                    <option value="7">Last 7 days</option>
+                                    <option value="30" selected>Last 30 days</option>
+                                    <option value="90">Last 3 months</option>
+                                    <option value="365">Last year</option>
+                                </select>
+                            </div>
                         </div>
-                        <div class="chart-container dashboard-canvas">
-                            <h3>Monthly Revenue (Invoices)</h3>
-                            <canvas id="revenueChart" width="400" height="180" class="dashboard-canvas"></canvas>
+                        
+                        <div class="charts-grid">
+                            <div class="chart-container chart-card">
+                                <div class="chart-header">
+                                    <h3><i class="fas fa-chart-pie"></i> Repair Status Distribution</h3>
+                                    <div class="chart-actions">
+                                        <button class="chart-action-btn" onclick="exportChart('repairStatusChart')" title="Export Chart">
+                                            <i class="fas fa-download"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="chart-content">
+                                    <canvas id="repairStatusChart" width="400" height="200"></canvas>
+                                </div>
+                            </div>
+
+                            <div class="chart-container chart-card">
+                                <div class="chart-header">
+                                    <h3><i class="fas fa-chart-line"></i> Monthly Revenue Trend</h3>
+                                    <div class="chart-actions">
+                                        <button class="chart-action-btn" onclick="exportChart('revenueChart')" title="Export Chart">
+                                            <i class="fas fa-download"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="chart-content">
+                                    <canvas id="revenueChart" width="400" height="200"></canvas>
+                                </div>
+                            </div>
+
+                            <div class="chart-container chart-card">
+                                <div class="chart-header">
+                                    <h3><i class="fas fa-chart-bar"></i> Quotation Value Analysis</h3>
+                                    <div class="chart-actions">
+                                        <button class="chart-action-btn" onclick="exportChart('quotationValueChart')" title="Export Chart">
+                                            <i class="fas fa-download"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="chart-content">
+                                    <canvas id="quotationValueChart" width="400" height="200"></canvas>
+                                </div>
+                            </div>
+
+                            <div class="chart-container chart-card">
+                                <div class="chart-header">
+                                    <h3><i class="fas fa-chart-area"></i> Customer Growth</h3>
+                                    <div class="chart-actions">
+                                        <button class="chart-action-btn" onclick="exportChart('customerGrowthChart')" title="Export Chart">
+                                            <i class="fas fa-download"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="chart-content">
+                                    <canvas id="customerGrowthChart" width="400" height="200"></canvas>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    
-                    <div class="dashboard-charts">
-                        <div class="chart-container dashboard-canvas">
-                            <h3>Quotation Value Analysis</h3>
-                            <canvas id="quotationValueChart" width="400" height="180" class="dashboard-canvas"></canvas>
+
+                    <!-- Quick Actions Section -->
+                    <div class="quick-actions-section">
+                        <div class="section-header">
+                            <h2><i class="fas fa-bolt"></i> Quick Actions</h2>
+                            <p>Get things done faster with these shortcuts</p>
                         </div>
-                        <div class="chart-container">
-                            <h3>Quick Actions</h3>
-                            <div class="quick-actions">
-                                <button class="action-btn" onclick="showModal('add-item-modal')">
-                                    <i class="fas fa-plus"></i> Add Item
-                                </button>
-                                <button class="action-btn" onclick="showModal('add-purchase-modal')">
-                                    <i class="fas fa-shopping-cart"></i> New Purchase
-                                </button>
-                                <button class="action-btn" onclick="showModal('add-vendor-modal')">
-                                    <i class="fas fa-user-plus"></i> Add Vendor
-                                </button>
-                                <button class="action-btn" onclick="showModal('add-customer-modal')">
-                                    <i class="fas fa-user-friends"></i> New Customer
-                                </button>
-                                <button class="action-btn" onclick="showModal('add-repair-modal')">
-                                    <i class="fas fa-wrench"></i> New Repair
-                                </button>
-                                <button class="action-btn" onclick="showModal('add-quotation-modal')">
-                                    <i class="fas fa-file-contract"></i> New Quotation
-                                </button>
-                                <button class="action-btn" onclick="showModal('add-invoice-modal')">
-                                    <i class="fas fa-file-invoice"></i> New Invoice
-                                </button>
-                                <button class="action-btn" onclick="showModal('add-pickdrop-modal')">
-                                    <i class="fas fa-truck"></i> New Pick & Drop
-                                </button>
-                                <button class="action-btn" onclick="showModal('add-delivery-modal')">
-                                    <i class="fas fa-shipping-fast"></i> New Delivery
-                                </button>
-                                <button class="action-btn" onclick="showModal('add-payment-modal')">
-                                    <i class="fas fa-credit-card"></i> New Payment
-                                </button>
+                        
+                        <div class="quick-actions-grid">
+                            <div class="action-category">
+                                <h3><i class="fas fa-boxes"></i> Inventory</h3>
+                                <div class="action-buttons">
+                                    <button class="action-btn action-btn-primary" onclick="showModal('add-item-modal')">
+                                        <i class="fas fa-plus"></i> Add Item
+                                    </button>
+                                    <button class="action-btn action-btn-secondary" onclick="navigateToSection('inventory')">
+                                        <i class="fas fa-search"></i> View All
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="action-category">
+                                <h3><i class="fas fa-shopping-cart"></i> Purchases</h3>
+                                <div class="action-buttons">
+                                    <button class="action-btn action-btn-primary" onclick="showModal('add-purchase-modal')">
+                                        <i class="fas fa-plus"></i> New Purchase
+                                    </button>
+                                    <button class="action-btn action-btn-secondary" onclick="navigateToSection('purchases')">
+                                        <i class="fas fa-list"></i> View All
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="action-category">
+                                <h3><i class="fas fa-users"></i> People</h3>
+                                <div class="action-buttons">
+                                    <button class="action-btn action-btn-primary" onclick="showModal('add-vendor-modal')">
+                                        <i class="fas fa-user-plus"></i> Add Vendor
+                                    </button>
+                                    <button class="action-btn action-btn-primary" onclick="showModal('add-customer-modal')">
+                                        <i class="fas fa-user-friends"></i> New Customer
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="action-category">
+                                <h3><i class="fas fa-wrench"></i> Services</h3>
+                                <div class="action-buttons">
+                                    <button class="action-btn action-btn-primary" onclick="showModal('add-repair-modal')">
+                                        <i class="fas fa-plus"></i> New Repair
+                                    </button>
+                                    <button class="action-btn action-btn-primary" onclick="showModal('add-quotation-modal')">
+                                        <i class="fas fa-file-contract"></i> New Quotation
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="action-category">
+                                <h3><i class="fas fa-file-alt"></i> Documents</h3>
+                                <div class="action-buttons">
+                                    <button class="action-btn action-btn-primary" onclick="showModal('add-invoice-modal')">
+                                        <i class="fas fa-plus"></i> New Invoice
+                                    </button>
+                                    <button class="action-btn action-btn-secondary" onclick="navigateToSection('invoices')">
+                                        <i class="fas fa-list"></i> View All
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="action-category">
+                                <h3><i class="fas fa-truck"></i> Logistics</h3>
+                                <div class="action-buttons">
+                                    <button class="action-btn action-btn-primary" onclick="showModal('add-pickdrop-modal')">
+                                        <i class="fas fa-plus"></i> New Pick & Drop
+                                    </button>
+                                    <button class="action-btn action-btn-primary" onclick="showModal('add-delivery-modal')">
+                                        <i class="fas fa-plus"></i> New Delivery
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Activity Section -->
+                    <div class="recent-activity-section">
+                        <div class="section-header">
+                            <h2><i class="fas fa-history"></i> Recent Activity</h2>
+                            <button class="btn btn-secondary" onclick="viewAllActivity()">View All</button>
+                        </div>
+                        
+                        <div class="activity-timeline" id="activity-timeline">
+                            <!-- Activity items will be populated by JavaScript -->
+                            <div class="activity-item">
+                                <div class="activity-icon">
+                                    <i class="fas fa-info-circle"></i>
+                                </div>
+                                <div class="activity-content">
+                                    <p>Loading recent activity...</p>
+                                    <span class="activity-time">Just now</span>
+                                </div>
                             </div>
                         </div>
                     </div>

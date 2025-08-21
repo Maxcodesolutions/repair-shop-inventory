@@ -17,6 +17,7 @@ function validateAndFixDataConsistency() {
 
 function updateUsernameInHeader() {
     const usernameElement = document.getElementById('header-username');
+    const dashboardUsernameElement = document.getElementById('dashboard-username');
     console.log('🔧 DEBUG: updateUsernameInHeader called');
     console.log('🔧 DEBUG: currentUser:', currentUser);
     console.log('🔧 DEBUG: currentUser.fullName:', currentUser?.fullName);
@@ -27,6 +28,11 @@ function updateUsernameInHeader() {
         const displayName = currentUser.fullName || currentUser.username || 'Unknown User';
         usernameElement.textContent = displayName;
         console.log('✅ Username updated in header:', displayName);
+        
+        // Also update dashboard username if element exists
+        if (dashboardUsernameElement) {
+            dashboardUsernameElement.textContent = displayName;
+        }
     } else if (usernameElement) {
         usernameElement.textContent = 'Loading...';
         console.log('⚠️ Username not available, set to Loading...');
@@ -448,6 +454,10 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Uncomment the next line to reset all data and start fresh
     // localStorage.clear();
+    
+    // Start updating current date and time
+    updateCurrentDateTime();
+    setInterval(updateCurrentDateTime, 1000);
     
     // Wait for Firebase to be ready before initializing
     if (window.waitForFirebase) {
@@ -1543,6 +1553,52 @@ async function syncAuthUsersToFirestore() {
     alert(`Sync complete. ${added} users added to Firestore.`);
 }
 window.syncAuthUsersToFirestore = syncAuthUsersToFirestore;
+
+// Update current date and time
+function updateCurrentDateTime() {
+    const now = new Date();
+    
+    // Update current date
+    const currentDateElement = document.getElementById('current-date');
+    if (currentDateElement) {
+        const dateOptions = { 
+            weekday: 'long', 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric' 
+        };
+        currentDateElement.textContent = now.toLocaleDateString('en-US', dateOptions);
+    }
+    
+    // Update current time
+    const currentTimeElement = document.getElementById('current-time');
+    if (currentTimeElement) {
+        const timeOptions = { 
+            hour: '2-digit', 
+            minute: '2-digit', 
+            second: '2-digit',
+            hour12: true 
+        };
+        currentTimeElement.textContent = now.toLocaleTimeString('en-US', timeOptions);
+    }
+}
+
+// Export chart function
+function exportChart(chartId) {
+    const canvas = document.getElementById(chartId);
+    if (canvas) {
+        const link = document.createElement('a');
+        link.download = `${chartId}-${new Date().toISOString().split('T')[0]}.png`;
+        link.href = canvas.toDataURL();
+        link.click();
+    }
+}
+
+// View all activity function
+function viewAllActivity() {
+    // Navigate to reports section for detailed activity
+    navigateToSection('reports');
+}
 
 // Utility: Make a user admin by email in Firestore users array
 async function makeUserAdmin(email = 'cpsingh@gmail.com') {
@@ -2786,10 +2842,18 @@ function updateDashboard() {
         console.warn('Warranty summary error:', e.message);
     }
 
+    // Update customer count
+    const totalCustomersEl = document.getElementById('total-customers');
+    if (totalCustomersEl) {
+        totalCustomersEl.textContent = customers.length;
+        console.log('Updated total customers:', customers.length);
+    }
+    
     // Update charts
     updateRepairStatusChart();
     updateRevenueChart();
     updateQuotationValueChart();
+    updateCustomerGrowthChart();
 }
 // Warranty helpers
 function getWarrantiesExpiringSoonCount(daysAhead) {
@@ -2834,6 +2898,7 @@ function addMonths(date, months) {
 let repairStatusChart = null;
 let revenueChart = null;
 let quotationValueChart = null;
+let customerGrowthChart = null;
 
 function updateRepairStatusChart() {
     console.log('Updating repair status chart...');
@@ -3082,6 +3147,122 @@ function updateQuotationValueChart() {
                 padding: {
                     top: 5,
                     bottom: 5
+                }
+            }
+        }
+    });
+}
+
+function updateCustomerGrowthChart() {
+    const ctx = document.getElementById('customerGrowthChart');
+    if (!ctx) {
+        console.log('Customer growth chart canvas not found');
+        return;
+    }
+    
+    // Check if Chart is available
+    if (typeof Chart === 'undefined') {
+        console.log('Chart.js not loaded');
+        return;
+    }
+    
+    // Destroy existing chart if it exists
+    if (customerGrowthChart) {
+        customerGrowthChart.destroy();
+    }
+    
+    // Generate customer growth data for the last 12 months
+    const months = [];
+    const customerCounts = [];
+    const today = new Date();
+    
+    for (let i = 11; i >= 0; i--) {
+        const date = new Date(today.getFullYear(), today.getMonth() - i, 1);
+        months.push(date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' }));
+        
+        // Count customers created before or during this month
+        const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+        const count = customers.filter(customer => {
+            if (customer.createdAt) {
+                const customerDate = new Date(customer.createdAt);
+                return customerDate <= monthEnd;
+            }
+            return false;
+        }).length;
+        customerCounts.push(count);
+    }
+    
+    customerGrowthChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: months,
+            datasets: [{
+                label: 'Total Customers',
+                data: customerCounts,
+                borderColor: '#8B5CF6',
+                backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                borderWidth: 3,
+                fill: true,
+                tension: 0.4,
+                pointBackgroundColor: '#8B5CF6',
+                pointBorderColor: '#ffffff',
+                pointBorderWidth: 2,
+                pointRadius: 6,
+                pointHoverRadius: 8
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    titleColor: '#ffffff',
+                    bodyColor: '#ffffff',
+                    borderColor: '#8B5CF6',
+                    borderWidth: 1,
+                    callbacks: {
+                        label: function(context) {
+                            return `Customers: ${context.parsed.y}`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.05)'
+                    },
+                    ticks: {
+                        color: '#64748b',
+                        font: {
+                            size: 11
+                        }
+                    }
+                },
+                y: {
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.05)'
+                    },
+                    ticks: {
+                        color: '#64748b',
+                        font: {
+                            size: 11
+                        },
+                        callback: function(value) {
+                            return Math.floor(value);
+                        }
+                    },
+                    beginAtZero: true
+                }
+            },
+            layout: {
+                padding: {
+                    top: 10,
+                    bottom: 10
                 }
             }
         }
