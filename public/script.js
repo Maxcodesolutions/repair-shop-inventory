@@ -912,6 +912,26 @@ function applyUserPermissions() {
     }
 }
 function createUser(userData) {
+    // Ensure permissions are properly set based on role
+    let finalPermissions = userData.permissions;
+    
+    // If no permissions were selected, use default permissions for the role
+    if (!finalPermissions || finalPermissions.length === 0) {
+        if (userRoles[userData.role]) {
+            finalPermissions = userRoles[userData.role].permissions;
+            console.log(`Using default permissions for ${userData.role} role:`, finalPermissions);
+        } else {
+            finalPermissions = ['dashboard']; // Fallback permission
+            console.warn(`Unknown role ${userData.role}, using fallback permissions:`, finalPermissions);
+        }
+    }
+    
+    // Validate that all selected permissions are valid
+    const validPermissions = ['dashboard', 'inventory', 'purchases', 'vendors', 'customers', 'repairs', 'outsource', 'invoices', 'quotations', 'pickdrop', 'delivery', 'payments', 'reports', 'users', 'warranties'];
+    finalPermissions = finalPermissions.filter(perm => validPermissions.includes(perm));
+    
+    console.log('Creating user with permissions:', finalPermissions);
+    
     const newUser = {
         id: users.length > 0 ? Math.max(...users.map(u => u.id)) + 1 : 1,
         username: userData.username,
@@ -920,7 +940,7 @@ function createUser(userData) {
         email: userData.email,
         role: userData.role,
         status: userData.status,
-        permissions: userData.permissions,
+        permissions: finalPermissions,
         lastLogin: null,
         createdAt: new Date().toISOString()
     };
@@ -1118,6 +1138,14 @@ function setupEventListeners() {
     document.getElementById('add-delivery-form').addEventListener('submit', handleAddDelivery);
     document.getElementById('add-payment-form').addEventListener('submit', handleAddPayment);
     document.getElementById('add-user-form').addEventListener('submit', handleAddUser);
+    
+    // User role change event listener for automatic permission setting
+    const userRoleSelect = document.getElementById('user-role');
+    if (userRoleSelect) {
+        userRoleSelect.addEventListener('change', function() {
+            setDefaultPermissionsForRole(this.value);
+        });
+    }
 
     // Global search functionality
     initializeGlobalSearch();
@@ -2576,6 +2604,32 @@ function getSelectedPermissions() {
     return permissions;
 }
 
+// Set default permissions based on selected role
+function setDefaultPermissionsForRole(role) {
+    if (!role || !userRoles[role]) {
+        console.warn('Invalid role for setting default permissions:', role);
+        return;
+    }
+    
+    const defaultPermissions = userRoles[role].permissions;
+    console.log(`Setting default permissions for ${role} role:`, defaultPermissions);
+    
+    // Reset all checkboxes first
+    document.querySelectorAll('.permissions-grid input[type="checkbox"]').forEach(checkbox => {
+        checkbox.checked = false;
+    });
+    
+    // Check the appropriate permissions for the role
+    defaultPermissions.forEach(permission => {
+        const checkbox = document.getElementById(`perm-${permission}`);
+        if (checkbox) {
+            checkbox.checked = true;
+        } else {
+            console.warn(`Permission checkbox not found for: ${permission}`);
+        }
+    });
+}
+
 async function handleAddUser(e) {
     e.preventDefault();
     
@@ -2601,7 +2655,22 @@ async function handleAddUser(e) {
     
     if (window.createUserWithEmailAndPassword && window.auth) {
         try {
+            // Store the current admin user before creating new user
+            const currentAdminUser = window.auth.currentUser;
+            
+            // Create the Firebase Auth account
             const userCredential = await window.createUserWithEmailAndPassword(window.auth, userData.email, userData.password);
+            
+            // Immediately sign back in as the admin user to prevent auto-login as new user
+            if (currentAdminUser) {
+                try {
+                    await window.signInWithEmailAndPassword(window.auth, currentAdminUser.email, localStorage.getItem('adminPassword') || 'admin');
+                    console.log('Successfully signed back in as admin user');
+                } catch (signInError) {
+                    console.warn('Could not sign back in as admin, but user creation succeeded:', signInError.message);
+                }
+            }
+            
             // Add to Firestore users collection
             createUser(userData);
             showSuccessMessage('User created successfully!');
