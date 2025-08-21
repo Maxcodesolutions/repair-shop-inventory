@@ -219,6 +219,23 @@ async function handleLogin(e) {
             console.log('[DEBUG] Users loaded from old structure:', allUsers);
         }
         
+        // If still no users found, try to get from any document in users collection
+        if (allUsers.length === 0) {
+            console.log('[DEBUG] No users found in either location, searching all documents...');
+            const usersCol = window.collection(window.db, 'users');
+            const snapshot = await window.getDocs(usersCol);
+            
+            // Look through all documents for any users array
+            snapshot.docs.forEach(doc => {
+                const data = doc.data();
+                console.log('[DEBUG] Document data:', doc.id, data);
+                if (data.users && Array.isArray(data.users)) {
+                    allUsers = allUsers.concat(data.users);
+                }
+            });
+            console.log('[DEBUG] Total users found after searching all docs:', allUsers);
+        }
+        
         // Try to find by email first, then by username (case-insensitive)
         let userProfile = allUsers.find(u => u.email && u.email.toLowerCase() === loginInput.toLowerCase());
         if (!userProfile) {
@@ -226,9 +243,27 @@ async function handleLogin(e) {
         }
         console.log('[DEBUG] Found user profile:', userProfile);
         if (!userProfile) {
-            loginError.style.display = 'block';
-            loginError.textContent = 'User not found.';
-            return;
+            // If no users found at all, create a default admin user
+            if (allUsers.length === 0) {
+                console.log('[DEBUG] No users found anywhere, creating default admin user...');
+                try {
+                    await createDefaultAdminUser();
+                    // Try to find the user again
+                    userProfile = allUsers.find(u => u.username === 'admin' || u.email === 'admin@repairmaniac.com');
+                    if (userProfile) {
+                        console.log('[DEBUG] Default admin user created and found:', userProfile);
+                    }
+                } catch (createError) {
+                    console.error('[DEBUG] Failed to create default admin user:', createError);
+                }
+            }
+            
+            if (!userProfile) {
+                loginError.style.display = 'block';
+                loginError.textContent = 'User not found. Please check your credentials.';
+                console.log('[DEBUG] Available users for debugging:', allUsers.map(u => ({ username: u.username, email: u.email })));
+                return;
+            }
         }
         
         // Use the found email for Firebase Auth
@@ -2033,7 +2068,48 @@ async function migrateToSharedDocument() {
     }
     
     // Make migration function available globally for testing
-    window.migrateToSharedDocument = migrateToSharedDocument;
+window.migrateToSharedDocument = migrateToSharedDocument;
+
+// Create a default admin user if none exists
+async function createDefaultAdminUser() {
+    try {
+        console.log('[DEBUG] Creating default admin user...');
+        
+        const defaultAdminUser = {
+            id: 1,
+            username: 'admin',
+            password: 'admin',
+            fullName: 'System Administrator',
+            email: 'admin@repairmaniac.com',
+            role: 'admin',
+            status: 'active',
+            permissions: ['dashboard', 'inventory', 'purchases', 'vendors', 'customers', 'repairs', 'outsource', 'invoices', 'quotations', 'pickdrop', 'delivery', 'payments', 'reports', 'users', 'warranties'],
+            lastLogin: null,
+            createdAt: new Date().toISOString()
+        };
+        
+        // Add to local users array
+        users.push(defaultAdminUser);
+        
+        // Save to shared document
+        if (window.db && window.safeCollection && window.setDoc && window.doc) {
+            const sharedDocRef = window.doc(window.safeCollection(window.db, 'shared_data'), 'repairmaniac_com');
+            await window.setDoc(sharedDocRef, {
+                users: users,
+                lastUpdated: new Date().toISOString(),
+                updatedBy: 'system',
+                defaultAdminCreated: true
+            }, { merge: true });
+            console.log('[DEBUG] Default admin user saved to shared document');
+        }
+        
+        console.log('[DEBUG] Default admin user created successfully');
+        return defaultAdminUser;
+    } catch (error) {
+        console.error('[DEBUG] Error creating default admin user:', error);
+        throw error;
+    }
+}
 
 // Handle role change in user modal
 function handleRoleChange() {
