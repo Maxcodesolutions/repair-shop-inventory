@@ -2560,6 +2560,22 @@ function handleAddPickDrop(e) {
     if (window.deviceImages) window.deviceImages.pickdrop = [];
     document.getElementById('pickdrop-images-container').innerHTML = '';
 }
+
+// Get selected permissions from permission checkboxes
+function getSelectedPermissions() {
+    const permissions = [];
+    const permissionCheckboxes = document.querySelectorAll('.permissions-grid input[type="checkbox"]:checked');
+    
+    permissionCheckboxes.forEach(checkbox => {
+        // Extract permission name from checkbox ID (e.g., "perm-dashboard" -> "dashboard")
+        const permissionName = checkbox.id.replace('perm-', '');
+        permissions.push(permissionName);
+    });
+    
+    console.log('Selected permissions:', permissions);
+    return permissions;
+}
+
 async function handleAddUser(e) {
     e.preventDefault();
     
