@@ -727,15 +727,22 @@ function authenticateUser(username, password) {
 }
 
 function hasPermission(permission) {
-    if (!currentUser) return false;
-    return currentUser.permissions.includes(permission);
+    if (!currentUser) {
+        console.log(`🔧 DEBUG: hasPermission(${permission}) - No currentUser`);
+        return false;
+    }
+    const hasPerm = currentUser.permissions.includes(permission);
+    console.log(`🔧 DEBUG: hasPermission(${permission}) - User: ${currentUser.username}, Role: ${currentUser.role}, Has Permission: ${hasPerm}`);
+    return hasPerm;
 }
 
 function applyUserPermissions() {
     if (!currentUser) return;
     
-    console.log('Applying permissions for user:', currentUser.username);
-    console.log('User permissions:', currentUser.permissions);
+    console.log('🔧 DEBUG: Applying permissions for user:', currentUser.username);
+    console.log('🔧 DEBUG: User role:', currentUser.role);
+    console.log('🔧 DEBUG: User permissions:', currentUser.permissions);
+    console.log('🔧 DEBUG: Has users permission:', currentUser.permissions.includes('users'));
     
     // Debug: Check if warranties permission exists
     const hasWarrantiesPermission = currentUser.permissions.includes('warranties');
@@ -759,7 +766,10 @@ function applyUserPermissions() {
     const sections = document.querySelectorAll('.content-section');
     sections.forEach(section => {
         const sectionId = section.id;
-        if (!hasPermission(sectionId)) {
+        const hasSectionPermission = hasPermission(sectionId);
+        console.log(`🔧 DEBUG: Section ${sectionId} - hasPermission: ${hasSectionPermission}`);
+        
+        if (!hasSectionPermission) {
             section.classList.add('section-hidden');
             console.log('Hiding content section:', sectionId);
         } else {
@@ -781,6 +791,19 @@ function applyUserPermissions() {
         console.log('🔧 FORCED SHOW: Warranty section');
     }
     
+    // Force show user management for debugging
+    const userLink = document.querySelector('[data-section="users"]');
+    if (userLink) {
+        userLink.classList.remove('nav-link-hidden');
+        console.log('🔧 FORCED SHOW: User Management navigation link');
+    }
+    
+    const userSection = document.getElementById('users');
+    if (userSection) {
+        userSection.classList.remove('section-hidden');
+        console.log('🔧 FORCED SHOW: User Management section');
+    }
+    
     // Update current user name in header
     if (currentUser && currentUser.fullName) {
         updateUsernameInHeader();
@@ -793,6 +816,18 @@ function applyUserPermissions() {
         fullName: currentUser?.fullName,
         username: currentUser?.username
     });
+    
+    // Check and fix user permissions if needed
+    if (currentUser && currentUser.role === 'admin' && (!currentUser.permissions || !currentUser.permissions.includes('users'))) {
+        console.log('🔧 WARNING: Admin user missing users permission, attempting to fix...');
+        if (!currentUser.permissions) {
+            currentUser.permissions = [];
+        }
+        if (!currentUser.permissions.includes('users')) {
+            currentUser.permissions.push('users');
+            console.log('🔧 FIXED: Added users permission to admin user');
+        }
+    }
 }
 function createUser(userData) {
     const newUser = {
