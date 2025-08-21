@@ -16,7 +16,7 @@ function validateAndFixDataConsistency() {
 }
 
 function updateUsernameInHeader() {
-    const usernameElement = document.getElementById('username');
+    const usernameElement = document.getElementById('header-username');
     console.log('🔧 DEBUG: updateUsernameInHeader called');
     console.log('🔧 DEBUG: currentUser:', currentUser);
     console.log('🔧 DEBUG: currentUser.fullName:', currentUser?.fullName);
