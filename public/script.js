@@ -297,6 +297,59 @@ async function handleLogin(e) {
     }
 }
 
+// Local authentication fallback
+async function handleLocalLogin(username, password) {
+    console.log('[DEBUG] Using local authentication...');
+    
+    // Check if we have local users
+    if (users.length === 0) {
+        // Create default admin user locally
+        const defaultAdmin = {
+            id: 1,
+            username: 'admin',
+            password: 'admin',
+            fullName: 'System Administrator',
+            email: 'admin@repairmaniac.com',
+            role: 'admin',
+            status: 'active',
+            permissions: ['dashboard', 'inventory', 'purchases', 'vendors', 'customers', 'repairs', 'outsource', 'invoices', 'quotations', 'pickdrop', 'delivery', 'payments', 'reports', 'users', 'warranties']
+        };
+        users.push(defaultAdmin);
+        console.log('[DEBUG] Created default admin user locally');
+    }
+    
+    // Find user
+    const userProfile = users.find(u => 
+        u.username.toLowerCase() === username.toLowerCase() || 
+        u.email?.toLowerCase() === username.toLowerCase()
+    );
+    
+    if (!userProfile || userProfile.password !== password) {
+        throw new Error('Invalid username or password');
+    }
+    
+    // Login successful
+    currentUser = userProfile;
+    currentUserId = userProfile.id;
+    
+    // Save to localStorage
+    localStorage.setItem('loginStatus', 'true');
+    localStorage.setItem('currentUserId', currentUserId.toString());
+    localStorage.setItem('currentUserEmail', userProfile.email || '');
+    
+    // Show success and redirect
+    const loginSuccess = document.getElementById('login-success');
+    loginSuccess.style.display = 'block';
+    loginSuccess.textContent = 'Local login successful! Redirecting...';
+    
+    setTimeout(() => {
+        showApp();
+        if (typeof applyUserPermissions === 'function') {
+            applyUserPermissions();
+        }
+    }, 1000);
+}
+
     // Clear login status
 function logout() {
     // Sign out from Firebase if available
@@ -2237,6 +2290,105 @@ async function simpleLogin(e) {
 // Make simple login available globally
 window.simpleLogin = simpleLogin;
 
+// Create test users for development
+async function createTestUsers() {
+    console.log('🔧 Creating test users...');
+    
+    const testUsers = [
+        {
+            id: 1,
+            username: 'admin',
+            password: 'admin',
+            fullName: 'System Administrator',
+            email: 'admin@repairmaniac.com',
+            role: 'admin',
+            status: 'active',
+            permissions: ['dashboard', 'inventory', 'purchases', 'vendors', 'customers', 'repairs', 'outsource', 'invoices', 'quotations', 'pickdrop', 'delivery', 'payments', 'reports', 'users', 'warranties']
+        },
+        {
+            id: 2,
+            username: 'manager',
+            password: 'manager',
+            fullName: 'Shop Manager',
+            email: 'manager@repairmaniac.com',
+            role: 'manager',
+            status: 'active',
+            permissions: ['dashboard', 'inventory', 'purchases', 'vendors', 'customers', 'repairs', 'outsource', 'invoices', 'quotations', 'pickdrop', 'delivery', 'payments', 'reports']
+        },
+        {
+            id: 3,
+            username: 'technician',
+            password: 'technician',
+            fullName: 'Repair Technician',
+            email: 'technician@repairmaniac.com',
+            role: 'technician',
+            status: 'active',
+            permissions: ['dashboard', 'inventory', 'customers', 'repairs', 'delivery', 'reports']
+        }
+    ];
+    
+    // Add to local users array
+    users = testUsers;
+    
+    // Save to shared document if available
+    if (window.db && window.safeCollection && window.setDoc && window.doc) {
+        try {
+            const sharedDocRef = window.doc(window.safeCollection(window.db, 'shared_data'), 'repairmaniac_com');
+            await window.setDoc(sharedDocRef, {
+                users: users,
+                lastUpdated: new Date().toISOString(),
+                updatedBy: 'system',
+                testUsersCreated: true
+            }, { merge: true });
+            console.log('✅ Test users saved to shared document');
+        } catch (error) {
+            console.error('❌ Error saving test users to shared document:', error);
+        }
+    }
+    
+    console.log('✅ Test users created successfully');
+    return testUsers;
+}
+
+// Make test user creation available globally
+window.createTestUsers = createTestUsers;
+
+// Show success message
+function showSuccessMessage(message) {
+    // Create or find success message container
+    let successContainer = document.getElementById('success-message');
+    if (!successContainer) {
+        successContainer = document.createElement('div');
+        successContainer.id = 'success-message';
+        successContainer.className = 'success-message';
+        successContainer.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #4CAF50;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 5px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            z-index: 10000;
+            max-width: 300px;
+            word-wrap: break-word;
+        `;
+        document.body.appendChild(successContainer);
+    }
+    
+    successContainer.textContent = message;
+    successContainer.style.display = 'block';
+    
+    // Auto-hide after 5 seconds
+    setTimeout(() => {
+        successContainer.style.display = 'none';
+    }, 5000);
+}
+
+// Make success message function available globally
+window.showSuccessMessage = showSuccessMessage;
+
 // Handle role change in user modal
 function handleRoleChange() {
     const selectedRole = this.value;
@@ -3003,69 +3155,90 @@ async function handleAddUser(e) {
         permissions: getSelectedPermissions()
     };
     
-    if (!userData.email || !userData.password) {
-        alert('Email and password are required.');
+    console.log('[DEBUG] Creating user:', userData);
+    
+    if (!userData.username || !userData.password || !userData.fullName) {
+        alert('Username, password, and full name are required.');
         return;
     }
     
-    if (await emailExistsInCloud(userData.email)) {
-        alert('This email is already registered. Please use a different email.');
-        return;
-    }
-    
-    if (window.createUserWithEmailAndPassword && window.auth) {
-        try {
-            // Store the current admin user info before creating new user
-            const currentAdminUser = window.auth.currentUser;
-            const adminEmail = currentAdminUser ? currentAdminUser.email : null;
-            
-            // Create the Firebase Auth account
-            const userCredential = await window.createUserWithEmailAndPassword(window.auth, userData.email, userData.password);
-            console.log('Firebase Auth user created:', userCredential.user.email);
-            
-            // IMPORTANT: Sign out the newly created user immediately
-            await window.signOut(window.auth);
-            console.log('Signed out newly created user');
-            
-            // Sign back in as the admin user
-            if (adminEmail) {
-                try {
-                    // We need to prompt for admin password or use stored credentials
-                    // For now, we'll just sign out and let the user sign back in manually
-                    console.log('Please sign back in as admin user:', adminEmail);
-                    
-                    // Show a message to the user
-                    showSuccessMessage('User created successfully! Please sign back in as admin.');
-                    
-                    // Sign out and show login
-                    setTimeout(() => {
-                        logout();
-                    }, 2000);
-                    
-                } catch (signInError) {
-                    console.warn('Could not sign back in as admin:', signInError.message);
-                    showSuccessMessage('User created successfully! Please sign back in as admin.');
-                    setTimeout(() => {
-                        logout();
-                    }, 2000);
-                }
-            }
-            
-            // Add to Firestore users collection
-            createUser(userData);
-            
-        } catch (error) {
-            if (error.code === 'auth/email-already-in-use') {
-                alert('This email is already registered in Firebase Auth. Please use a different email.');
-            } else {
-                alert('Failed to create Firebase Auth account: ' + error.message);
+    try {
+        // Check if username already exists
+        const existingUser = users.find(u => u.username.toLowerCase() === userData.username.toLowerCase());
+        if (existingUser) {
+            alert('Username already exists. Please choose a different username.');
+            return;
+        }
+        
+        // Check if email already exists
+        if (userData.email) {
+            const existingEmail = users.find(u => u.email && u.email.toLowerCase() === userData.email.toLowerCase());
+            if (existingEmail) {
+                alert('Email already exists. Please use a different email.');
+                return;
             }
         }
-    } else {
-        alert('Firebase Auth is not available. Cannot create user.');
+        
+        // Create user object
+        const newUser = {
+            id: Date.now(),
+            ...userData,
+            createdAt: new Date().toISOString(),
+            lastLogin: null
+        };
+        
+        // Add to local users array
+        users.push(newUser);
+        console.log('[DEBUG] User added to local array:', newUser);
+        
+        // Try to create Firebase Auth account if available
+        if (window.createUserWithEmailAndPassword && window.auth && userData.email) {
+            try {
+                console.log('[DEBUG] Creating Firebase Auth account...');
+                const userCredential = await window.createUserWithEmailAndPassword(window.auth, userData.email, userData.password);
+                console.log('[DEBUG] Firebase Auth user created:', userCredential.user.email);
+                
+                // Sign out the newly created user immediately
+                await window.signOut(window.auth);
+                console.log('[DEBUG] Signed out newly created user');
+                
+                // Show success message
+                showSuccessMessage('User created successfully! The new user can now log in.');
+                
+            } catch (authError) {
+                console.warn('[DEBUG] Firebase Auth creation failed:', authError.message);
+                // Continue with local user creation even if Firebase Auth fails
+                showSuccessMessage('User created locally. Firebase Auth creation failed: ' + authError.message);
+            }
+        } else {
+            showSuccessMessage('User created successfully!');
+        }
+        
+        // Save to shared document
+        if (window.db && window.safeCollection && window.setDoc && window.doc) {
+            try {
+                const sharedDocRef = window.doc(window.safeCollection(window.db, 'shared_data'), 'repairmaniac_com');
+                await window.setDoc(sharedDocRef, {
+                    users: users,
+                    lastUpdated: new Date().toISOString(),
+                    updatedBy: currentUser ? currentUser.username : 'system'
+                }, { merge: true });
+                console.log('[DEBUG] Users saved to shared document');
+            } catch (saveError) {
+                console.error('[DEBUG] Error saving to shared document:', saveError);
+            }
+        }
+        
+        // Refresh user display
+        renderUsers();
+        
+        // Close modal
+        closeModal('add-user-modal');
+        
+    } catch (error) {
+        console.error('[DEBUG] Error creating user:', error);
+        alert('Failed to create user: ' + error.message);
     }
-    
-    resetUserModal();
 }
 async function fetchAndRenderAllUsers() {
     if (!window.db || !window.collection || !window.getDocs) return;
