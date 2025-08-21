@@ -1831,6 +1831,9 @@ function showModal(modalId) {
     if (modalId === 'add-payment-modal') {
         populatePaymentModal();
     }
+    if (modalId === 'add-user-modal') {
+        initializeUserModal();
+    }
 }
 // Dashboard navigation function
 function navigateToSection(sectionName) {
@@ -1891,6 +1894,39 @@ function populatePaymentModal() {
     if (referenceInput) {
         referenceInput.value = `REF-${Date.now()}`;
     }
+}
+
+// Initialize user modal with proper event listeners and default permissions
+function initializeUserModal() {
+    console.log('Initializing user modal...');
+    
+    // Reset form
+    document.getElementById('add-user-form').reset();
+    
+    // Reset all permission checkboxes
+    document.querySelectorAll('.permissions-grid input[type="checkbox"]').forEach(checkbox => {
+        checkbox.checked = false;
+    });
+    
+    // Set default role to 'viewer' and apply its permissions
+    const roleSelect = document.getElementById('user-role');
+    if (roleSelect) {
+        roleSelect.value = 'viewer';
+        setDefaultPermissionsForRole('viewer');
+        
+        // Ensure the change event listener is attached
+        roleSelect.removeEventListener('change', handleRoleChange);
+        roleSelect.addEventListener('change', handleRoleChange);
+    }
+    
+    console.log('User modal initialized');
+}
+
+// Handle role change in user modal
+function handleRoleChange() {
+    const selectedRole = this.value;
+    console.log('Role changed to:', selectedRole);
+    setDefaultPermissionsForRole(selectedRole);
 }
 function closeModal(modalId) {
     document.getElementById(modalId).style.display = 'none';
@@ -2606,6 +2642,8 @@ function getSelectedPermissions() {
 
 // Set default permissions based on selected role
 function setDefaultPermissionsForRole(role) {
+    console.log('setDefaultPermissionsForRole called with role:', role);
+    
     if (!role || !userRoles[role]) {
         console.warn('Invalid role for setting default permissions:', role);
         return;
@@ -2614,20 +2652,27 @@ function setDefaultPermissionsForRole(role) {
     const defaultPermissions = userRoles[role].permissions;
     console.log(`Setting default permissions for ${role} role:`, defaultPermissions);
     
-    // Reset all checkboxes first
-    document.querySelectorAll('.permissions-grid input[type="checkbox"]').forEach(checkbox => {
+    // First, uncheck ALL permission checkboxes
+    const allPermissionCheckboxes = document.querySelectorAll('.permissions-grid input[type="checkbox"]');
+    console.log('Found permission checkboxes:', allPermissionCheckboxes.length);
+    
+    allPermissionCheckboxes.forEach(checkbox => {
         checkbox.checked = false;
+        console.log('Unchecked:', checkbox.id);
     });
     
-    // Check the appropriate permissions for the role
+    // Then, check only the permissions for the selected role
     defaultPermissions.forEach(permission => {
         const checkbox = document.getElementById(`perm-${permission}`);
         if (checkbox) {
             checkbox.checked = true;
+            console.log('Checked permission:', permission);
         } else {
             console.warn(`Permission checkbox not found for: ${permission}`);
         }
     });
+    
+    console.log('Permission setup completed for role:', role);
 }
 
 async function handleAddUser(e) {
@@ -2655,25 +2700,45 @@ async function handleAddUser(e) {
     
     if (window.createUserWithEmailAndPassword && window.auth) {
         try {
-            // Store the current admin user before creating new user
+            // Store the current admin user info before creating new user
             const currentAdminUser = window.auth.currentUser;
+            const adminEmail = currentAdminUser ? currentAdminUser.email : null;
             
             // Create the Firebase Auth account
             const userCredential = await window.createUserWithEmailAndPassword(window.auth, userData.email, userData.password);
+            console.log('Firebase Auth user created:', userCredential.user.email);
             
-            // Immediately sign back in as the admin user to prevent auto-login as new user
-            if (currentAdminUser) {
+            // IMPORTANT: Sign out the newly created user immediately
+            await window.signOut(window.auth);
+            console.log('Signed out newly created user');
+            
+            // Sign back in as the admin user
+            if (adminEmail) {
                 try {
-                    await window.signInWithEmailAndPassword(window.auth, currentAdminUser.email, localStorage.getItem('adminPassword') || 'admin');
-                    console.log('Successfully signed back in as admin user');
+                    // We need to prompt for admin password or use stored credentials
+                    // For now, we'll just sign out and let the user sign back in manually
+                    console.log('Please sign back in as admin user:', adminEmail);
+                    
+                    // Show a message to the user
+                    showSuccessMessage('User created successfully! Please sign back in as admin.');
+                    
+                    // Sign out and show login
+                    setTimeout(() => {
+                        logout();
+                    }, 2000);
+                    
                 } catch (signInError) {
-                    console.warn('Could not sign back in as admin, but user creation succeeded:', signInError.message);
+                    console.warn('Could not sign back in as admin:', signInError.message);
+                    showSuccessMessage('User created successfully! Please sign back in as admin.');
+                    setTimeout(() => {
+                        logout();
+                    }, 2000);
                 }
             }
             
             // Add to Firestore users collection
             createUser(userData);
-            showSuccessMessage('User created successfully!');
+            
         } catch (error) {
             if (error.code === 'auth/email-already-in-use') {
                 alert('This email is already registered in Firebase Auth. Please use a different email.');
