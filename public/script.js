@@ -197,24 +197,40 @@ async function handleLogin(e) {
     loginSuccess.style.display = 'none';
     // Extra debug output
     console.log('[DEBUG] Login input:', loginInput, '| Password:', password);
-    // Fetch all users from Firestore
-    const usersCol = window.collection(window.db, 'users');
-    const snapshot = await window.getDocs(usersCol);
-    // Flatten all users arrays from all documents
-    const allUsers = snapshot.docs.flatMap(doc => (doc.data().users || []));
-    console.log('[DEBUG] All users loaded from Firestore:', allUsers);
-    // Try to find by email first, then by username (case-insensitive)
-    let userProfile = allUsers.find(u => u.email && u.email.toLowerCase() === loginInput.toLowerCase());
-    if (!userProfile) {
-        userProfile = allUsers.find(u => u.username && u.username.toLowerCase() === loginInput.toLowerCase());
-    }
-    console.log('[DEBUG] Found user profile:', userProfile);
-    if (!userProfile) {
-        loginError.style.display = 'block';
-        loginError.textContent = 'User not found.';
-        return;
-    }
+    
     try {
+        // First try to get users from the shared document
+        const sharedDocRef = window.doc(window.safeCollection(window.db, 'shared_data'), 'repairmaniac_com');
+        const sharedDocSnap = await window.getDoc(sharedDocRef);
+        
+        let allUsers = [];
+        
+        if (sharedDocSnap.exists()) {
+            // Get users from shared document
+            const sharedData = sharedDocSnap.data();
+            allUsers = Array.isArray(sharedData.users) ? sharedData.users : [];
+            console.log('[DEBUG] Users loaded from shared document:', allUsers);
+        } else {
+            // Fallback: try to get users from old structure
+            console.log('[DEBUG] Shared document not found, trying old structure...');
+            const usersCol = window.collection(window.db, 'users');
+            const snapshot = await window.getDocs(usersCol);
+            allUsers = snapshot.docs.flatMap(doc => (doc.data().users || []));
+            console.log('[DEBUG] Users loaded from old structure:', allUsers);
+        }
+        
+        // Try to find by email first, then by username (case-insensitive)
+        let userProfile = allUsers.find(u => u.email && u.email.toLowerCase() === loginInput.toLowerCase());
+        if (!userProfile) {
+            userProfile = allUsers.find(u => u.username && u.username.toLowerCase() === loginInput.toLowerCase());
+        }
+        console.log('[DEBUG] Found user profile:', userProfile);
+        if (!userProfile) {
+            loginError.style.display = 'block';
+            loginError.textContent = 'User not found.';
+            return;
+        }
+        
         // Use the found email for Firebase Auth
         console.log('[DEBUG] Attempting Firebase Auth sign-in with email:', userProfile.email, '| Password:', password);
         const userCredential = await window.signInWithEmailAndPassword(window.auth, userProfile.email, password);
@@ -236,6 +252,7 @@ async function handleLogin(e) {
             showApp();
             applyUserPermissions();
         }, 1000);
+        
     } catch (error) {
         loginError.style.display = 'block';
         loginError.textContent = 'Invalid email or password. Please try again.';
