@@ -40,36 +40,72 @@ function updateUsernameInHeader() {
 }
 
 async function checkLoginStatus() {
+    console.log('Checking login status...');
+    
+    // First check if Firebase Auth has a current user
+    if (window.auth && window.auth.currentUser) {
+        console.log('Firebase Auth has current user:', window.auth.currentUser.email);
+        
+        // Try to restore session from localStorage
+        const storedUserId = localStorage.getItem('currentUserId');
+        const storedUserEmail = localStorage.getItem('currentUserEmail');
+        
+        if (storedUserId && storedUserEmail && storedUserEmail === window.auth.currentUser.email) {
+            // Restore user data from localStorage
+            currentUserId = parseInt(storedUserId);
+            currentUser = users.find(u => u.id === currentUserId);
+            
+            if (currentUser && currentUser.status === 'active') {
+                console.log('Session restored successfully:', currentUser);
+                updateUsernameInHeader();
+                showApp();
+                return;
+            }
+        }
+        
+        // If localStorage restore failed, try to find user by email
+        const userEmail = window.auth.currentUser.email;
+        const userProfile = users.find(u => u.email === userEmail);
+        
+        if (userProfile && userProfile.status === 'active') {
+            console.log('User found by email:', userProfile);
+            currentUser = userProfile;
+            currentUserId = userProfile.id;
+            
+            // Update localStorage
+            localStorage.setItem('loginStatus', 'true');
+            localStorage.setItem('currentUserId', currentUserId.toString());
+            localStorage.setItem('currentUserEmail', userProfile.email);
+            
+            updateUsernameInHeader();
+            showApp();
+            return;
+        }
+    }
+    
+    // Check localStorage fallback (for backward compatibility)
     const loginStatus = localStorage.getItem('loginStatus');
     const storedUserId = localStorage.getItem('currentUserId');
     
-    console.log('Checking login status:', loginStatus);
+    console.log('LocalStorage login status:', loginStatus);
     console.log('Stored user ID:', storedUserId);
-    console.log('Available users:', users);
+    console.log('Available users count:', users.length);
     
-    if (loginStatus === 'true' && storedUserId) {
+    if (loginStatus === 'true' && storedUserId && users.length > 0) {
         currentUserId = parseInt(storedUserId);
         currentUser = users.find(u => u.id === currentUserId);
+        
         if (currentUser && currentUser.status === 'active') {
-            currentUserId = currentUser.id;
-            console.log('User found and active:', currentUser);
-            
-            // Update username in header immediately
+            console.log('User found and active from localStorage:', currentUser);
             updateUsernameInHeader();
-            
             showApp();
-            // Note: applyUserPermissions() is now called in showApp()
-        } else {
-            console.log('User not found or inactive, clearing login status');
-            // User not found, clear login status
-            localStorage.removeItem('loginStatus');
-            localStorage.removeItem('currentUserId');
-            showLogin();
+            return;
         }
-    } else {
-        console.log('No valid login status, showing login');
-        showLogin();
     }
+    
+    // No valid session found, show login
+    console.log('No valid session found, showing login');
+    showLogin();
 }
 
 // Show login overlay
@@ -181,6 +217,12 @@ async function handleLogin(e) {
         console.log('🔧 DEBUG: After login - currentUser:', currentUser);
         console.log('🔧 DEBUG: After login - currentUser.fullName:', currentUser.fullName);
         console.log('🔧 DEBUG: After login - currentUser.username:', currentUser.username);
+        
+        // Save login status to localStorage for session persistence
+        localStorage.setItem('loginStatus', 'true');
+        localStorage.setItem('currentUserId', currentUserId.toString());
+        localStorage.setItem('currentUserEmail', currentUser.email);
+        
         updateUsernameInHeader();
         loginSuccess.style.display = 'block';
         loginSuccess.textContent = 'Login successful! Redirecting...';
@@ -207,6 +249,15 @@ function logout() {
             console.log('Error signing out from Firebase:', error.message);
         });
     }
+    
+    // Clear localStorage session data
+    localStorage.removeItem('loginStatus');
+    localStorage.removeItem('currentUserId');
+    localStorage.removeItem('currentUserEmail');
+    
+    // Reset current user variables
+    currentUser = null;
+    currentUserId = null;
     
     // Show login overlay
     showLogin();
@@ -343,8 +394,8 @@ function initializeApp() {
     // Test username update immediately
     testUsernameUpdate();
     
-    // Check if user is already logged in
-    checkLoginStatus();
+    // Note: checkLoginStatus() is now called after data is loaded from Firestore
+    // This ensures we have the user data before checking login status
     
     // Setup login form event listener
     document.getElementById('login-form').addEventListener('submit', handleLogin);
@@ -407,6 +458,11 @@ function setupFirebaseAuthListener() {
         }
     } else {
         console.log('Firebase auth not available, using local storage only');
+        // If Firebase is not available, check login status immediately
+        // This ensures the app works offline
+        setTimeout(() => {
+            checkLoginStatus();
+        }, 100);
     }
 }
 
@@ -579,8 +635,13 @@ async function loadDataFromCloud() {
             }, 100);
             // Update username in header after cloud data is loaded
             updateUsernameInHeader();
+            
+            // After data is loaded, check if user should be automatically logged in
+            checkLoginStatus();
         } else {
                 console.warn('❌ No cloud data found for this user.');
+                // Even if no cloud data, check login status for localStorage fallback
+                checkLoginStatus();
         }
         }, (error) => {
             console.error('[Firestore Real-Time Error]', { docRef, error });
